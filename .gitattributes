@@ -1,0 +1,15 @@
+# Normaliza los finales de línea: en el repositorio siempre LF, sin importar el
+# sistema operativo de quien commitea. Evita diffs falsos entre Windows y Linux.
+* text=auto eol=lf
+
+# Binarios: Git no debe tocarlos.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.pdf binary
+
+# En los diffs de GitHub, el lockfile es ruido.
+package-lock.json linguist-generated=true -diff

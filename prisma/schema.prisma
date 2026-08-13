@@ -1,0 +1,294 @@
+// ---------------------------------------------------------------------------
+// Ferias Municipales — Municipalidad de San Miguel de Tucumán
+// ---------------------------------------------------------------------------
+// La base es un proyecto de Supabase (PostgreSQL + PostGIS).
+//
+// · `Usuario` es el perfil de la aplicación. Las credenciales las administra
+//   Supabase Auth en `auth.users`; `Usuario.id` es el mismo UUID que
+//   `auth.users.id`. Por eso acá no hay ningún campo de contraseña.
+//
+// · `Feria.ubicacion` es una columna PostGIS. En Supabase la extensión vive en
+//   el schema `extensions`, así que el tipo real de la columna es
+//   `extensions.geometry(Point, 4326)`. Prisma no puede leer columnas
+//   `Unsupported`, de modo que la geometría se escribe por SQL crudo desde
+//   `src/lib/geo.ts` y `latitud`/`longitud` funcionan como espejo legible.
+//
+// · Todas las tablas tienen RLS habilitado y sin políticas: así PostgREST
+//   (la API pública de Supabase, accesible con la anon key) no las expone.
+//   Prisma se conecta como dueño de las tablas y no le afecta.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Pooler de transacciones (puerto 6543): lo usa la aplicación.
+  url       = env("DATABASE_URL")
+  // Conexión directa (puerto 5432): la usan las migraciones.
+  directUrl = env("DIRECT_URL")
+}
+
+// --------------------------------- Enums -----------------------------------
+
+enum Rol {
+  ADMIN
+  VENDEDOR
+}
+
+enum EstadoVendedor {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+enum EstadoEdicion {
+  BORRADOR
+  PUBLICADA
+  EN_CURSO
+  FINALIZADA
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+  ANULADO
+}
+
+enum MedioPago {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA_DEBITO
+  TARJETA_CREDITO
+  OTRO
+}
+
+/// Categoría general de la feria (define el perfil del evento).
+enum CategoriaFeria {
+  ARTESANIAS
+  EMPRENDEDORES
+  GASTRONOMIA
+  PRODUCTOS_REGIONALES
+  LIBROS_Y_ARTE
+  MIXTA
+}
+
+/// Rubro del emprendimiento de cada feriante.
+enum Rubro {
+  ARTESANIAS
+  GASTRONOMIA
+  INDUMENTARIA
+  MARROQUINERIA
+  JOYERIA_Y_BIJOUTERIE
+  DECORACION
+  COSMETICA_NATURAL
+  LIBROS_Y_ARTE
+  PRODUCTOS_REGIONALES
+  HUERTA_Y_VIVERO
+  JUGUETES
+  OTROS
+}
+
+// -------------------------------- Modelos ----------------------------------
+
+/// Perfil de la aplicación. Espeja `auth.users` de Supabase por `id`.
+model Usuario {
+  /// Mismo UUID que `auth.users.id`. Lo asigna Supabase Auth, no Prisma.
+  id     String @id @db.Uuid
+  email  String @unique
+  nombre String
+  rol    Rol    @default(VENDEDOR)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  vendedor Vendedor?
+
+  @@index([rol])
+  @@map("usuarios")
+}
+
+/// Perfil del feriante. Relación 1-1 con Usuario.
+model Vendedor {
+  id        String  @id @default(cuid())
+  usuarioId String  @unique @db.Uuid
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  // Datos del emprendimiento
+  emprendimiento String
+  slug           String  @unique
+  rubro          Rubro
+  descripcion    String?
+
+  // Contacto
+  telefono String?
+  /// Sólo dígitos con código de país, ej. "5493811234567" (para armar el link wa.me).
+  whatsapp String
+  email    String?
+
+  // Redes
+  instagram String?
+  facebook  String?
+  sitioWeb  String?
+
+  // Vidriera online — rutas dentro de Supabase Storage, ej. "vendedores/abc.webp"
+  imagenPortada String?
+  logo          String?
+
+  // Datos administrativos
+  dni       String?
+  direccion String?
+
+  // Flujo de aprobación municipal
+  estado        EstadoVendedor @default(PENDIENTE)
+  motivoRechazo String?
+  revisadoEn    DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  productos Producto[]
+  stands    Stand[]
+  pagos     PagoCanon[]
+
+  @@index([estado])
+  @@index([rubro])
+  @@map("vendedores")
+}
+
+model Feria {
+  id          String         @id @default(cuid())
+  nombre      String
+  slug        String         @unique
+  descripcion String
+  categoria   CategoriaFeria
+
+  // Ubicación
+  direccion String
+  /// Fuente de verdad geográfica (PostGIS). El tipo real es
+  /// `extensions.geometry(Point, 4326)`; Prisma no la lee, usar src/lib/geo.ts.
+  ubicacion Unsupported("geometry(Point, 4326)")?
+  /// Espejo legible de `ubicacion`, mantenido en sincronía por guardarUbicacion().
+  latitud   Float?
+  longitud  Float?
+
+  /// Ruta dentro de Supabase Storage, ej. "ferias/abc.webp".
+  imagen String?
+  activa Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  ediciones EdicionFeria[]
+
+  @@index([categoria])
+  @@index([activa])
+  @@map("ferias")
+}
+
+model EdicionFeria {
+  id      String @id @default(cuid())
+  feriaId String
+  feria   Feria  @relation(fields: [feriaId], references: [id], onDelete: Cascade)
+
+  /// Nombre opcional de la edición, ej. "Edición Aniversario".
+  nombre      String?
+  fechaInicio DateTime @db.Date
+  fechaFin    DateTime @db.Date
+  /// Texto libre, ej. "Sábados y domingos de 17 a 23 h".
+  horario     String
+
+  estado         EstadoEdicion @default(BORRADOR)
+  cantidadStands Int           @default(0)
+
+  /// Canon que debe abonar cada feriante para participar de esta edición.
+  montoCanon       Decimal   @default(0) @db.Decimal(12, 2)
+  vencimientoCanon DateTime? @db.Date
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  stands Stand[]
+  pagos  PagoCanon[]
+
+  @@index([feriaId])
+  @@index([estado])
+  @@index([fechaInicio])
+  @@map("ediciones_feria")
+}
+
+model Stand {
+  id        String       @id @default(cuid())
+  edicionId String
+  edicion   EdicionFeria @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+
+  numero Int
+  notas  String?
+
+  vendedorId String?
+  vendedor   Vendedor? @relation(fields: [vendedorId], references: [id], onDelete: SetNull)
+  asignadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Un número de stand no se repite dentro de una edición.
+  @@unique([edicionId, numero])
+  // Un feriante ocupa como máximo un stand por edición.
+  // (Postgres permite múltiples NULL, así que los stands libres no chocan.)
+  @@unique([edicionId, vendedorId])
+  @@index([vendedorId])
+  @@map("stands")
+}
+
+model Producto {
+  id         String   @id @default(cuid())
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  nombre      String
+  descripcion String?
+  precio      Decimal  @db.Decimal(12, 2)
+  /// Rutas dentro de Supabase Storage, ej. "productos/abc.webp".
+  imagenes    String[] @default([])
+  disponible  Boolean  @default(true)
+  destacado   Boolean  @default(false)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([vendedorId])
+  @@index([disponible])
+  @@map("productos")
+}
+
+/// Registro de canon. Puede haber más de un pago por feriante y edición
+/// (pagos parciales); el estado del permiso se deriva de la suma abonada
+/// contra `EdicionFeria.montoCanon` y su vencimiento — ver src/lib/canon.ts.
+model PagoCanon {
+  id String @id @default(cuid())
+
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  edicionId String
+  edicion   EdicionFeria @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+
+  monto       Decimal    @db.Decimal(12, 2)
+  fechaPago   DateTime?  @db.Date
+  medio       MedioPago?
+  /// Ruta en el bucket privado `comprobantes`. Se sirve con URL firmada.
+  comprobante String?
+  estado      EstadoPago @default(PENDIENTE)
+
+  observaciones String?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([vendedorId])
+  @@index([edicionId])
+  @@index([estado])
+  @@map("pagos_canon")
+}
