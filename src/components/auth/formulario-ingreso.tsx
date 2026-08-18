@@ -7,9 +7,17 @@ import { AccesosDemo } from "@/components/auth/accesos-demo";
 import { Alerta } from "@/components/ui/alerta";
 import { BotonEnvio } from "@/components/ui/boton-envio";
 import { Campo, Entrada } from "@/components/ui/campo";
+import type { CuentaDemo } from "@/lib/accesos-demo";
 import { ESTADO_INICIAL } from "@/lib/form";
 
-export function FormularioIngreso({ volverA }: { volverA: string }) {
+export function FormularioIngreso({
+  volverA,
+  cuentasDemo = [],
+}: {
+  volverA: string;
+  /** Cuentas de ejemplo del seed. Vacío en producción: el panel no se muestra. */
+  cuentasDemo?: CuentaDemo[];
+}) {
   const [estado, accion] = useActionState(iniciarSesion, ESTADO_INICIAL);
   const formulario = useRef<HTMLFormElement>(null);
 
@@ -82,8 +90,8 @@ export function FormularioIngreso({ volverA }: { volverA: string }) {
         Ingresar
       </BotonEnvio>
 
-      {/* No renderiza nada fuera de desarrollo. */}
-      <AccesosDemo onElegir={ingresarComo} />
+      {/* No renderiza nada si la lista viene vacía. */}
+      <AccesosDemo cuentas={cuentasDemo} onElegir={ingresarComo} />
     </form>
   );
 }

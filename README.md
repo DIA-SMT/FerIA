@@ -216,16 +216,32 @@ Todos los feriantes del seed usan la misma contraseña. Los correos están en
 
 ### Accesos rápidos en el login
 
-En **desarrollo**, `/ingresar` muestra un panel con estas cuatro cuentas: un
-click completa el formulario y entra, para no tipear credenciales cada vez que
-se prueba otro rol.
+`/ingresar` puede mostrar un panel con estas cuatro cuentas: un click completa
+el formulario y entra, para no tipear credenciales cada vez que se prueba otro
+rol. Aparece **siempre en desarrollo**, y en un deploy sólo declarando
+`ACCESOS_DEMO=true`.
 
-El panel está en `src/components/auth/accesos-demo.tsx` y la guarda es
-`process.env.NODE_ENV === "development"`. Next.js reemplaza esa expresión por una
-constante al compilar, así que en un build de producción la condición queda en
-`false` y el bloque entero se elimina del bundle: **las credenciales no llegan al
-navegador, no están sólo ocultas.** Se puede comprobar buscándolas en `.next`
-después de un `npm run build` — no aparecen en ningún archivo.
+> ⚠️ Prenderlo en una URL pública significa que cualquiera que la encuentre
+> entra como ADMIN con un click y puede aprobar feriantes, borrar ferias o
+> registrar pagos. Sirve para una demo; hay que apagarlo antes de que el sitio
+> sea real.
+
+**Las credenciales viven sólo en el servidor**, en `src/lib/accesos-demo.ts`.
+`cuentasDemo()` decide si el panel corresponde y devuelve la lista o un arreglo
+vacío; `src/components/auth/accesos-demo.tsx` sólo presenta lo que recibe. Con
+el flag apagado no se manda nada y las credenciales no existen en el bundle del
+navegador. Comprobable buscándolas en `.next/static` después de un
+`npm run build`.
+
+Dos detalles de esa separación, que no son casuales:
+
+- **El flag no lleva el prefijo `NEXT_PUBLIC_`.** Así lo lee únicamente el
+  servidor, en tiempo de ejecución: prenderlo o apagarlo no necesita recompilar.
+- **La decisión no puede vivir en el componente de cliente.** La primera versión
+  lo hacía, confiando en que el minificador eliminara el bloque al compilar.
+  No es confiable: con la variable vacía, Next no la reemplaza por una constante,
+  no se elimina nada y las credenciales terminan en el bundle igual. Una
+  propiedad de seguridad no se apoya en la eliminación de código muerto.
 
 ---
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { FormularioIngreso } from "@/components/auth/formulario-ingreso";
 import { Tarjeta, TarjetaCuerpo } from "@/components/ui/tarjeta";
+import { cuentasDemo } from "@/lib/accesos-demo";
 
 export const metadata: Metadata = {
   title: "Ingresar",
@@ -38,7 +39,10 @@ export default async function PaginaIngresar({
 
       <Tarjeta className="mt-6">
         <TarjetaCuerpo className="sm:p-6">
-          <FormularioIngreso volverA={destino} />
+          {/* Las credenciales se resuelven en el servidor: si el panel está
+              apagado, `cuentasDemo()` devuelve vacío y nada de esto llega al
+              navegador. Ver src/lib/accesos-demo.ts. */}
+          <FormularioIngreso volverA={destino} cuentasDemo={cuentasDemo()} />
         </TarjetaCuerpo>
       </Tarjeta>
 

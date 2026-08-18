@@ -1,63 +1,25 @@
 "use client";
 
+import type { CuentaDemo } from "@/lib/accesos-demo";
+
 /**
- * Accesos rápidos a las cuentas de ejemplo del seed. **Sólo en desarrollo.**
+ * Accesos rápidos a las cuentas de ejemplo del seed: un click completa el
+ * formulario de ingreso y lo envía, para no tipear credenciales cada vez que se
+ * prueba un rol distinto.
  *
- * Existe para no tipear credenciales cada vez que se prueba un rol distinto:
- * un click completa el formulario y lo envía.
- *
- * La guarda es `process.env.NODE_ENV`, que Next.js reemplaza por una constante
- * al compilar. En un build de producción la condición queda en `false` y el
- * bloque entero —credenciales incluidas— se elimina del bundle. No es que esté
- * oculto: no llega al navegador. Ver la nota del README.
+ * Este componente sólo presenta lo que recibe. Quién decide si el panel existe
+ * —y por lo tanto si las credenciales llegan al navegador— es `cuentasDemo()`
+ * en `src/lib/accesos-demo.ts`, que corre en el servidor. Si la lista viene
+ * vacía, acá no se renderiza nada.
  */
-
-export const ES_DESARROLLO = process.env.NODE_ENV === "development";
-
-interface CuentaDemo {
-  etiqueta: string;
-  detalle: string;
-  email: string;
-  password: string;
-}
-
-/** Las mismas contraseñas que fija `prisma/seed.ts`. */
-const PASSWORD_ADMIN = "Ferias.2026";
-const PASSWORD_FERIANTE = "Feriante.2026";
-
-const CUENTAS: CuentaDemo[] = [
-  {
-    etiqueta: "Municipal",
-    detalle: "Panel completo",
-    email: "admin@smt.gob.ar",
-    password: PASSWORD_ADMIN,
-  },
-  {
-    etiqueta: "Feriante aprobado",
-    detalle: "Tejidos del Cerro",
-    email: "tejidosdelcerro@example.com",
-    password: PASSWORD_FERIANTE,
-  },
-  {
-    etiqueta: "Feriante pendiente",
-    detalle: "Telar Andino",
-    email: "telarandino@example.com",
-    password: PASSWORD_FERIANTE,
-  },
-  {
-    etiqueta: "Feriante rechazado",
-    detalle: "Importados LH",
-    email: "importadoslh@example.com",
-    password: PASSWORD_FERIANTE,
-  },
-];
-
 export function AccesosDemo({
+  cuentas,
   onElegir,
 }: {
+  cuentas: CuentaDemo[];
   onElegir: (email: string, password: string) => void;
 }) {
-  if (!ES_DESARROLLO) return null;
+  if (cuentas.length === 0) return null;
 
   return (
     <section
@@ -72,11 +34,11 @@ export function AccesosDemo({
         Accesos de prueba
       </h2>
       <p className="mt-1 text-xs text-amber-800">
-        Cuentas del seed. Un click ingresa. Sólo visible en desarrollo.
+        Cuentas del seed. Un click ingresa.
       </p>
 
       <ul className="mt-2.5 grid gap-1.5 sm:grid-cols-2">
-        {CUENTAS.map((cuenta) => (
+        {cuentas.map((cuenta) => (
           <li key={cuenta.email}>
             <button
               type="button"
