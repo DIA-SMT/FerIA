@@ -18,7 +18,15 @@ const TAMANIOS = {
   lg: { caja: "size-16 text-lg", px: 64 },
 } as const;
 
-/** Logo del emprendimiento; si no hay, muestra las iniciales sobre el azul institucional. */
+/**
+ * Logo del emprendimiento; si no hay, muestra las iniciales.
+ *
+ * El relleno de las iniciales es blanco con las letras en azul, igual que el
+ * cromo de la variante con imagen. Es a propósito: en la tarjeta del stand y en
+ * la vidriera el avatar se superpone a la portada, y cuando el feriante todavía
+ * no subió foto esa portada es el degradé institucional. Un círculo azul sobre
+ * degradé azul se desdibuja; uno blanco recorta contra cualquier fondo.
+ */
 export function Avatar({
   nombre,
   imagen,
@@ -49,7 +57,7 @@ export function Avatar({
       aria-hidden="true"
       className={cn(
         caja,
-        "flex shrink-0 items-center justify-center rounded-full bg-municipal-500 font-semibold text-white",
+        "flex shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-semibold text-municipal-700",
         className,
       )}
     >

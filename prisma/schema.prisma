@@ -249,7 +249,6 @@ model Producto {
 
   nombre      String
   descripcion String?
-  precio      Decimal  @db.Decimal(12, 2)
   /// Rutas dentro de Supabase Storage, ej. "productos/abc.webp".
   imagenes    String[] @default([])
   disponible  Boolean  @default(true)

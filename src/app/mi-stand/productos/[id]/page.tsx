@@ -5,7 +5,6 @@ import { actualizarProducto } from "@/actions/productos";
 import { FormularioProducto } from "@/components/vendedor/formulario-producto";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
 import { prisma } from "@/lib/db";
-import { aNumero } from "@/lib/format";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Editar producto" };
@@ -46,7 +45,6 @@ export default async function PaginaEditarProducto({
           id: producto.id,
           nombre: producto.nombre,
           descripcion: producto.descripcion,
-          precio: aNumero(producto.precio),
           imagenes: producto.imagenes,
           disponible: producto.disponible,
           destacado: producto.destacado,

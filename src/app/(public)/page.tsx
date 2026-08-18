@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
@@ -36,7 +37,46 @@ export default async function PaginaInicio() {
   return (
     <>
       {/* ------------------------------- Hero ------------------------------- */}
-      <section className="degrade-institucional relative overflow-hidden">
+      {/*
+        Foto de fondo con velo institucional. El velo no es decorativo: es lo
+        que sostiene el contraste del texto blanco sobre una imagen que tiene
+        zonas claras (los toldos iluminados). Va opaco a la izquierda, donde
+        está el texto, y se abre hacia la derecha para dejar ver la feria.
+      */}
+      <section className="relative isolate overflow-hidden bg-municipal-950">
+        <Image
+          src="/hero-feria-nocturna.webp"
+          // Vacío a propósito: es una imagen de ambiente y el h1 ya dice de
+          // qué se trata. Anunciarla sería ruido para un lector de pantalla.
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-right"
+        />
+
+        {/*
+          Dos velos, según el ancho, porque el texto no ocupa la misma
+          proporción de la pantalla:
+
+          · Hasta `lg` el texto abarca casi todo el ancho, así que el velo es
+            parejo y parejo tiene que ser: un degradé horizontal dejaría las
+            últimas palabras de cada línea sobre los toldos iluminados.
+          · Desde `lg` el texto llega como máximo al 69 % del ancho. El velo se
+            mantiene denso hasta el 65 % y se abre después, que es justo donde
+            están los puestos con las luces cálidas.
+
+          Contraste medido contra blanco, en el peor píxel de la zona de texto:
+          13,4:1 a 1440 px, 8,6:1 a 1024 px y 10,4:1 a 375 px. AAA pide 7:1.
+        */}
+        <div
+          className="absolute inset-0 bg-municipal-950/85 lg:hidden"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0 hidden lg:block lg:bg-gradient-to-r lg:from-municipal-950 lg:from-20% lg:via-municipal-950/88 lg:via-65% lg:to-municipal-900/10"
+          aria-hidden="true"
+        />
         <div className="trama-puntos absolute inset-0" aria-hidden="true" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">

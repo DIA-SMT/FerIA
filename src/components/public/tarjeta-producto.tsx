@@ -1,14 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { IconoEtiqueta, IconoWhatsapp } from "@/components/ui/iconos";
 import { ImagenPortada } from "@/components/ui/imagen";
-import { formatearMoneda, type ValorDecimal } from "@/lib/format";
 import { linkWhatsapp, mensajeConsultaProducto } from "@/lib/whatsapp";
 
 export interface ProductoPublico {
   id: string;
   nombre: string;
   descripcion: string | null;
-  precio: ValorDecimal;
   imagenes: string[];
   disponible: boolean;
 }
@@ -52,23 +50,23 @@ export function TarjetaProducto({
           </p>
         )}
 
-        <p className="mt-3 text-lg font-bold text-municipal-700">
-          {formatearMoneda(producto.precio)}
-        </p>
-
+        {/* `mt-auto` ancla el botón al pie: sin el precio arriba, es lo que
+            mantiene alineadas las tarjetas de la grilla. */}
         {producto.disponible && (
-          <a
-            href={linkWhatsapp(
-              whatsapp,
-              mensajeConsultaProducto(emprendimiento, producto.nombre),
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
-          >
-            <IconoWhatsapp className="size-4" />
-            Consultar por este producto
-          </a>
+          <div className="mt-auto pt-4">
+            <a
+              href={linkWhatsapp(
+                whatsapp,
+                mensajeConsultaProducto(emprendimiento, producto.nombre),
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
+            >
+              <IconoWhatsapp className="size-4" />
+              Consultar por este producto
+            </a>
+          </div>
         )}
       </div>
     </article>

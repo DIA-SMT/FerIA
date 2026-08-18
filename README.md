@@ -39,10 +39,11 @@ La cara visible para los vecinos.
 - **Directorio de stands** (`/stands`): todos los feriantes aprobados, con
   búsqueda por nombre o producto y filtros por rubro y por feria.
 - **Vidriera del feriante** (`/stands/[slug]`): portada, descripción, catálogo
-  con precios y **botón de contacto por WhatsApp** con el mensaje ya escrito.
+  y **botón de contacto por WhatsApp** con el mensaje ya escrito.
 
-> No hay carrito ni pagos online: el modelo es vidriera + contacto directo entre
-> el vecino y quien produce.
+> No hay carrito ni pagos online, y **el catálogo no publica precios**: el
+> modelo es vidriera + contacto directo entre el vecino y quien produce. El
+> precio se acuerda por WhatsApp.
 
 ### Panel municipal — `/admin` (rol `ADMIN`)
 
@@ -68,7 +69,7 @@ La cara visible para los vecinos.
   pendiente de aprobación y el feriante ve claramente ese estado al ingresar.
 - Una vez aprobado: edición de su **vidriera** (nombre, descripción, portada,
   logo, contacto y redes) y de su **catálogo de productos** (nombre,
-  descripción, precio, hasta 4 fotos, disponible sí/no).
+  descripción, hasta 4 fotos, disponible sí/no).
 - **Sus ferias**: a qué ediciones y stands fue asignado.
 - **Canon**: estado de sus pagos, en sólo lectura.
 
@@ -160,8 +161,9 @@ los índices —incluido el GIST espacial— y habilita RLS.
 npm run db:seed
 ```
 
-El seed hace tres cosas: crea los buckets de Storage, crea los usuarios en
-Supabase Auth con su rol, y carga los datos. Son cinco ferias en puntos reales
+El seed hace cuatro cosas: crea los buckets de Storage, crea los usuarios en
+Supabase Auth con su rol, genera y sube las imágenes de ejemplo, y carga los
+datos. Son cinco ferias en puntos reales
 de la ciudad (Parque 9 de Julio, Plaza Urquiza, Parque Avellaneda, Plaza
 Independencia y Plaza Alberdi), con ediciones pasadas, en curso y próximas,
 catorce feriantes en distintos estados de aprobación, sus catálogos y pagos de
@@ -212,6 +214,19 @@ despliegue real.
 Todos los feriantes del seed usan la misma contraseña. Los correos están en
 `prisma/seed.ts`.
 
+### Accesos rápidos en el login
+
+En **desarrollo**, `/ingresar` muestra un panel con estas cuatro cuentas: un
+click completa el formulario y entra, para no tipear credenciales cada vez que
+se prueba otro rol.
+
+El panel está en `src/components/auth/accesos-demo.tsx` y la guarda es
+`process.env.NODE_ENV === "development"`. Next.js reemplaza esa expresión por una
+constante al compilar, así que en un build de producción la condición queda en
+`false` y el bloque entero se elimina del bundle: **las credenciales no llegan al
+navegador, no están sólo ocultas.** Se puede comprobar buscándolas en `.next`
+después de un `npm run build` — no aparecen en ningún archivo.
+
 ---
 
 ## Comandos disponibles
@@ -243,8 +258,10 @@ ferias-smt/
 │  ├─ schema.prisma            Modelo de datos
 │  ├─ migrations/
 │  │  ├─ …_enable_postgis/     CREATE EXTENSION postgis en `extensions`
-│  │  └─ …_init/               Tablas, índices, GIST espacial y RLS
-│  └─ seed.ts                  Buckets + usuarios + datos de ejemplo
+│  │  ├─ …_init/               Tablas, índices, GIST espacial y RLS
+│  │  └─ …_quitar_precio_…/    DROP de `productos.precio`
+│  ├─ seed.ts                  Buckets + usuarios + datos de ejemplo
+│  └─ imagenes-seed.ts         Imágenes geométricas por rubro para el seed
 ├─ public/logo.png             Isologo municipal
 └─ src/
    ├─ app/
@@ -404,6 +421,28 @@ columnas, así que:
 edición y su fecha de vencimiento. Así no puede quedar desactualizado y se
 admiten pagos parciales sin lógica extra.
 
+### Las imágenes del seed son generadas, no fotos
+
+No podemos garantizar derechos de uso de fotos reales para un sitio municipal, y
+dejar todo con el placeholder del degradé hacía ver el market más plano de lo
+que se ve en producción. `prisma/imagenes-seed.ts` genera imágenes geométricas
+—nada representacional, sin problema de licencia— y las sube a Storage.
+
+- **Un motivo por rubro**: telar para artesanías, círculos concéntricos para
+  gastronomía, cerros para productos regionales, y así con los doce. Se
+  distinguen de un vistazo en la grilla del directorio.
+- **Sólo la paleta institucional**, con el amarillo como realce puntual.
+- **Determinista**: las variaciones salen de un hash del slug, no de
+  `Math.random()`. Dos corridas del seed producen las mismas imágenes.
+- **Nombres de objeto derivados del slug** y subida con `upsert`, así reejecutar
+  el seed sobreescribe en lugar de acumular huérfanos en el bucket.
+- Se rasteriza a WebP con `sharp` (que ya viene con Next.js). El set completo
+  pesa unos 550 KB.
+
+Cuatro feriantes quedan **a propósito sin imágenes** —los no aprobados y uno
+aprobado— para que los placeholders y el avatar de iniciales sigan visibles en
+la demo.
+
 ### OpenRouter
 
 `src/lib/ai.ts` deja el cliente configurado y listo, pero **ninguna parte de la
@@ -437,6 +476,46 @@ Cada color tiene su escala completa de 50 a 950 (`bg-municipal-50`,
 
 Tipografía: **Inter** vía `next/font/google`, por su legibilidad en pantallas
 chicas — la mayoría de los vecinos entra desde el celular.
+
+### Las fotos del área pública
+
+Son dos, las dos **imágenes generadas**, y cada una lleva su velo porque el
+texto blanco va encima:
+
+| Archivo | Dónde | Velo |
+| ------- | ----- | ---- |
+| `hero-feria-nocturna.webp` | Hero de inicio | Horizontal: denso a la izquierda, se abre a la derecha |
+| `ferias-encabezado-dia.webp` | Encabezado de `/ferias` | Vertical: denso abajo, se abre hacia arriba |
+
+Los velos van en sentidos distintos a propósito. La nocturna es oscura y el
+texto ocupa la mitad izquierda, así que conviene oscurecer ese lado y dejar ver
+los puestos del otro. La diurna es luminosa y lo que la hace linda es la luz
+entre los árboles, así que se oscurece sólo el pie, donde va el título.
+
+En las dos, **abajo de `lg` el velo es parejo**: en pantallas chicas el texto
+ocupa casi todo el ancho y todo el alto de la banda, y un degradé dejaría
+palabras sobre las zonas claras de la foto.
+
+Contraste medido sobre la imagen ya compuesta con el velo, en el peor píxel de
+la zona de texto (AAA pide 7:1):
+
+| | 1440 px | 1024 px | 375 px |
+| --- | --- | --- | --- |
+| Hero de inicio | 13,4:1 | 8,6:1 | 10,4:1 |
+| Encabezado de `/ferias` | 9,1:1 | 8,8:1 | 10,5:1 |
+
+#### El recorte de la nocturna
+
+`public/hero-feria-nocturna.webp` está recortada del original, y **el recorte no
+es estético: es necesario.** El cuadro completo tiene, en su tercio izquierdo, un
+puesto de carteles de madera cuyo texto salió mal generado ("BRHUONDAR" donde
+debería decir Bienvenidos, y varios que son garabatos imitando letras). A tamaño
+hero se lee. La imagen del repositorio arranca pasada esa zona; si alguna vez se
+reemplaza por el original completo, el problema vuelve.
+
+La diurna no necesitó recorte por ese motivo: se revisó cuadro por cuadro y no
+tiene texto mal generado. Sólo está acotada a una banda ancha para no cargar
+píxeles que el encabezado nunca muestra.
 
 El área pública es más cálida y visual (fotos, tarjetas, degradés); el panel
 municipal es más denso y funcional (tablas, filtros, barra lateral).
