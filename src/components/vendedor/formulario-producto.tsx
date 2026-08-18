@@ -30,7 +30,6 @@ export interface ValoresProducto {
   id: string;
   nombre: string;
   descripcion: string | null;
-  precio: number;
   imagenes: string[];
   disponible: boolean;
   destacado: boolean;
@@ -106,27 +105,6 @@ export function FormularioProducto({
               rows={4}
               defaultValue={producto?.descripcion ?? ""}
               errores={errores?.descripcion}
-            />
-          </Campo>
-
-          <Campo
-            htmlFor="precio"
-            etiqueta="Precio"
-            ayuda="En pesos. Se muestra en tu stand; la venta se coordina por WhatsApp."
-            errores={errores?.precio}
-            requerido
-            className="max-w-xs"
-          >
-            <Entrada
-              name="precio"
-              type="number"
-              min={0}
-              step="0.01"
-              inputMode="decimal"
-              defaultValue={producto?.precio ?? ""}
-              placeholder="0"
-              errores={errores?.precio}
-              required
             />
           </Campo>
 

@@ -60,7 +60,6 @@ export async function crearProducto(
         vendedorId: vendedor.id,
         nombre: entrada.nombre,
         descripcion: entrada.descripcion,
-        precio: entrada.precio,
         disponible: entrada.disponible,
         destacado: entrada.destacado,
         imagenes,
@@ -108,7 +107,6 @@ export async function actualizarProducto(
       data: {
         nombre: entrada.nombre,
         descripcion: entrada.descripcion,
-        precio: entrada.precio,
         disponible: entrada.disponible,
         destacado: entrada.destacado,
         imagenes: [...conservadas, ...nuevas],

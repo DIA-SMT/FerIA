@@ -22,6 +22,12 @@ import {
 } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 
+import {
+  generarImagenFeria,
+  generarImagenProducto,
+  generarImagenesVendedor,
+} from "./imagenes-seed";
+
 const prisma = new PrismaClient();
 
 function requerido(nombre: string): string {
@@ -333,7 +339,6 @@ const FERIAS: DatosFeria[] = [
 interface DatosProducto {
   nombre: string;
   descripcion: string;
-  precio: number;
   disponible?: boolean;
   destacado?: boolean;
 }
@@ -352,6 +357,15 @@ interface DatosVendedor {
   sitioWeb?: string;
   estado: EstadoVendedor;
   motivoRechazo?: string;
+  /**
+   * Deja al feriante sin portada, sin logo y con productos sin foto.
+   *
+   * A propósito: si todos tuvieran imagen, los placeholders del market nunca se
+   * verían y no podríamos revisar cómo queda una vidriera recién creada. Lo
+   * llevan los que no están aprobados (nunca configuraron su vidriera) y un
+   * aprobado, para que el caso también se vea en la parte pública.
+   */
+  sinImagenes?: boolean;
   productos: DatosProducto[];
 }
 
@@ -373,23 +387,19 @@ const VENDEDORES: DatosVendedor[] = [
         nombre: "Poncho de lana de oveja",
         descripcion:
           "Tejido en telar criollo con lana hilada a mano, teñida con nogal. Talle único.",
-        precio: 145000,
         destacado: true,
       },
       {
         nombre: "Ruana tejida a dos agujas",
         descripcion: "Lana natural sin teñir, con fleco trenzado a mano.",
-        precio: 98000,
       },
       {
         nombre: "Bufanda de telar",
         descripcion: "Diseño en franjas, disponible en varias combinaciones.",
-        precio: 32000,
       },
       {
         nombre: "Almohadón de lana",
         descripcion: "Funda tejida en telar con relleno de vellón. 40 x 40 cm.",
-        precio: 28000,
       },
     ],
   },
@@ -409,18 +419,15 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Juego de mates de cerámica",
         descripcion: "Set de dos mates con bombilla de alpaca. Motivos calchaquíes.",
-        precio: 46000,
         destacado: true,
       },
       {
         nombre: "Fuente de barro cocido",
         descripcion: "Apta para horno. 32 cm de diámetro.",
-        precio: 38000,
       },
       {
         nombre: "Vasija decorativa grande",
         descripcion: "Pieza única, engobe rojo bruñido a piedra. 45 cm de alto.",
-        precio: 120000,
       },
     ],
   },
@@ -440,23 +447,19 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Docena de empanadas de carne",
         descripcion: "Cortadas a cuchillo, al horno de barro. Se venden por docena.",
-        precio: 18000,
         destacado: true,
       },
       {
         nombre: "Docena de empanadas de pollo",
         descripcion: "Con cebolla de verdeo y huevo.",
-        precio: 17000,
       },
       {
         nombre: "Tamales (unidad)",
         descripcion: "Con carne de cerdo y maíz pelado. Mínimo media docena.",
-        precio: 2200,
       },
       {
         nombre: "Humita en chala (unidad)",
         descripcion: "Choclo rallado, queso y albahaca.",
-        precio: 2000,
       },
     ],
   },
@@ -476,23 +479,19 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Dulce de cayote (500 g)",
         descripcion: "Con nueces de la zona. Frasco de vidrio.",
-        precio: 9500,
         destacado: true,
       },
       {
         nombre: "Dulce de higo (500 g)",
         descripcion: "Higos enteros en almíbar liviano.",
-        precio: 9800,
       },
       {
         nombre: "Alfajores de dulce de cayote (caja x 6)",
         descripcion: "Masa de maicena con coco rallado.",
-        precio: 12000,
       },
       {
         nombre: "Miel de monte (1 kg)",
         descripcion: "Cosecha de primavera del pedemonte tucumano.",
-        precio: 15000,
       },
     ],
   },
@@ -512,18 +511,15 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Cinto de cuero repujado",
         descripcion: "Curtido vegetal, hebilla de alpaca. Todos los talles.",
-        precio: 42000,
         destacado: true,
       },
       {
         nombre: "Cartera de mano",
         descripcion: "Cuero natural cosido a mano, forro de tela criolla.",
-        precio: 135000,
       },
       {
         nombre: "Funda de cuchillo",
         descripcion: "A medida, con repujado personalizado.",
-        precio: 35000,
       },
     ],
   },
@@ -542,23 +538,19 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Jabón de caléndula y avena",
         descripcion: "Para pieles sensibles. Saponificado en frío. 100 g.",
-        precio: 6500,
         destacado: true,
       },
       {
         nombre: "Crema de karité y lavanda",
         descripcion: "Hidratación intensa para manos y cuerpo. 200 ml.",
-        precio: 16500,
       },
       {
         nombre: "Aceite de romero para el cabello",
         descripcion: "Macerado en frío durante 40 días. 100 ml.",
-        precio: 13000,
       },
       {
         nombre: "Bálsamo labial de cera de abeja",
         descripcion: "Con manteca de cacao y vitamina E.",
-        precio: 4800,
         disponible: false,
       },
     ],
@@ -578,18 +570,15 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Anillo de plata con rodocrosita",
         descripcion: "Plata 925 con piedra nacional engarzada a mano.",
-        precio: 78000,
         destacado: true,
       },
       {
         nombre: "Aros de alpaca martillada",
         descripcion: "Livianos, terminación mate.",
-        precio: 24000,
       },
       {
         nombre: "Colgante calchaquí",
         descripcion: "Plata 925 con motivo grabado a buril.",
-        precio: 62000,
       },
     ],
   },
@@ -608,18 +597,15 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Tabla de algarrobo",
         descripcion: "Para asado o picada. 45 x 30 cm, con canaleta.",
-        precio: 52000,
         destacado: true,
       },
       {
         nombre: "Bandeja de cedro",
         descripcion: "Con manijas de cuero. 40 x 25 cm.",
-        precio: 44000,
       },
       {
         nombre: "Portavelas de palo santo",
         descripcion: "Juego de tres alturas.",
-        precio: 21000,
       },
     ],
   },
@@ -638,18 +624,15 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Locro tucumano (porción)",
         descripcion: "Con maíz blanco, panceta, chorizo colorado y quiaquiño.",
-        precio: 11000,
         destacado: true,
       },
       {
         nombre: "Pastelitos de membrillo (docena)",
         descripcion: "Fritos en el momento, con azúcar y grana.",
-        precio: 9000,
       },
       {
         nombre: "Guiso de mondongo (porción)",
         descripcion: "Receta casera, con porotos y verduras de estación.",
-        precio: 10500,
       },
     ],
   },
@@ -668,18 +651,15 @@ const VENDEDORES: DatosVendedor[] = [
       {
         nombre: "Plantín de lapacho rosado",
         descripcion: "Especie nativa. Altura 40 cm, en maceta de 2 litros.",
-        precio: 8500,
         destacado: true,
       },
       {
         nombre: "Kit de aromáticas",
         descripcion: "Albahaca, romero, tomillo y menta en macetas de 12 cm.",
-        precio: 14000,
       },
       {
         nombre: "Compost orgánico (5 kg)",
         descripcion: "Elaborado con residuos de poda y verdulería.",
-        precio: 6000,
       },
     ],
   },
@@ -694,17 +674,16 @@ const VENDEDORES: DatosVendedor[] = [
     whatsapp: "5493815551211",
     instagram: "librosdeljardin",
     estado: EstadoVendedor.APROBADO,
+    sinImagenes: true,
     productos: [
       {
         nombre: "Antología de poesía tucumana",
         descripcion: "Edición independiente, tapa blanda, 180 páginas.",
-        precio: 22000,
         destacado: true,
       },
       {
         nombre: "Libro álbum infantil ilustrado",
         descripcion: "Historias del monte para primeros lectores.",
-        precio: 18500,
       },
     ],
   },
@@ -719,6 +698,7 @@ const VENDEDORES: DatosVendedor[] = [
     whatsapp: "5493815551212",
     instagram: "telarandino.ok",
     estado: EstadoVendedor.PENDIENTE,
+    sinImagenes: true,
     productos: [],
   },
   {
@@ -731,6 +711,7 @@ const VENDEDORES: DatosVendedor[] = [
       "Juguetes de madera para primera infancia: encastres, rompecabezas y móviles, con maderas nativas de manejo sustentable y pinturas al agua.",
     whatsapp: "5493815551213",
     estado: EstadoVendedor.PENDIENTE,
+    sinImagenes: true,
     productos: [],
   },
   {
@@ -742,6 +723,7 @@ const VENDEDORES: DatosVendedor[] = [
     descripcion: "Venta de artículos de bazar y electrónica importada.",
     whatsapp: "5493815551214",
     estado: EstadoVendedor.RECHAZADO,
+    sinImagenes: true,
     motivoRechazo:
       "Las ferias municipales están destinadas a la producción artesanal y a emprendimientos locales. La reventa de artículos importados no cumple con el reglamento vigente (Ord. 4.812, art. 5).",
     productos: [],
@@ -889,6 +871,11 @@ async function main(): Promise<void> {
         direccion: datosFeria.direccion,
         latitud: datosFeria.latitud,
         longitud: datosFeria.longitud,
+        imagen: await generarImagenFeria(
+          supabase,
+          datosFeria.slug,
+          datosFeria.categoria,
+        ),
         activa: true,
       },
     });
@@ -961,6 +948,11 @@ async function main(): Promise<void> {
 
     const yaRevisado = datos.estado !== EstadoVendedor.PENDIENTE;
 
+    // Las imágenes son geométricas y se generan por rubro; ver imagenes-seed.ts.
+    const imagenes = datos.sinImagenes
+      ? { imagenPortada: null, logo: null }
+      : await generarImagenesVendedor(supabase, datos.slug, datos.rubro);
+
     const vendedor = await prisma.vendedor.create({
       data: {
         usuarioId: idUsuario,
@@ -974,6 +966,8 @@ async function main(): Promise<void> {
         instagram: datos.instagram ?? null,
         facebook: datos.facebook ?? null,
         sitioWeb: datos.sitioWeb ?? null,
+        imagenPortada: imagenes.imagenPortada,
+        logo: imagenes.logo,
         estado: datos.estado,
         motivoRechazo: datos.motivoRechazo ?? null,
         revisadoEn: yaRevisado ? dia(-40) : null,
@@ -983,12 +977,27 @@ async function main(): Promise<void> {
     vendedoresPorSlug.set(datos.slug, vendedor.id);
 
     if (datos.productos.length > 0) {
+      // Una foto por producto, del mismo rubro que el feriante, para que el
+      // catálogo se vea como un conjunto y no como piezas sueltas.
+      const fotos = datos.sinImagenes
+        ? datos.productos.map(() => [])
+        : await Promise.all(
+            datos.productos.map(async (_, indice) => [
+              await generarImagenProducto(
+                supabase,
+                datos.slug,
+                indice,
+                datos.rubro,
+              ),
+            ]),
+          );
+
       await prisma.producto.createMany({
-        data: datos.productos.map((producto) => ({
+        data: datos.productos.map((producto, indice) => ({
           vendedorId: vendedor.id,
           nombre: producto.nombre,
           descripcion: producto.descripcion,
-          precio: producto.precio,
+          imagenes: fotos[indice] ?? [],
           disponible: producto.disponible ?? true,
           destacado: producto.destacado ?? false,
         })),
@@ -1051,16 +1060,27 @@ async function main(): Promise<void> {
   }
 
   // ------------------------------------------------------------------------
-  const [ferias, ediciones, stands, ocupados, vendedores, productos, pagos] =
-    await Promise.all([
-      prisma.feria.count(),
-      prisma.edicionFeria.count(),
-      prisma.stand.count(),
-      prisma.stand.count({ where: { vendedorId: { not: null } } }),
-      prisma.vendedor.count(),
-      prisma.producto.count(),
-      prisma.pagoCanon.count(),
-    ]);
+  const [
+    ferias,
+    ediciones,
+    stands,
+    ocupados,
+    vendedores,
+    conVidriera,
+    productos,
+    conFoto,
+    pagos,
+  ] = await Promise.all([
+    prisma.feria.count(),
+    prisma.edicionFeria.count(),
+    prisma.stand.count(),
+    prisma.stand.count({ where: { vendedorId: { not: null } } }),
+    prisma.vendedor.count(),
+    prisma.vendedor.count({ where: { imagenPortada: { not: null } } }),
+    prisma.producto.count(),
+    prisma.producto.count({ where: { imagenes: { isEmpty: false } } }),
+    prisma.pagoCanon.count(),
+  ]);
 
   console.log(`
 ✔ Datos de ejemplo cargados
@@ -1068,9 +1088,12 @@ async function main(): Promise<void> {
   Ferias        ${ferias}
   Ediciones     ${ediciones}
   Stands        ${stands} (${ocupados} ocupados, ${stands - ocupados} libres)
-  Feriantes     ${vendedores}
-  Productos     ${productos}
+  Feriantes     ${vendedores} (${conVidriera} con portada y logo, ${vendedores - conVidriera} sin imágenes)
+  Productos     ${productos} (${conFoto} con foto, ${productos - conFoto} sin foto)
   Pagos canon   ${pagos}
+
+  Las imágenes son geométricas, generadas por rubro (prisma/imagenes-seed.ts).
+  Los feriantes sin imágenes son a propósito: dejan ver los placeholders.
 
   Acceso al panel municipal
     admin@smt.gob.ar / ${PASSWORD_ADMIN}

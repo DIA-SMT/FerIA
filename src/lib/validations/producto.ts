@@ -3,16 +3,19 @@ import { z } from "zod";
 import {
   casilla,
   id,
-  importe,
   texto,
   textoOpcional,
 } from "@/lib/validations/comunes";
 
-/** Alta y edición de un producto del catálogo del feriante. */
+/**
+ * Alta y edición de un producto del catálogo del feriante.
+ *
+ * Sin precio a propósito: el catálogo es una vidriera y el valor se acuerda por
+ * WhatsApp entre el vecino y quien produce.
+ */
 export const productoSchema = z.object({
   nombre: texto(2, 140, "El nombre del producto"),
   descripcion: textoOpcional(1500, "La descripción"),
-  precio: importe("El precio"),
   disponible: casilla,
   destacado: casilla,
   /** Imágenes ya cargadas que se conservan (las nuevas llegan como archivos). */

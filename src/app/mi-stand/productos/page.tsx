@@ -13,7 +13,6 @@ import {
 import { ImagenPortada } from "@/components/ui/imagen";
 import { Tarjeta } from "@/components/ui/tarjeta";
 import { prisma } from "@/lib/db";
-import { formatearMoneda } from "@/lib/format";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Catálogo" };
@@ -51,7 +50,7 @@ export default async function PaginaProductos() {
         <EstadoVacio
           icono={IconoEtiqueta}
           titulo="Tu catálogo está vacío"
-          descripcion="Cargá tus productos con foto y precio para que los vecinos sepan qué ofrecés antes de escribirte."
+          descripcion="Cargá tus productos con foto y descripción para que los vecinos sepan qué ofrecés antes de escribirte."
           accion={
             <BotonLink href="/mi-stand/productos/nuevo">
               Agregar el primero
@@ -94,11 +93,8 @@ export default async function PaginaProductos() {
                       {producto.descripcion}
                     </p>
                   )}
-                  <p className="mt-2 text-lg font-bold text-municipal-700">
-                    {formatearMoneda(producto.precio)}
-                  </p>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                  <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                     <Link
                       href={`/mi-stand/productos/${producto.id}`}
                       className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
