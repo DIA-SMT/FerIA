@@ -93,7 +93,12 @@ export async function generarVariantesDeFoto(
     // Si falla, se devuelven las dos deterministas con el error al lado: el
     // feriante puede seguir sin depender de que OpenRouter responda.
     try {
-      const editada = await mejorarFotoConIA(entrada, archivo.type, {
+      // Va la versión ya encuadrada y NO la foto cruda: el modelo devuelve la
+      // proporción de lo que recibe, así que entrándole un cuadrado devuelve un
+      // cuadrado y no hay nada que recortar después. Con la foto cruda vertical
+      // devolvía 864x1184 y el cuadrado se comía 13,5 % arriba y abajo: en un
+      // poncho colgado eso es la percha y los flecos.
+      const editada = await mejorarFotoConIA(sinRetocar, "image/webp", {
         nombre: String(datos.get("nombre") ?? "").trim() || "Producto artesanal",
         categoria: RUBROS[vendedor.rubro],
         descripcion: String(datos.get("descripcion") ?? ""),
