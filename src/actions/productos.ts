@@ -10,8 +10,9 @@ import {
   estadoDesdeZod,
   type EstadoFormulario,
 } from "@/lib/form";
+import { rutaEsDelVendedor } from "@/lib/fotos-producto";
 import { requerirVendedorAprobado } from "@/lib/session";
-import { almacenamiento, validarImagen } from "@/lib/storage";
+import { almacenamiento } from "@/lib/storage";
 import { productoSchema } from "@/lib/validations/producto";
 
 const MAXIMO_IMAGENES = 4;
@@ -22,24 +23,49 @@ function revalidarCatalogo(slug: string): void {
   revalidatePath(`/stands/${slug}`);
 }
 
-/** Guarda las fotos nuevas de un producto respetando el tope por producto. */
-async function guardarFotos(
+/** Separa un campo de rutas separadas por coma. */
+function leerRutas(datos: FormData, campo: string): string[] {
+  return String(datos.get(campo) ?? "")
+    .split(",")
+    .map((ruta) => ruta.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Rutas de las fotos nuevas elegidas en el selector, ya subidas a Storage.
+ *
+ * **Se filtra por propiedad.** Las rutas viajan al cliente y vuelven en el
+ * formulario, así que hay que verificar que cada una esté dentro de la carpeta
+ * de quien la manda. Sin esto, un feriante podría mandar la ruta de la foto de
+ * otro y hacérnosla guardar en su catálogo —o borrar, más abajo.
+ */
+function fotosElegidas(
   datos: FormData,
+  vendedorId: string,
   yaCargadas: number,
-): Promise<string[]> {
-  const archivos = datos
-    .getAll("imagenes")
-    .filter((valor): valor is File => valor instanceof File && valor.size > 0);
-
+): string[] {
   const disponibles = Math.max(0, MAXIMO_IMAGENES - yaCargadas);
-  const rutas: string[] = [];
 
-  for (const archivo of archivos.slice(0, disponibles)) {
-    validarImagen(archivo);
-    rutas.push(await almacenamiento.guardar(archivo, "productos"));
-  }
+  return leerRutas(datos, "imagenesNuevas")
+    .filter((ruta) => rutaEsDelVendedor(ruta, vendedorId))
+    .slice(0, disponibles);
+}
 
-  return rutas;
+/**
+ * Borra las variantes que el feriante no eligió.
+ *
+ * Es limpieza, no parte del negocio: si alguna falla, la operación principal
+ * sigue. Mismo filtro de propiedad que arriba, y por el mismo motivo.
+ */
+async function descartarVariantes(
+  datos: FormData,
+  vendedorId: string,
+): Promise<void> {
+  const rutas = leerRutas(datos, "imagenesDescartadas").filter((ruta) =>
+    rutaEsDelVendedor(ruta, vendedorId),
+  );
+
+  await Promise.all(rutas.map((ruta) => almacenamiento.eliminar(ruta)));
 }
 
 export async function crearProducto(
@@ -53,7 +79,7 @@ export async function crearProducto(
     if (!validacion.success) return estadoDesdeZod(validacion.error);
 
     const entrada = validacion.data;
-    const imagenes = await guardarFotos(datos, 0);
+    const imagenes = fotosElegidas(datos, vendedor.id, 0);
 
     await prisma.producto.create({
       data: {
@@ -65,6 +91,10 @@ export async function crearProducto(
         imagenes,
       },
     });
+
+    // Recién con el producto guardado se borran las variantes sin elegir: si el
+    // guardado falla, siguen ahí y el feriante puede reintentar sin rehacerlas.
+    await descartarVariantes(datos, vendedor.id);
 
     revalidarCatalogo(vendedor.slug);
     return estadoDeExito("Producto agregado al catálogo.");
@@ -96,11 +126,11 @@ export async function actualizarProducto(
 
     const entrada = validacion.data;
 
-    // Las que el feriante dejó marcadas + las que sube ahora.
+    // Las que el feriante dejó marcadas + las que eligió en el selector.
     const conservadas = entrada.imagenesActuales.filter((ruta) =>
       actual.imagenes.includes(ruta),
     );
-    const nuevas = await guardarFotos(datos, conservadas.length);
+    const nuevas = fotosElegidas(datos, vendedor.id, conservadas.length);
 
     await prisma.producto.update({
       where: { id: productoId },
@@ -113,10 +143,11 @@ export async function actualizarProducto(
       },
     });
 
-    // Borramos del disco las fotos que se quitaron.
+    // Borramos del disco las fotos que se quitaron y las variantes sin elegir.
     for (const ruta of actual.imagenes) {
       if (!conservadas.includes(ruta)) await almacenamiento.eliminar(ruta);
     }
+    await descartarVariantes(datos, vendedor.id);
 
     revalidarCatalogo(vendedor.slug);
     return estadoDeExito("Producto actualizado.");

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { Rubro } from "@prisma/client";
 
 import { actualizarPerfilVendedor } from "@/actions/vendedores";
@@ -14,6 +14,7 @@ import {
   Entrada,
   Seleccion,
 } from "@/components/ui/campo";
+import { AsistenteDeDescripcion } from "@/components/vendedor/asistente-de-descripcion";
 import {
   Tarjeta,
   TarjetaCuerpo,
@@ -46,6 +47,14 @@ export function FormularioPerfil({ perfil }: { perfil: ValoresPerfil }) {
   );
   const errores = estado.errores;
 
+  // Estos tres son controlados porque el asistente de redacción los lee en vivo:
+  // la descripción para saber si mejora o arma un borrador, y el nombre y el
+  // rubro para ambientar el texto —el feriante puede estar cambiándolos acá
+  // mismo—. El resto del formulario sigue sin control.
+  const [emprendimiento, setEmprendimiento] = useState(perfil.emprendimiento);
+  const [rubro, setRubro] = useState<Rubro>(perfil.rubro);
+  const [descripcion, setDescripcion] = useState(perfil.descripcion ?? "");
+
   return (
     <form action={accion} className="space-y-5" noValidate>
       {estado.mensaje && (
@@ -68,7 +77,8 @@ export function FormularioPerfil({ perfil }: { perfil: ValoresPerfil }) {
             >
               <Entrada
                 name="emprendimiento"
-                defaultValue={perfil.emprendimiento}
+                value={emprendimiento}
+                onChange={(evento) => setEmprendimiento(evento.target.value)}
                 errores={errores?.emprendimiento}
                 required
               />
@@ -82,7 +92,8 @@ export function FormularioPerfil({ perfil }: { perfil: ValoresPerfil }) {
             >
               <Seleccion
                 name="rubro"
-                defaultValue={perfil.rubro}
+                value={rubro}
+                onChange={(evento) => setRubro(evento.target.value as Rubro)}
                 opciones={aOpciones(RUBROS)}
                 errores={errores?.rubro}
                 required
@@ -99,10 +110,18 @@ export function FormularioPerfil({ perfil }: { perfil: ValoresPerfil }) {
             <AreaTexto
               name="descripcion"
               rows={6}
-              defaultValue={perfil.descripcion ?? ""}
+              value={descripcion}
+              onChange={(evento) => setDescripcion(evento.target.value)}
               errores={errores?.descripcion}
             />
           </Campo>
+
+          <AsistenteDeDescripcion
+            valor={descripcion}
+            nombreEmprendimiento={emprendimiento}
+            rubro={rubro}
+            onAplicar={setDescripcion}
+          />
         </TarjetaCuerpo>
       </Tarjeta>
 

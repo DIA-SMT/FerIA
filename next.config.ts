@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "8mb",
     },
   },
+  /**
+   * `src/lib/imagenes.ts` compone el isologo municipal sobre las fotos del
+   * catálogo, leyéndolo del disco. Los archivos de `public/` se sirven como
+   * estáticos pero no están garantizados en el sistema de archivos de una
+   * función serverless, así que hay que declararlo para que viaje con el bundle.
+   * Sin esto anda en desarrollo y falla en el deploy.
+   */
+  outputFileTracingIncludes: {
+    "/**": ["./public/logo.png"],
+  },
   images: {
     remotePatterns: hostSupabase
       ? [
