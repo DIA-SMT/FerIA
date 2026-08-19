@@ -130,20 +130,29 @@ export default async function PaginaStand({
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ---------------------------- Encabezado ---------------------------
-            `relative z-10` no es decorativo: la portada de arriba es
-            `position: relative` para que funcione el `fill` de next/image, y en
-            el orden de pintado de CSS un elemento posicionado va por encima del
-            texto de los elementos no posicionados aunque estén después en el
-            DOM. Sin esto, la portada tapaba la mitad de arriba del título y del
-            avatar, que es justamente lo que el margen negativo mete abajo de
-            ella. Queda en 10 para seguir por debajo del encabezado del sitio,
-            que es z-30. */}
-        <div className="relative z-10 -mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end">
+            Dos cosas acá que parecen detalle y no lo son.
+
+            `relative z-10`: la portada es `position: relative` para que funcione
+            el `fill` de next/image, y en el orden de pintado de CSS un elemento
+            posicionado va por encima del texto de los elementos no posicionados
+            aunque estén después en el DOM. Sin esto, la portada tapaba la mitad
+            de arriba del título y del avatar. Queda en 10 para seguir por debajo
+            del encabezado del sitio, que es z-30.
+
+            El margen negativo va en el avatar y no en la fila. Cuando estaba en
+            la fila, el título se metía unos 14 px dentro de la portada, y ahí es
+            texto slate-900 sobre una foto cualquiera: medido sobre las diez
+            portadas cargadas, ocho no llegaban al 3:1 que pide AA para texto
+            grande, y la peor daba 1,21:1 en su zona más oscura. Con el margen en
+            el avatar, la fila arranca en el borde de la portada y el texto queda
+            siempre abajo; el avatar sigue superpuesto, que es lo que da el aire
+            de vidriera, y para eso tiene el aro blanco. */}
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-end">
           <Avatar
             nombre={vendedor.emprendimiento}
             imagen={vendedor.logo}
             tamanio="lg"
-            className="size-24 text-2xl ring-4 ring-white sm:size-28"
+            className="-mt-12 size-24 text-2xl ring-4 ring-white sm:-mt-14 sm:size-28"
           />
           <div className="min-w-0 flex-1 pb-1">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
