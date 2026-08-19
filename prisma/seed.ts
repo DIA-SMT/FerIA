@@ -11,8 +11,6 @@
  */
 
 import {
-  CategoriaFeria,
-  EstadoEdicion,
   EstadoPago,
   EstadoVendedor,
   MedioPago,
@@ -27,6 +25,13 @@ import {
   generarImagenProducto,
   generarImagenesVendedor,
 } from "./imagenes-seed";
+
+import {
+  dia,
+  fechaDeAsignacion,
+  fechaDePago,
+  FERIAS,
+} from "./datos-ferias";
 
 const prisma = new PrismaClient();
 
@@ -59,17 +64,6 @@ const PASSWORD_FERIANTE = "Feriante.2026";
 // --------------------------------------------------------------------------
 // Utilidades
 // --------------------------------------------------------------------------
-
-/** Fecha a medianoche UTC desplazada N días respecto de hoy (columnas `DATE`). */
-function dia(offset: number): Date {
-  const hoy = new Date();
-  const base = Date.UTC(
-    hoy.getUTCFullYear(),
-    hoy.getUTCMonth(),
-    hoy.getUTCDate(),
-  );
-  return new Date(base + offset * 24 * 60 * 60 * 1000);
-}
 
 /**
  * Escribe la geometría PostGIS de una feria.
@@ -160,181 +154,10 @@ async function crearUsuarioAuth(
 
 // --------------------------------------------------------------------------
 // Definición de los datos
+//
+// Las ferias, sus ediciones y sus fechas están en `datos-ferias.ts`: las
+// comparte con `refrescar-fechas.ts`.
 // --------------------------------------------------------------------------
-
-interface DatosEdicion {
-  nombre?: string;
-  inicio: number;
-  fin: number;
-  horario: string;
-  estado: EstadoEdicion;
-  cantidadStands: number;
-  montoCanon: number;
-  vencimiento?: number;
-}
-
-interface DatosFeria {
-  nombre: string;
-  slug: string;
-  descripcion: string;
-  categoria: CategoriaFeria;
-  direccion: string;
-  latitud: number;
-  longitud: number;
-  ediciones: DatosEdicion[];
-}
-
-const FERIAS: DatosFeria[] = [
-  {
-    nombre: "Feria de Artesanos — Parque 9 de Julio",
-    slug: "feria-de-artesanos-parque-9-de-julio",
-    descripcion:
-      "La feria más tradicional de la ciudad, en el corazón del Parque 9 de Julio. Artesanos y artesanas de toda la provincia exponen telares, cerámica, platería, tallado en madera y trabajos en cuero. Un paseo al aire libre entre los lapachos, ideal para recorrer en familia los fines de semana.",
-    categoria: CategoriaFeria.ARTESANIAS,
-    direccion: "Parque 9 de Julio, Av. Benjamín Aráoz y Av. Soldati",
-    latitud: -26.8285,
-    longitud: -65.1888,
-    ediciones: [
-      {
-        nombre: "Edición de Invierno",
-        inicio: -60,
-        fin: -58,
-        horario: "Viernes a domingo de 16 a 21 h",
-        estado: EstadoEdicion.FINALIZADA,
-        cantidadStands: 24,
-        montoCanon: 12000,
-        vencimiento: -65,
-      },
-      {
-        nombre: "Edición Agosto",
-        inicio: -1,
-        fin: 2,
-        horario: "Jueves a domingo de 17 a 22 h",
-        estado: EstadoEdicion.EN_CURSO,
-        cantidadStands: 28,
-        montoCanon: 15000,
-        vencimiento: -6,
-      },
-      {
-        nombre: "Edición Primavera",
-        inicio: 25,
-        fin: 27,
-        horario: "Viernes a domingo de 17 a 22 h",
-        estado: EstadoEdicion.PUBLICADA,
-        cantidadStands: 28,
-        montoCanon: 15000,
-        vencimiento: 18,
-      },
-    ],
-  },
-  {
-    nombre: "Paseo de Emprendedores — Plaza Urquiza",
-    slug: "paseo-de-emprendedores-plaza-urquiza",
-    descripcion:
-      "Emprendimientos jóvenes de San Miguel de Tucumán se dan cita en Plaza Urquiza: indumentaria de autor, bijouterie, cosmética natural, decoración y objetos de diseño. Una vidriera para quienes están dando sus primeros pasos con su marca.",
-    categoria: CategoriaFeria.EMPRENDEDORES,
-    direccion: "Plaza Urquiza, Av. Sarmiento y Congreso",
-    latitud: -26.8267,
-    longitud: -65.2076,
-    ediciones: [
-      {
-        nombre: "Edición Agosto",
-        inicio: 0,
-        fin: 1,
-        horario: "Sábados y domingos de 10 a 20 h",
-        estado: EstadoEdicion.EN_CURSO,
-        cantidadStands: 20,
-        montoCanon: 10000,
-        vencimiento: -4,
-      },
-      {
-        nombre: "Edición Septiembre",
-        inicio: 14,
-        fin: 15,
-        horario: "Sábados y domingos de 10 a 20 h",
-        estado: EstadoEdicion.PUBLICADA,
-        cantidadStands: 20,
-        montoCanon: 10000,
-        vencimiento: 7,
-      },
-    ],
-  },
-  {
-    nombre: "Feria Gastronómica — Parque Avellaneda",
-    slug: "feria-gastronomica-parque-avellaneda",
-    descripcion:
-      "Cocina tucumana en el Parque Avellaneda: empanadas al horno de barro, locro, tamales, humita en chala y los dulces regionales de siempre. Con mesas comunitarias, música en vivo y espacio para las infancias.",
-    categoria: CategoriaFeria.GASTRONOMIA,
-    direccion: "Parque Avellaneda, Av. Néstor Kirchner y Juan B. Justo",
-    latitud: -26.8525,
-    longitud: -65.2192,
-    ediciones: [
-      {
-        nombre: "Edición Sabores del Norte",
-        inicio: 9,
-        fin: 11,
-        horario: "Viernes de 18 a 24 h, sábados y domingos de 12 a 24 h",
-        estado: EstadoEdicion.PUBLICADA,
-        cantidadStands: 16,
-        montoCanon: 20000,
-        vencimiento: 4,
-      },
-      {
-        nombre: "Edición Fin de Año",
-        inicio: 60,
-        fin: 62,
-        horario: "A confirmar",
-        estado: EstadoEdicion.BORRADOR,
-        cantidadStands: 16,
-        montoCanon: 0,
-      },
-    ],
-  },
-  {
-    nombre: "Feria del Libro y las Artes — Plaza Independencia",
-    slug: "feria-del-libro-y-las-artes-plaza-independencia",
-    descripcion:
-      "Editoriales independientes, librerías de usados, ilustradores y talleres de arte se instalan en la plaza principal de la ciudad. Con lecturas, presentaciones y actividades para escuelas durante toda la semana.",
-    categoria: CategoriaFeria.LIBROS_Y_ARTE,
-    direccion: "Plaza Independencia, 25 de Mayo y San Martín",
-    latitud: -26.8354,
-    longitud: -65.2038,
-    ediciones: [
-      {
-        nombre: "Edición Aniversario",
-        inicio: 40,
-        fin: 44,
-        horario: "Todos los días de 10 a 21 h",
-        estado: EstadoEdicion.PUBLICADA,
-        cantidadStands: 18,
-        montoCanon: 8000,
-        vencimiento: 33,
-      },
-    ],
-  },
-  {
-    nombre: "Feria Regional del Norte — Plaza Alberdi",
-    slug: "feria-regional-del-norte-plaza-alberdi",
-    descripcion:
-      "Productores de los valles y del pedemonte tucumano acercan a la ciudad dulces artesanales, quesos, conservas, miel, nueces y plantas nativas. Venta directa del productor al vecino.",
-    categoria: CategoriaFeria.PRODUCTOS_REGIONALES,
-    direccion: "Plaza Alberdi, Av. Sáenz Peña y Corrientes",
-    latitud: -26.8305,
-    longitud: -65.1992,
-    ediciones: [
-      {
-        nombre: "Edición Julio",
-        inicio: -30,
-        fin: -28,
-        horario: "Viernes a domingo de 9 a 18 h",
-        estado: EstadoEdicion.FINALIZADA,
-        cantidadStands: 14,
-        montoCanon: 11000,
-        vencimiento: -35,
-      },
-    ],
-  },
-];
 
 interface DatosProducto {
   nombre: string;
@@ -858,7 +681,7 @@ async function main(): Promise<void> {
   // edicionesPorClave["slug-feria::Nombre edición"] = { id, montoCanon, vencimiento }
   const edicionesPorClave = new Map<
     string,
-    { id: string; montoCanon: number; vencimiento: Date | null }
+    { id: string; montoCanon: number; vencimiento: Date | null; inicio: Date }
   >();
 
   for (const datosFeria of FERIAS) {
@@ -921,6 +744,7 @@ async function main(): Promise<void> {
           id: edicion.id,
           montoCanon: datosEdicion.montoCanon,
           vencimiento,
+          inicio: dia(datosEdicion.inicio),
         });
       }
     }
@@ -1033,7 +857,7 @@ async function main(): Promise<void> {
 
       await prisma.stand.update({
         where: { id: stand.id },
-        data: { vendedorId, asignadoEn: dia(-10) },
+        data: { vendedorId, asignadoEn: fechaDeAsignacion(edicion.inicio) },
       });
 
       // Canon correspondiente a esa participación.
@@ -1048,7 +872,9 @@ async function main(): Promise<void> {
             edicionId: edicion.id,
             monto: edicion.montoCanon,
             estado: impago ? EstadoPago.PENDIENTE : EstadoPago.PAGADO,
-            fechaPago: impago ? null : dia(-12),
+            fechaPago: impago
+              ? null
+              : fechaDePago(edicion.vencimiento, edicion.inicio),
             medio: impago ? null : medio,
             observaciones: impago
               ? "Pendiente de regularización."
