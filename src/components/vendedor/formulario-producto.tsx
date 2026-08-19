@@ -4,16 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
+import type { Variante } from "@/lib/fotos-producto";
 import { Alerta } from "@/components/ui/alerta";
 import { estilosBoton } from "@/components/ui/boton";
 import { BotonEnvio } from "@/components/ui/boton-envio";
-import {
-  AreaTexto,
-  Campo,
-  CampoArchivo,
-  Casilla,
-  Entrada,
-} from "@/components/ui/campo";
+import { AreaTexto, Campo, Casilla, Entrada } from "@/components/ui/campo";
+import { SelectorDeFoto } from "@/components/vendedor/selector-de-foto";
 import { IconoCerrar } from "@/components/ui/iconos";
 import {
   Tarjeta,
@@ -56,7 +52,34 @@ export function FormularioProducto({
     producto?.imagenes ?? [],
   );
 
-  const espacioLibre = MAXIMO_IMAGENES - conservadas.length;
+  // Fotos nuevas que ya pasaron por el selector. Las variantes están subidas a
+  // Storage, así que acá sólo viajan sus rutas.
+  const [nuevas, setNuevas] = useState<Variante[]>([]);
+
+  // Rutas de variantes que quedaron sin elegir. Al guardar se borran: es lo que
+  // evita que cada foto deje dos o tres huérfanas en el bucket.
+  const [descartadas, setDescartadas] = useState<string[]>([]);
+
+  // El nombre y la descripción alimentan el prompt de la IA, así que el selector
+  // necesita leerlos en vivo mientras el feriante los escribe.
+  const [nombre, setNombre] = useState(producto?.nombre ?? "");
+  const [descripcion, setDescripcion] = useState(producto?.descripcion ?? "");
+
+  const espacioLibre = MAXIMO_IMAGENES - conservadas.length - nuevas.length;
+
+  function alConfirmarFoto(
+    elegida: Variante | null,
+    sinElegir: string[],
+  ): void {
+    if (elegida) setNuevas((actuales) => [...actuales, elegida]);
+    setDescartadas((actuales) => [...actuales, ...sinElegir]);
+  }
+
+  /** Quitar una foto nueva: su ruta pasa a la lista de descartadas. */
+  function quitarNueva(ruta: string): void {
+    setNuevas((actuales) => actuales.filter((v) => v.ruta !== ruta));
+    setDescartadas((actuales) => [...actuales, ruta]);
+  }
 
   return (
     <form action={enviar} className="space-y-5" noValidate>
@@ -67,6 +90,16 @@ export function FormularioProducto({
         type="hidden"
         name="imagenesActuales"
         value={conservadas.join(",")}
+      />
+      <input
+        type="hidden"
+        name="imagenesNuevas"
+        value={nuevas.map((v) => v.ruta).join(",")}
+      />
+      <input
+        type="hidden"
+        name="imagenesDescartadas"
+        value={descartadas.join(",")}
       />
 
       {estado.mensaje && (
@@ -87,7 +120,8 @@ export function FormularioProducto({
           >
             <Entrada
               name="nombre"
-              defaultValue={producto?.nombre}
+              value={nombre}
+              onChange={(evento) => setNombre(evento.target.value)}
               placeholder="Ej. Poncho de lana de oveja"
               errores={errores?.nombre}
               required
@@ -103,7 +137,8 @@ export function FormularioProducto({
             <AreaTexto
               name="descripcion"
               rows={4}
-              defaultValue={producto?.descripcion ?? ""}
+              value={descripcion}
+              onChange={(evento) => setDescripcion(evento.target.value)}
               errores={errores?.descripcion}
             />
           </Campo>
@@ -164,25 +199,43 @@ export function FormularioProducto({
             </ul>
           )}
 
-          {espacioLibre > 0 ? (
-            <Campo
-              htmlFor="imagenes"
-              etiqueta={
-                conservadas.length > 0 ? "Agregar más fotos" : "Fotos del producto"
-              }
-              ayuda={`Podés subir hasta ${espacioLibre} ${
-                espacioLibre === 1 ? "imagen más" : "imágenes más"
-              }. JPG, PNG, WEBP o AVIF, hasta 5 MB cada una.`}
-              errores={errores?.imagenes}
-            >
-              <CampoArchivo name="imagenes" multiple errores={errores?.imagenes} />
-            </Campo>
-          ) : (
-            <p className="text-sm text-slate-500">
-              Llegaste al máximo de {MAXIMO_IMAGENES} fotos. Quitá alguna para
-              poder subir otra.
-            </p>
+          {nuevas.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-slate-700">
+                Fotos nuevas, listas para publicar
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-3">
+                {nuevas.map((variante) => (
+                  <li key={variante.ruta} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={variante.url}
+                      alt={variante.titulo}
+                      className="size-28 rounded-lg border border-municipal-200 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => quitarNueva(variante.ruta)}
+                      aria-label={`Quitar ${variante.titulo}`}
+                      className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+                    >
+                      <IconoCerrar className="size-3.5" />
+                    </button>
+                    <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                      {variante.titulo}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
+
+          <SelectorDeFoto
+            nombreProducto={nombre}
+            descripcionProducto={descripcion}
+            onConfirmar={alConfirmarFoto}
+            disponibles={espacioLibre}
+          />
         </TarjetaCuerpo>
 
         <TarjetaPie>

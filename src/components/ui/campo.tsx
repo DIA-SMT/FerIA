@@ -1,4 +1,5 @@
 import type {
+  ComponentProps,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
@@ -175,7 +176,10 @@ export function Seleccion({
   );
 }
 
-interface PropsCasilla extends InputHTMLAttributes<HTMLInputElement> {
+// `ComponentProps<"input">` en lugar de `InputHTMLAttributes` para que acepten
+// `ref` como prop, que es la forma de React 19 de referenciar el input desde el
+// llamador sin envolver el componente en `forwardRef`.
+interface PropsCasilla extends ComponentProps<"input"> {
   name: string;
   etiqueta: ReactNode;
   ayuda?: ReactNode;
@@ -210,7 +214,7 @@ export function Casilla({
   );
 }
 
-interface PropsCampoArchivo extends InputHTMLAttributes<HTMLInputElement> {
+interface PropsCampoArchivo extends ComponentProps<"input"> {
   name: string;
   errores?: string[];
 }

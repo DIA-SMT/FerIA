@@ -19,7 +19,16 @@ import { clienteAdmin } from "@/lib/supabase/admin";
  */
 export interface AlmacenamientoArchivos {
   /** Guarda el archivo y devuelve su ruta, ej. `productos/abc.webp`. */
-  guardar(archivo: File, bucket: Bucket): Promise<string>;
+  guardar(archivo: File, bucket: Bucket, carpeta?: string): Promise<string>;
+  /**
+   * Guarda un buffer ya procesado. Lo usan las variantes de foto de producto,
+   * que salen de `sharp` o del modelo de imagen y no son un `File` del cliente.
+   */
+  guardarBuffer(
+    contenido: Buffer,
+    bucket: Bucket,
+    opciones?: { tipoMime?: string; carpeta?: string },
+  ): Promise<string>;
   /** Elimina un archivo previamente guardado. Nunca lanza si no existe. */
   eliminar(ruta: string): Promise<void>;
   /** URL temporal para un archivo de un bucket privado. */
@@ -85,14 +94,24 @@ export function validarComprobante(archivo: File): void {
 }
 
 class AlmacenamientoSupabase implements AlmacenamientoArchivos {
-  async guardar(archivo: File, bucket: Bucket): Promise<string> {
-    const extension = EXTENSIONES[archivo.type] ?? ".bin";
-    const objeto = `${randomUUID()}${extension}`;
-
+  /**
+   * Sube el contenido y devuelve la ruta con el bucket adelante.
+   *
+   * `carpeta` prefija el objeto. Las fotos de producto la usan con el id del
+   * feriante (`productos/<vendedorId>/<uuid>.webp`), y ese prefijo no es
+   * cosmético: es lo que permite verificar después que una ruta que llega en un
+   * formulario le pertenece a quien la manda, antes de borrarla o guardarla.
+   */
+  private async subir(
+    bucket: Bucket,
+    objeto: string,
+    contenido: File | Buffer,
+    tipoMime: string,
+  ): Promise<string> {
     const { error } = await clienteAdmin()
       .storage.from(bucket)
-      .upload(objeto, archivo, {
-        contentType: archivo.type,
+      .upload(objeto, contenido, {
+        contentType: tipoMime,
         cacheControl: "3600",
         upsert: false,
       });
@@ -104,6 +123,27 @@ class AlmacenamientoSupabase implements AlmacenamientoArchivos {
     }
 
     return `${bucket}/${objeto}`;
+  }
+
+  async guardar(archivo: File, bucket: Bucket, carpeta?: string): Promise<string> {
+    const extension = EXTENSIONES[archivo.type] ?? ".bin";
+    const nombre = `${randomUUID()}${extension}`;
+    const objeto = carpeta ? `${carpeta}/${nombre}` : nombre;
+
+    return this.subir(bucket, objeto, archivo, archivo.type);
+  }
+
+  async guardarBuffer(
+    contenido: Buffer,
+    bucket: Bucket,
+    opciones: { tipoMime?: string; carpeta?: string } = {},
+  ): Promise<string> {
+    const tipoMime = opciones.tipoMime ?? "image/webp";
+    const extension = EXTENSIONES[tipoMime] ?? ".bin";
+    const nombre = `${randomUUID()}${extension}`;
+    const objeto = opciones.carpeta ? `${opciones.carpeta}/${nombre}` : nombre;
+
+    return this.subir(bucket, objeto, contenido, tipoMime);
   }
 
   async eliminar(ruta: string): Promise<void> {

@@ -18,7 +18,10 @@ export const productoSchema = z.object({
   descripcion: textoOpcional(1500, "La descripción"),
   disponible: casilla,
   destacado: casilla,
-  /** Imágenes ya cargadas que se conservan (las nuevas llegan como archivos). */
+  /**
+   * Imágenes ya cargadas que se conservan. Las nuevas llegan también como rutas
+   * —no como archivos—: el selector de fotos ya las subió a Storage.
+   */
   imagenesActuales: z
     .string()
     .optional()

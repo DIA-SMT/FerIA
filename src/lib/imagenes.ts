@@ -306,6 +306,27 @@ export async function procesarFotoProducto(
 }
 
 /**
+ * Encuadra la foto sin retocarla: rotación EXIF, cuadrado sobre blanco y WebP.
+ *
+ * Es la opción "dejá mi foto como está" del selector. No es exactamente el
+ * original —el catálogo necesita cuadrado y WebP para que la grilla funcione—
+ * pero no toca el fondo, ni la exposición, ni la nitidez. Existe porque el
+ * blanqueo de fondo es conservador pero no infalible, y el feriante tiene que
+ * poder decir "no me lo toques".
+ */
+export async function encuadrarSinRetocar(entrada: Buffer): Promise<Buffer> {
+  return sharp(entrada, { failOn: "none" })
+    .rotate()
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .resize(LADO, LADO, {
+      fit: "contain",
+      background: { r: 255, g: 255, b: 255 },
+    })
+    .webp({ quality: CALIDAD })
+    .toBuffer();
+}
+
+/**
  * Normaliza la imagen que devuelve el modelo de IA al cuadrado del catálogo.
  *
  * El modelo **no respeta el 1:1** aunque el prompt lo pida: devuelve la
