@@ -63,12 +63,16 @@ export default async function PaginaProductos() {
             <li key={producto.id}>
               <Tarjeta className="flex h-full flex-col overflow-hidden">
                 <div className="relative">
+                  {/* Cuadrada como la tarjeta pública: el procesador de fotos
+                      devuelve 1:1, así que acá no se recorta nada y el feriante
+                      ve exactamente lo que va a ver el vecino. */}
                   <ImagenPortada
                     src={producto.imagenes[0] ?? null}
                     alt={producto.nombre}
                     icono={IconoEtiqueta}
                     sizes="(max-width: 640px) 100vw, 33vw"
-                    className="aspect-[4/3] w-full"
+                    ajuste="contain"
+                    className="aspect-square w-full"
                   />
                   <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
                     {producto.destacado && (

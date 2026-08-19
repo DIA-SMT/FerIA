@@ -14,6 +14,16 @@ interface PropsImagenPortada {
   /** `sizes` de next/image; ajustalo a la grilla donde se usa. */
   sizes?: string;
   prioridad?: boolean;
+  /**
+   * `cover` recorta para llenar la caja; `contain` muestra la imagen entera.
+   *
+   * Para fotos de producto va `contain`. La insignia municipal se compone en una
+   * esquina, entre el 3,5 % y el 13,5 % del borde, así que cualquier recorte se
+   * la lleva: en una caja 4/3 se pierde 12,5 % arriba y abajo y del logo queda
+   * una astilla. Las portadas de feria y de stand sí van recortadas, que para
+   * eso son apaisadas.
+   */
+  ajuste?: "cover" | "contain";
   className?: string;
 }
 
@@ -34,9 +44,11 @@ export function ImagenPortada({
   icono: Icono = IconoImagen,
   sizes = "(max-width: 768px) 100vw, 33vw",
   prioridad = false,
+  ajuste = "cover",
   className,
 }: PropsImagenPortada) {
   const url = urlPublica(src);
+  const contiene = ajuste === "contain";
 
   if (!url) {
     return (
@@ -55,14 +67,24 @@ export function ImagenPortada({
   }
 
   return (
-    <div className={cn("relative overflow-hidden bg-slate-100", className)}>
+    // El fondo se decide acá y no por `className`: `cn` no resuelve conflictos
+    // entre utilidades, así que un `bg-*` que llegue por props no gana seguro.
+    // Con `contain` va blanco, que es el fondo que compone el procesador de
+    // fotos: si la imagen no fuera cuadrada, la banda no se ve.
+    <div
+      className={cn(
+        "relative overflow-hidden",
+        contiene ? "bg-white" : "bg-slate-100",
+        className,
+      )}
+    >
       <Image
         src={url}
         alt={alt}
         fill
         sizes={sizes}
         priority={prioridad}
-        className="object-cover"
+        className={contiene ? "object-contain" : "object-cover"}
       />
     </div>
   );
