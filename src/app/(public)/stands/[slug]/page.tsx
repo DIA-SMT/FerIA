@@ -129,8 +129,16 @@ export default async function PaginaStand({
       />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* ---------------------------- Encabezado --------------------------- */}
-        <div className="-mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end">
+        {/* ---------------------------- Encabezado ---------------------------
+            `relative z-10` no es decorativo: la portada de arriba es
+            `position: relative` para que funcione el `fill` de next/image, y en
+            el orden de pintado de CSS un elemento posicionado va por encima del
+            texto de los elementos no posicionados aunque estén después en el
+            DOM. Sin esto, la portada tapaba la mitad de arriba del título y del
+            avatar, que es justamente lo que el margen negativo mete abajo de
+            ella. Queda en 10 para seguir por debajo del encabezado del sitio,
+            que es z-30. */}
+        <div className="relative z-10 -mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end">
           <Avatar
             nombre={vendedor.emprendimiento}
             imagen={vendedor.logo}
