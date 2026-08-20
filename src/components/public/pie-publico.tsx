@@ -56,15 +56,42 @@ export function PiePublico() {
           ))}
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-slate-200 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        {/* Aviso en castellano llano, donde el vecino lo cruza sin buscarlo. El
+            texto formal completo vive en /terminos: acá va lo que cambia una
+            decisión de compra, y nada más. Las dos frases están medidas contra
+            lo que las funciones de IA pueden hacer de verdad —una foto puede
+            quedar recompuesta y una descripción asistida—, así que si se toca
+            alguna de las dos funciones, hay que revisar esto. */}
+        <div className="mt-10 rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs leading-relaxed text-slate-600">
+            <strong className="font-semibold text-slate-900">
+              Antes de comprar:
+            </strong>{" "}
+            las fotos de los productos pueden estar mejoradas con inteligencia
+            artificial, así que tomalas como ilustrativas y consultale al
+            feriante. Las ventas se acuerdan de forma directa entre vecinos y
+            feriantes: el municipio no intermedia en el precio, el pago ni la
+            entrega.{" "}
+            <Link
+              href="/terminos"
+              className="font-medium text-municipal-700 underline underline-offset-2 transition-colors hover:text-municipal-800"
+            >
+              Leer los términos y condiciones
+            </Link>
+          </p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2 border-t border-slate-200 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {anio} Municipalidad de San Miguel de Tucumán. Todos los derechos
             reservados.
           </p>
-          <p>
-            Las ventas se realizan de forma directa entre vecinos y feriantes.
-            El municipio no intermedia en las transacciones.
-          </p>
+          <Link
+            href="/terminos"
+            className="transition-colors hover:text-municipal-700"
+          >
+            Términos y condiciones
+          </Link>
         </div>
 
         {/* Autoría. Va en su propia franja y no junto al copyright: es una firma
