@@ -44,16 +44,21 @@ export default async function PaginaInicio() {
         está el texto, y se abre hacia la derecha para dejar ver la feria.
       */}
       <section className="relative isolate overflow-hidden bg-municipal-950">
-        <Image
-          src="/hero-feria-nocturna.webp"
-          // Vacío a propósito: es una imagen de ambiente y el h1 ya dice de
-          // qué se trata. Anunciarla sería ruido para un lector de pantalla.
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-right"
-        />
+        {/* La foto va en su propio contenedor porque el que se acerca es él: si
+            el `scale` fuera sobre el `Image` con `fill`, pelearía con el
+            `object-position`. */}
+        <div className="animar-acercar absolute inset-0" aria-hidden="true">
+          <Image
+            src="/hero-feria-nocturna.webp"
+            // Vacío a propósito: es una imagen de ambiente y el h1 ya dice de
+            // qué se trata. Anunciarla sería ruido para un lector de pantalla.
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-right"
+          />
+        </div>
 
         {/*
           Dos velos, según el ancho, porque el texto no ocupa la misma
@@ -62,71 +67,116 @@ export default async function PaginaInicio() {
           · Hasta `lg` el texto abarca casi todo el ancho, así que el velo es
             parejo y parejo tiene que ser: un degradé horizontal dejaría las
             últimas palabras de cada línea sobre los toldos iluminados.
-          · Desde `lg` el texto llega como máximo al 69 % del ancho. El velo se
-            mantiene denso hasta el 65 % y se abre después, que es justo donde
-            están los puestos con las luces cálidas.
+          · Desde `lg` el texto llega como máximo al 55 % del ancho, y ahí entra
+            `velo-hero`, que abre hacia la derecha sin escalón.
 
-          Contraste medido contra blanco, en el peor píxel de la zona de texto:
-          13,4:1 a 1440 px, 8,6:1 a 1024 px y 10,4:1 a 375 px. AAA pide 7:1.
+          Contraste contra blanco, componiendo foto + velo + resplandor + trama
+          y midiendo el píxel más claro del 55 % izquierdo, que es el peor caso
+          para texto blanco: 8,0:1 a 1440 px, 8,0:1 a 1024 px y 7,2:1 a 375 px.
+          AAA pide 7:1, así que el margen es chico: si se abre más el velo o se
+          sube el resplandor, hay que volver a medir.
         */}
         <div
           className="absolute inset-0 bg-municipal-950/85 lg:hidden"
           aria-hidden="true"
         />
+        <div className="velo-hero absolute inset-0 hidden lg:block" aria-hidden="true" />
+
+        {/* Resplandor celeste detrás del texto: da profundidad al azul plano
+            del lado izquierdo, que era lo más chato del hero. */}
         <div
-          className="absolute inset-0 hidden lg:block lg:bg-gradient-to-r lg:from-municipal-950 lg:from-20% lg:via-municipal-950/88 lg:via-65% lg:to-municipal-900/10"
+          className="absolute top-1/2 -left-32 size-[34rem] -translate-y-1/2 rounded-full bg-celeste-500/20 blur-3xl"
           aria-hidden="true"
         />
-        <div className="trama-puntos absolute inset-0" aria-hidden="true" />
 
+        <div
+          className="trama-puntos trama-hero absolute inset-0"
+          aria-hidden="true"
+        />
+
+        {/* Base que engancha con la sección clara de abajo, para que el corte no
+            sea una línea recta. */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-municipal-950 to-transparent"
+          aria-hidden="true"
+        />
+
+        {/* Los bloques entran escalonados, de arriba hacia abajo. El retraso va
+            inline porque es un dato de este hero y no una escala reutilizable. */}
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="max-w-2xl">
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white ring-1 ring-white/25">
+            <p
+              className="animar-aparecer inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-medium tracking-wide text-white ring-1 ring-white/25 backdrop-blur-sm"
+              style={{ animationDelay: "60ms" }}
+            >
               <span
-                className="size-1.5 rounded-full bg-acento-400"
+                className="animar-latir size-1.5 rounded-full bg-acento-400"
                 aria-hidden="true"
               />
               Municipalidad de San Miguel de Tucumán
             </p>
 
-            <h1 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            <h1
+              className="animar-aparecer mt-6 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl"
+              style={{ animationDelay: "160ms" }}
+            >
               Las ferias de la ciudad,
-              <span className="text-acento-400"> ahora también online</span>
+              {/* El amarillo va en su propia línea: partido a mitad de frase por
+                  el salto de línea se leía como un error de maquetado. */}
+              <span className="mt-1 block text-acento-400">
+                ahora también online
+              </span>
             </h1>
 
-            <p className="mt-5 text-lg text-white/90">
+            <p
+              className="animar-aparecer mt-6 max-w-xl text-lg leading-relaxed text-white/85"
+              style={{ animationDelay: "260ms" }}
+            >
               Artesanos, emprendedores y cocineros de San Miguel de Tucumán en un
               solo lugar. Mirá qué ferias hay esta semana, recorré cada stand y
               escribile directamente a quien produce.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <BotonLink href="/ferias" variante="acento" tamanio="lg">
+            <div
+              className="animar-aparecer mt-9 flex flex-wrap gap-3"
+              style={{ animationDelay: "360ms" }}
+            >
+              <BotonLink
+                href="/ferias"
+                variante="acento"
+                tamanio="lg"
+                className="shadow-lg shadow-acento-400/20 transition-transform hover:-translate-y-0.5"
+              >
                 Ver ferias
               </BotonLink>
               <BotonLink
                 href="/stands"
                 tamanio="lg"
-                className="border border-white/30 bg-white/10 text-white hover:bg-white/20"
+                className="border border-white/30 bg-white/10 text-white backdrop-blur-sm transition-transform hover:-translate-y-0.5 hover:bg-white/20"
               >
                 Explorar stands
               </BotonLink>
             </div>
 
-            <dl className="mt-10 flex gap-8 border-t border-white/20 pt-6">
+            <dl
+              className="animar-aparecer mt-12 flex gap-10 border-t border-white/15 pt-6"
+              style={{ animationDelay: "460ms" }}
+            >
               <div>
-                <dt className="text-xs tracking-wide text-white/70 uppercase">
+                <dt className="text-[11px] font-medium tracking-widest text-celeste-200 uppercase">
                   Ferias activas
                 </dt>
-                <dd className="mt-1 text-2xl font-bold text-white">
+                <dd className="mt-1.5 text-3xl font-bold text-white tabular-nums">
                   {formatearNumero(totalFerias)}
                 </dd>
               </div>
+              {/* Separador fino, en lugar de dejar los dos números sueltos. */}
+              <div className="w-px self-stretch bg-white/15" aria-hidden="true" />
               <div>
-                <dt className="text-xs tracking-wide text-white/70 uppercase">
+                <dt className="text-[11px] font-medium tracking-widest text-celeste-200 uppercase">
                   Feriantes
                 </dt>
-                <dd className="mt-1 text-2xl font-bold text-white">
+                <dd className="mt-1.5 text-3xl font-bold text-white tabular-nums">
                   {formatearNumero(totalFeriantes)}
                 </dd>
               </div>
