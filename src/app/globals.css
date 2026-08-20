@@ -218,6 +218,22 @@
   }
 }
 
+/*
+  Diálogos modales nativos.
+
+  La animación reusa los keyframes `aparecer` del hero: `[open]` empieza a
+  coincidir recién cuando el diálogo se abre, así que corre en cada apertura.
+  Y con un modal abierto la página de atrás no scrollea: el `<dialog>` nativo
+  no lo trae de fábrica.
+*/
+.dialogo-modal[open] {
+  animation: aparecer 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
 /* Respeta la preferencia de movimiento reducido del sistema. */
 @media (prefers-reduced-motion: reduce) {
   *,
