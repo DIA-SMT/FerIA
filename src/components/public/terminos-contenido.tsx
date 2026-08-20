@@ -1,26 +1,21 @@
 import type { ReactNode } from "react";
 
 /**
- * Términos y condiciones de uso.
+ * El texto de los términos y condiciones, sin envoltorio.
  *
- * El registro es deliberadamente formal: es el texto que queda como respaldo y
- * el que revisa Legales. La versión llana de lo mismo vive donde el vecino la
- * cruza sin buscarla —el pie de todas las páginas— y enlaza acá.
+ * Vive separado del diálogo que lo muestra por dos motivos: el diálogo es un
+ * componente de cliente y este texto no necesita serlo —viaja ya renderizado
+ * como children—, y así queda un solo lugar que editar cuando Legales lo
+ * revise.
  *
  * ⚠️ Este texto lo redactó el equipo de desarrollo y **tiene que pasar por el
  * área de Legales del municipio antes de publicarse**. La sección de reclamos
- * está sin canal de contacto a propósito: hay que completarla con el correo o la
- * oficina oficial en lugar de inventar uno.
+ * está sin canal de contacto a propósito: hay que completarla con el correo o
+ * la oficina oficial en lugar de inventar uno.
  */
 
-export const metadata = {
-  title: "Términos y condiciones",
-  description:
-    "Condiciones de uso de la plataforma de ferias municipales de San Miguel de Tucumán: alcance del servicio, uso de inteligencia artificial, responsabilidad comercial y tratamiento de datos personales.",
-};
-
 /** Fecha de la última revisión del texto. Actualizar al editarlo. */
-const ULTIMA_ACTUALIZACION = "20 de agosto de 2026";
+export const ULTIMA_ACTUALIZACION_TERMINOS = "20 de agosto de 2026";
 
 function Seccion({
   titulo,
@@ -30,26 +25,24 @@ function Seccion({
   children: ReactNode;
 }) {
   return (
-    <section className="mt-10">
-      <h2 className="text-xl font-bold tracking-tight text-slate-900">
+    <section className="mt-7">
+      {/* h3 y no h2: el título del diálogo que envuelve esto es el h2. */}
+      <h3 className="text-base font-bold tracking-tight text-slate-900">
         {titulo}
-      </h2>
-      <div className="mt-3 space-y-3 text-slate-700">{children}</div>
+      </h3>
+      <div className="mt-2 space-y-2.5 text-sm leading-relaxed text-slate-700">
+        {children}
+      </div>
     </section>
   );
 }
 
-export default function PaginaTerminos() {
+export function TerminosContenido() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <p className="text-xs font-medium tracking-widest text-municipal-600 uppercase">
-        Municipalidad de San Miguel de Tucumán
-      </p>
-      <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-        Términos y condiciones de uso
-      </h1>
-      <p className="mt-3 text-sm text-slate-500">
-        Última actualización: {ULTIMA_ACTUALIZACION}
+    <div>
+      <p className="text-xs text-slate-500">
+        Municipalidad de San Miguel de Tucumán · Última actualización:{" "}
+        {ULTIMA_ACTUALIZACION_TERMINOS}
       </p>
 
       <Seccion titulo="1. Alcance de la plataforma">
@@ -147,10 +140,10 @@ export default function PaginaTerminos() {
         </p>
         <p>
           Los datos que el municipio recaba para la gestión de las ferias se
-          tratan conforme a la normativa aplicable en materia de protección de
-          datos personales. La persona titular puede solicitar el acceso, la
-          rectificación o la supresión de sus datos ante la Dirección de Ferias y
-          Mercados.
+          tratan conforme a la Ley N.º 25.326 de Protección de los Datos
+          Personales y sus normas complementarias. La persona titular puede
+          ejercer los derechos de acceso, rectificación y supresión que esa ley
+          reconoce, presentándose ante la Dirección de Ferias y Mercados.
         </p>
       </Seccion>
 
@@ -172,7 +165,7 @@ export default function PaginaTerminos() {
         <p>
           Estas condiciones pueden actualizarse para reflejar cambios en el
           servicio o en la normativa aplicable. La fecha de la última revisión se
-          indica al comienzo de esta página.
+          indica al comienzo de este texto.
         </p>
       </Seccion>
     </div>

@@ -1,5 +1,10 @@
 import Link from "next/link";
 
+import {
+  BotonTerminos,
+  DialogoTerminos,
+} from "@/components/public/dialogo-terminos";
+import { TerminosContenido } from "@/components/public/terminos-contenido";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
 
 const SECCIONES = [
@@ -72,12 +77,9 @@ export function PiePublico() {
             feriante. Las ventas se acuerdan de forma directa entre vecinos y
             feriantes: el municipio no intermedia en el precio, el pago ni la
             entrega.{" "}
-            <Link
-              href="/terminos"
-              className="font-medium text-municipal-700 underline underline-offset-2 transition-colors hover:text-municipal-800"
-            >
+            <BotonTerminos className="font-medium text-municipal-700 underline underline-offset-2 transition-colors hover:text-municipal-800">
               Leer los términos y condiciones
-            </Link>
+            </BotonTerminos>
           </p>
         </div>
 
@@ -86,13 +88,16 @@ export function PiePublico() {
             © {anio} Municipalidad de San Miguel de Tucumán. Todos los derechos
             reservados.
           </p>
-          <Link
-            href="/terminos"
-            className="transition-colors hover:text-municipal-700"
-          >
+          <BotonTerminos className="text-left transition-colors hover:text-municipal-700">
             Términos y condiciones
-          </Link>
+          </BotonTerminos>
         </div>
+
+        {/* El diálogo que abren los dos botones de arriba. El texto viaja como
+            children para que siga renderizándose en el servidor. */}
+        <DialogoTerminos>
+          <TerminosContenido />
+        </DialogoTerminos>
 
         {/* Autoría. Va en su propia franja y no junto al copyright: es una firma
             del equipo que construyó la plataforma, no letra chica legal. El
