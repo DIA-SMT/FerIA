@@ -70,11 +70,14 @@ export default async function PaginaInicio() {
           · Desde `lg` el texto llega como máximo al 55 % del ancho, y ahí entra
             `velo-hero`, que abre hacia la derecha sin escalón.
 
-          Contraste contra blanco, componiendo foto + velo + resplandor + trama
-          y midiendo el píxel más claro del 55 % izquierdo, que es el peor caso
-          para texto blanco: 8,0:1 a 1440 px, 8,0:1 a 1024 px y 7,2:1 a 375 px.
-          AAA pide 7:1, así que el margen es chico: si se abre más el velo o se
-          sube el resplandor, hay que volver a medir.
+          Contraste contra blanco, componiendo foto + velo + resplandor y
+          midiendo el píxel más claro del 55 % izquierdo, que es el peor caso
+          para texto blanco: 12,1:1 a 1440 px, 12,1:1 a 1024 px y 10,6:1 a
+          375 px. AAA pide 7:1.
+
+          Acá había además una trama de puntos blancos al 18 %. Se sacó porque no
+          gustaba, y de paso subió el contraste: eran lo más claro de la zona de
+          texto y el peor píxel estaba en 8,0:1, contra los 12,1:1 de ahora.
         */}
         <div
           className="absolute inset-0 bg-municipal-950/85 lg:hidden"
@@ -86,11 +89,6 @@ export default async function PaginaInicio() {
             del lado izquierdo, que era lo más chato del hero. */}
         <div
           className="absolute top-1/2 -left-32 size-[34rem] -translate-y-1/2 rounded-full bg-celeste-500/20 blur-3xl"
-          aria-hidden="true"
-        />
-
-        <div
-          className="trama-puntos trama-hero absolute inset-0"
           aria-hidden="true"
         />
 

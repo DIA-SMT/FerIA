@@ -158,19 +158,6 @@
     );
   }
 
-  /*
-    La trama sólo sobre la zona oscura. Antes cubría toda la sección, foto
-    incluida, y sobre los toldos iluminados se leía como suciedad.
-  */
-  .trama-hero {
-    mask-image: linear-gradient(
-      90deg,
-      #000 0%,
-      #000 42%,
-      rgb(0 0 0 / 0.35) 62%,
-      transparent 78%
-    );
-  }
 }
 
 /*
