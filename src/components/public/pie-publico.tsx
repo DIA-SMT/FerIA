@@ -66,6 +66,25 @@ export function PiePublico() {
             El municipio no intermedia en las transacciones.
           </p>
         </div>
+
+        {/* Autoría. Va en su propia franja y no junto al copyright: es una firma
+            del equipo que construyó la plataforma, no letra chica legal. El
+            punto amarillo retoma el del isologo, que es lo que la identifica. */}
+        <div className="mt-6 border-t border-slate-200 pt-6">
+          <p className="flex items-center gap-2 text-xs text-slate-500">
+            <span
+              className="size-1.5 shrink-0 rounded-full bg-acento-400"
+              aria-hidden="true"
+            />
+            <span>
+              Creado por la{" "}
+              <span className="font-semibold text-municipal-700">
+                Dirección de Inteligencia Artificial
+              </span>{" "}
+              de la Municipalidad de San Miguel de Tucumán
+            </span>
+          </p>
+        </div>
       </div>
 
       {/* Franja institucional con los tres colores del isologo. */}
