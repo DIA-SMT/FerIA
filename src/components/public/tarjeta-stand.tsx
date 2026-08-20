@@ -44,8 +44,11 @@ export function TarjetaStand({
             nombre={stand.emprendimiento}
             imagen={stand.logo}
             tamanio="md"
-            // Se superpone al borde de la portada, como en una vidriera.
-            className="-mt-9 ring-2 ring-white"
+            // Se superpone al borde de la portada, como en una vidriera. Va
+            // `relative z-10` porque la portada es `position: relative` y, por
+            // el orden de pintado de CSS, taparía la parte del avatar que queda
+            // dentro de ella.
+            className="relative z-10 -mt-9 ring-2 ring-white"
           />
           <div className="min-w-0 flex-1 pt-0.5">
             <h3 className="truncate font-semibold text-slate-900 transition-colors group-hover:text-municipal-700">

@@ -327,31 +327,33 @@ export async function encuadrarSinRetocar(entrada: Buffer): Promise<Buffer> {
 }
 
 /**
- * Normaliza la imagen que devuelve el modelo de IA al cuadrado del catálogo.
+ * Lleva al cuadrado del catálogo la imagen que devuelve el modelo de IA.
  *
- * El modelo **no respeta el 1:1** aunque el prompt lo pida: devuelve la
- * proporción de la entrada (896 de alto por 1152 con un frasco horizontal, 864
- * por 1184 con un poncho vertical). Hay que llevarlo al cuadrado acá.
+ * **El modelo devuelve la proporción de lo que recibe**, no el 1:1 que le pide el
+ * prompt: con un frasco horizontal devolvió 1152x896 y con un poncho vertical
+ * 864x1184. Por eso quien llama tiene que mandarle la foto **ya encuadrada en
+ * cuadrado**: así lo que vuelve también es cuadrado —medido: 1200x1200 a la
+ * entrada devolvió 1024x1024— y este `cover` termina siendo un puro escalado.
  *
- * Recorta al centro (`cover`). Se probaron antes tres formas de **rellenar** hasta
- * el cuadrado en lugar de recortar, y las tres salieron peor:
+ * Que reciba un cuadrado no es un detalle de prolijidad, es el arreglo de un bug
+ * real. Antes se le mandaba la foto cruda y el `cover` recortaba al centro. Con
+ * una salida vertical de 864x1184 eso se llevaba 160 px arriba y 160 abajo, el
+ * 13,5 % de cada lado, y en un poncho colgado arriba están la percha y el
+ * capucho: el feriante veía su producto cortado.
  *
- * · **Color muestreado del borde**: barras perfectamente visibles. El fondo que
- *   compone el modelo es un *degradé*, así que promediar los bordes da un tono
- *   medio que no coincide con ninguno de los extremos.
- * · **Fondo propio desenfocado, borde duro**: costura visible, un escalón de tono
- *   donde termina el lienzo y empieza la foto.
- * · **Fondo propio desenfocado, borde difuminado**: peor todavía — parece una
- *   foto enmarcada con esquinas redondeadas flotando sobre otra imagen.
+ * El comentario que estaba acá justificaba el recorte diciendo que sólo se
+ * llevaba adorno de los costados. Eso vale para una salida horizontal, no para
+ * una vertical, donde recorta arriba y abajo. Rellenar en lugar de recortar
+ * tampoco servía: se probaron tres formas —color promediado del borde, fondo
+ * propio desenfocado con borde duro, y con borde difuminado— y las tres dejaban
+ * barras o costuras visibles, porque el fondo que compone el modelo es un
+ * degradé. La salida es cuadrada de origen, así que el problema desaparece.
  *
- * El motivo por el que se evitaba recortar era la regla del prompt que prohíbe
- * recortar, pero esa regla dice "ninguna parte importante **del producto**", y el
- * recorte no toca el producto: se lleva lo que el propio modelo agregó de adorno
- * en los costados. Además el prompt le exige dejar un 8 % de margen alrededor del
- * producto, que es justo lo que hace el recorte seguro.
+ * Se deja el `cover` para absorber una desviación chica de proporción; si algún
+ * día el modelo devolviera algo muy distinto del cuadrado, volvería a recortar.
  *
- * Las otras dos diferencias con `procesarFotoProducto` también son deliberadas:
- * no blanquea el fondo (la escena es intencional, inundarla se la comería) y no
+ * Las otras dos diferencias con `procesarFotoProducto` son deliberadas: no
+ * blanquea el fondo (la escena es intencional, inundarla se la comería) y no
  * toca la exposición (ya viene iluminada como estudio).
  */
 export async function normalizarSalidaIA(entrada: Buffer): Promise<Buffer> {

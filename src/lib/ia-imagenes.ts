@@ -101,6 +101,12 @@ export class ErrorDeIA extends Error {}
 /**
  * Manda la foto al modelo y devuelve la imagen editada.
  *
+ * ⚠️ `entrada` tiene que venir **ya encuadrada en cuadrado** (ver
+ * `encuadrarSinRetocar`). El modelo devuelve la proporción de lo que recibe, no
+ * el 1:1 que le pide el prompt, así que mandarle la foto cruda obliga a recortar
+ * después y con una foto vertical eso corta el producto por arriba y por abajo.
+ * Medido: 1200x1200 a la entrada devuelve 1024x1024.
+ *
  * Lanza `ErrorDeIA` con un mensaje legible: quien llama tiene que poder
  * mostrarle al feriante qué pasó y ofrecerle seguir con su foto original.
  */

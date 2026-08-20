@@ -7,6 +7,7 @@ import { ErrorDeIA, mejorarFotoConIA } from "@/lib/ia-imagenes";
 import {
   aplicarInsigniaMunicipal,
   describirAjustes,
+  encuadrarSinRetocar,
   normalizarSalidaIA,
   procesarFotoProducto,
 } from "@/lib/imagenes";
@@ -96,12 +97,16 @@ export async function probarFoto(
     // versión de sharp, que ya está lista.
     try {
       const t1 = Date.now();
-      const editada = await mejorarFotoConIA(entrada, archivo.type, contexto);
 
-      // El modelo devuelve 1152x896 aunque el prompt pida 1:1, así que hay que
-      // llevarlo al cuadrado del catálogo. Va por `normalizarSalidaIA`, que
-      // recorta en lugar de rellenar: rellenar deja franjas blancas que parten
-      // la escena ambientada.
+      // Se le manda la versión encuadrada, igual que en producción: el modelo
+      // devuelve la proporción de lo que recibe, así que un cuadrado a la
+      // entrada evita el recorte a la salida.
+      const editada = await mejorarFotoConIA(
+        await encuadrarSinRetocar(entrada),
+        "image/webp",
+        contexto,
+      );
+
       const normalizada = await normalizarSalidaIA(editada);
 
       // La insignia la pone el código, no el modelo: es la regla 9 del prompt.
