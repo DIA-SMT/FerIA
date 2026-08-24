@@ -291,3 +291,21 @@ model PagoCanon {
   @@index([estado])
   @@map("pagos_canon")
 }
+
+/// Pregunta hecha al asistente del sitio, guardada de forma anónima para que
+/// la Dirección vea qué busca la gente y qué falta en las ferias.
+///
+/// Anónima en serio: sin IP, sin sesión y sin ningún identificador que permita
+/// enlazar dos preguntas de la misma persona. Sólo el texto y cuándo. Está
+/// declarado en los términos (sección de datos personales); si alguna vez se
+/// agrega un campo acá, hay que actualizar los términos antes.
+model ConsultaAsistente {
+  id String @id @default(cuid())
+
+  pregunta String @db.VarChar(500)
+
+  creadoEn DateTime @default(now())
+
+  @@index([creadoEn])
+  @@map("consultas_asistente")
+}
