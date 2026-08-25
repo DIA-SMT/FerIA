@@ -331,6 +331,24 @@ export function IconoEtiqueta(props: PropsIcono) {
   );
 }
 
+export function IconoChat(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M21 12a8 8 0 0 1-8 8H4.5a1.5 1.5 0 0 1-1.06-2.56A8 8 0 1 1 21 12Z" />
+      <path d="M8.5 10.5h7M8.5 14h4.5" />
+    </Base>
+  );
+}
+
+export function IconoEnviar(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M4.5 12 20 4.5 15 19.5l-3-6-7.5-1.5Z" />
+      <path d="M12 13.5 20 4.5" />
+    </Base>
+  );
+}
+
 export function IconoDocumento(props: PropsIcono) {
   return (
     <Base {...props}>

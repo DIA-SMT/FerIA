@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import { EncabezadoPublico } from "@/components/public/encabezado-publico";
 import { PiePublico } from "@/components/public/pie-publico";
 
@@ -20,6 +21,8 @@ export default function LayoutPublico({ children }: { children: ReactNode }) {
       </main>
 
       <PiePublico />
+
+      <AsistenteBurbuja />
     </div>
   );
 }

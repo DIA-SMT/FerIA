@@ -90,6 +90,13 @@ export function TerminosContenido() {
             sobre el producto exhibido.
           </strong>
         </p>
+        <p>
+          El sitio ofrece además un asistente virtual que responde consultas
+          mediante inteligencia artificial, a partir de la información publicada
+          en la plataforma. Sus respuestas son orientativas y pueden contener
+          errores u omisiones: la información válida es la que figura en las
+          páginas de cada feria y de cada stand.
+        </p>
       </Seccion>
 
       <Seccion titulo="3. Responsabilidad comercial">
@@ -144,6 +151,13 @@ export function TerminosContenido() {
           Personales y sus normas complementarias. La persona titular puede
           ejercer los derechos de acceso, rectificación y supresión que esa ley
           reconoce, presentándose ante la Dirección de Ferias y Mercados.
+        </p>
+        <p>
+          Las consultas escritas al asistente virtual se almacenan de manera
+          anónima —sin ningún dato que identifique a quien consulta ni permita
+          vincular una consulta con otra— con la única finalidad de conocer qué
+          buscan los vecinos y mejorar la oferta de las ferias. Se conservan por
+          un plazo máximo de doce meses.
         </p>
       </Seccion>
 
