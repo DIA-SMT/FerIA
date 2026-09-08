@@ -9,7 +9,8 @@ export type VarianteBoton =
   | "contorno"
   | "fantasma"
   | "acento"
-  | "peligro";
+  | "peligro"
+  | "vidrio";
 
 export type TamanioBoton = "sm" | "md" | "lg";
 
@@ -33,6 +34,17 @@ const VARIANTES: Record<VarianteBoton, string> = {
     "bg-acento-400 text-slate-900 shadow-sm hover:bg-acento-300 active:bg-acento-500 focus-visible:outline-acento-700",
   peligro:
     "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 focus-visible:outline-red-700",
+  /*
+    Translúcido, para ir encima de una foto: hoy lo usa el hero.
+
+    Existe porque antes ese botón se armaba pidiendo `primario` y pisándole el
+    fondo desde `className`. Eso dejaba vivo el `active:bg-municipal-700` de
+    `primario`, así que al apretarlo pestañeaba azul oscuro sobre un fondo de
+    vidrio. También heredaba el foco azul, que sobre el hero oscuro casi no se
+    ve; acá el contorno va blanco.
+  */
+  vidrio:
+    "border border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 active:bg-white/25 focus-visible:outline-white",
 };
 
 const TAMANIOS: Record<TamanioBoton, string> = {
