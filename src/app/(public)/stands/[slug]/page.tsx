@@ -22,7 +22,7 @@ import {
 import { ImagenPortada } from "@/components/ui/imagen";
 import { EDICIONES_PUBLICAS } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearRangoFechas, hoyUTC, truncar } from "@/lib/format";
+import { formatearRangoFechas, hoyEnZona, truncar } from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
 import {
   linkFacebook,
@@ -101,7 +101,7 @@ export default async function PaginaStand({
 
   if (!vendedor) notFound();
 
-  const hoy = hoyUTC();
+  const hoy = hoyEnZona();
   const participaciones = vendedor.stands.filter(
     (stand) => stand.edicion.fechaFin >= hoy,
   );
@@ -151,8 +151,8 @@ export default async function PaginaStand({
           <Avatar
             nombre={vendedor.emprendimiento}
             imagen={vendedor.logo}
-            tamanio="lg"
-            className="-mt-12 size-24 text-2xl ring-4 ring-white sm:-mt-14 sm:size-28"
+            tamanio="xl"
+            className="-mt-12 ring-4 ring-white sm:-mt-14"
           />
           <div className="min-w-0 flex-1 pb-1">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">

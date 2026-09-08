@@ -1,4 +1,4 @@
-import { aNumero, hoyUTC, type ValorDecimal } from "@/lib/format";
+import { aNumero, hoyEnZona, type ValorDecimal } from "@/lib/format";
 import type { TonoBadge } from "@/lib/labels";
 
 /**
@@ -61,7 +61,7 @@ export function calcularResumenCanon(entrada: EntradaCanon): ResumenCanon {
 
   const diasParaVencer = entrada.vencimientoCanon
     ? Math.round(
-        (entrada.vencimientoCanon.getTime() - hoyUTC().getTime()) /
+        (entrada.vencimientoCanon.getTime() - hoyEnZona().getTime()) /
           (24 * 60 * 60 * 1000),
       )
     : null;

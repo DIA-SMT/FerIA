@@ -41,9 +41,26 @@ export function formatearNumero(valor: number): string {
 }
 
 /**
- * Las fechas de ferias y pagos se guardan como `DATE` en PostgreSQL y Prisma
- * las devuelve a medianoche UTC. Formatearlas en la zona local de Argentina
- * las correría un día hacia atrás, así que se leen siempre en UTC.
+ * La zona de la plataforma. Es una sola ciudad, así que va fija.
+ *
+ * Fijarla es lo que la vuelve predecible: antes el «hoy» salía del reloj UTC
+ * del servidor, y como Vercel corre en UTC y acá son tres horas menos, de las
+ * 21:00 a las 23:59 el sitio ya estaba en el día siguiente. Las ferias cierran
+ * 22 h y 24 h, así que durante esas tres horas una feria abierta figuraba como
+ * terminada, y una que empezaba al día siguiente figuraba como en curso.
+ */
+export const ZONA = "America/Argentina/Tucuman";
+
+/**
+ * REGLA DE ZONAS, que conviene no mezclar:
+ *
+ * · Columnas `DATE` (fechas de ediciones, vencimientos, pagos): Prisma las
+ *   devuelve a medianoche UTC. Se formatean **en UTC**, porque leerlas en la
+ *   zona local las correría un día hacia atrás.
+ * · Columnas de marca temporal (auditoría): se formatean **en `ZONA`**, que es
+ *   la hora que el usuario tiene en la pared.
+ * · «Hoy», para comparar contra columnas `DATE`: se calcula el día del
+ *   calendario en `ZONA` y se expresa como medianoche UTC — ver `hoyEnZona`.
  */
 const formateadorFecha = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -111,7 +128,7 @@ export function formatearFechaHora(fecha: Date | null | undefined): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "America/Argentina/Buenos_Aires",
+    timeZone: ZONA,
   }).format(fecha);
 }
 
@@ -121,12 +138,29 @@ export function aValorInputFecha(fecha: Date | null | undefined): string {
   return fecha.toISOString().slice(0, 10);
 }
 
-/** Hoy a medianoche UTC, para comparar contra columnas `DATE`. */
-export function hoyUTC(): Date {
-  const ahora = new Date();
-  return new Date(
-    Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate()),
-  );
+/**
+ * El día de hoy **en Tucumán**, expresado como medianoche UTC para poder
+ * compararlo contra las columnas `DATE`.
+ *
+ * No usa el reloj UTC del servidor: eso es justo lo que hacía que a las 21:00
+ * el sitio saltara al día siguiente. Se le pregunta a `Intl` qué día es en
+ * `ZONA` y se arma la medianoche UTC de ese día.
+ *
+ * `en-CA` porque da `AAAA-MM-DD`, que se parte sin ambigüedad de orden.
+ */
+export function hoyEnZona(): Date {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(new Date())
+    .split("-")
+    .map(Number);
+
+  const [anio, mes, dia] = partes;
+  return new Date(Date.UTC(anio!, mes! - 1, dia!));
 }
 
 /** Días entre dos fechas (positivo si `hasta` es posterior). */

@@ -1,7 +1,7 @@
 import { obtenerClienteIA } from "@/lib/ai";
 import { edicionesVigentes } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearFechaLarga, formatearRangoFechas, hoyUTC } from "@/lib/format";
+import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import { CATEGORIAS_FERIA, RUBROS } from "@/lib/labels";
 
 /**
@@ -166,7 +166,7 @@ export async function contextoDelSitio(): Promise<string> {
     );
   });
 
-  return `Hoy es ${formatearFechaLarga(hoyUTC())}.
+  return `Hoy es ${formatearFechaLarga(hoyEnZona())}.
 
 FERIAS (las fechas y direcciones válidas son ÚNICAMENTE estas):
 ${bloquesFeria.join("\n")}
