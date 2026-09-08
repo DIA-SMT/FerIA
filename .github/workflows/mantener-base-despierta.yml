@@ -1,0 +1,108 @@
+# Mantiene despierto el proyecto de Supabase y avisa si el sitio se cae.
+#
+# El plan gratuito de Supabase pausa los proyectos que pasan una semana sin
+# actividad. Ya nos pasó: el 24/8 quedó todo funcionando y el 8/9 el proyecto
+# había desaparecido del pooler («FATAL: (ENOTFOUND) tenant/user ... not
+# found»), con el sitio sirviendo sólo el cascarón de carga.
+#
+# Por qué una consulta SQL de verdad y no un ping HTTP a la API REST: con RLS
+# sin políticas, una lectura anónima vuelve vacía y no hay certeza de que eso
+# cuente como actividad. Una consulta al Postgres cuenta seguro, y de paso
+# comprueba que la base tenga datos.
+#
+# ⚠️ DOS COSAS QUE HAY QUE SABER:
+#
+# 1. Los workflows programados corren SÓLO desde la rama por defecto. Este
+#    archivo tiene que estar en `main` para que el cron dispare.
+# 2. GitHub deshabilita los workflows programados en repos sin actividad
+#    durante 60 días, y manda un mail antes. Justo la inactividad de la que nos
+#    queremos proteger puede apagar la protección: si llega ese aviso, hay que
+#    reactivarlo desde la pestaña Actions.
+
+name: Mantener la base despierta
+
+on:
+  schedule:
+    # 09:17 UTC = 06:17 en Tucumán. Minuto salteado a propósito: en punto es
+    # cuando GitHub tiene más cola y más demora los programados.
+    - cron: "17 9 * * *"
+  # Para poder probarlo a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+# No necesita tocar el repo.
+permissions: {}
+
+# Que dos corridas no se pisen si una queda colgada.
+concurrency:
+  group: mantener-base-despierta
+  cancel-in-progress: false
+
+jobs:
+  despertar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Consultar la base
+        env:
+          # Secreto del repo. Sirve DATABASE_URL o DIRECT_URL del .env.
+          URL_BASE: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${URL_BASE}" ]; then
+            echo "::error::Falta el secreto SUPABASE_DB_URL en el repositorio."
+            exit 1
+          fi
+
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+
+          # `?pgbouncer=true` y compañía son parámetros de Prisma: libpq los
+          # rechaza como palabras clave desconocidas, así que hay que recortar
+          # la query.
+          #
+          # Se corta a partir del `@`, no del principio: una contraseña de
+          # Supabase puede contener un `?`, y recortando desde el primer signo
+          # de pregunta la URL quedaba partida al medio
+          # («postgresql://postgres.abc:cla»). Está probado con una contraseña
+          # con `?` adentro.
+          if [ "${URL_BASE}" = "${URL_BASE#*@}" ]; then
+            echo "::error::SUPABASE_DB_URL no parece una URL de Postgres (no tiene @)."
+            exit 1
+          fi
+
+          credenciales="${URL_BASE%@*}"
+          servidor="${URL_BASE##*@}"
+          limpia="${credenciales}@${servidor%%\?*}"
+
+          ferias=$(psql "${limpia}" -tAc 'select count(*) from ferias')
+          echo "Ferias en la base: ${ferias}"
+
+          if [ "${ferias}" -eq 0 ]; then
+            echo "::error::La base responde pero no tiene ferias. ¿Falta correr el seed?"
+            exit 1
+          fi
+
+      - name: Revisar que el sitio sirva contenido, no sólo el cascarón
+        run: |
+          set -euo pipefail
+
+          # El parámetro con la fecha evita que Vercel devuelva una respuesta
+          # cacheada: hace falta que la petición llegue a renderizar de nuevo.
+          url="https://fer-ia.vercel.app/?keepalive=$(date +%s)"
+          html=$(curl -sS --fail --max-time 45 "${url}")
+
+          # Un 200 no alcanza como señal: con la base caída, el sitio devuelve
+          # 200 igual, con el layout y «Cargando contenido…» y nada más. Este
+          # texto vive dentro del contenido que depende de los datos, así que
+          # su ausencia es exactamente el síntoma que hubo que diagnosticar a
+          # mano el 8/9.
+          if ! printf '%s' "${html}" | grep -q "Ferias activas"; then
+            echo "::error::El sitio responde pero no renderiza el contenido."
+            exit 1
+          fi
+
+          echo "El sitio sirve el contenido completo."
