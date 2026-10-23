@@ -1,4 +1,8 @@
-import { calcularResumenCanon } from "@/lib/canon";
+import {
+  calcularPermisos,
+  EDICIONES_CON_OBLIGACION,
+  sumarImportes,
+} from "@/lib/canon";
 import { edicionesVigentes } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { aNumero } from "@/lib/format";
@@ -17,6 +21,7 @@ export async function obtenerEstadisticas() {
     feriantesAprobados,
     porRubro,
     edicionesActivas,
+    edicionesConObligacion,
     recaudacionTotal,
     recaudacionPorEdicion,
   ] = await Promise.all([
@@ -35,9 +40,18 @@ export async function obtenerEstadisticas() {
         id: true,
         nombre: true,
         fechaInicio: true,
+        feria: { select: { nombre: true } },
+        stands: { select: { vendedorId: true } },
+      },
+    }),
+    // La morosidad se mide sobre otro universo: una edición ya finalizada con
+    // canon impago sigue siendo plata adeudada, aunque no esté vigente.
+    prisma.edicionFeria.findMany({
+      where: EDICIONES_CON_OBLIGACION,
+      select: {
+        estado: true,
         montoCanon: true,
         vencimientoCanon: true,
-        feria: { select: { nombre: true } },
         stands: { select: { vendedorId: true } },
         pagos: { select: { vendedorId: true, monto: true, estado: true } },
       },
@@ -76,33 +90,22 @@ export async function obtenerEstadisticas() {
   });
 
   // ------------------------------- Morosidad -------------------------------
-  // Un feriante está en mora si tiene stand asignado en una edición vigente
-  // con canon y su permiso quedó VENCIDO.
-  let feriantesEnMora = 0;
-  let montoAdeudado = 0;
+  // El mismo cálculo que usa /admin/canon, para que el cartel rojo del tablero
+  // y la pantalla a la que linkea no puedan mostrar números distintos.
+  const vencidos = calcularPermisos(edicionesConObligacion).filter(
+    (permiso) => permiso.resumen.estado === "VENCIDO",
+  );
 
-  for (const edicion of edicionesActivas) {
-    if (aNumero(edicion.montoCanon) <= 0) continue;
-
-    const asignados = new Set(
-      edicion.stands
-        .map((stand) => stand.vendedorId)
-        .filter((id): id is string => id !== null),
-    );
-
-    for (const vendedorId of asignados) {
-      const resumen = calcularResumenCanon({
-        montoCanon: edicion.montoCanon,
-        vencimientoCanon: edicion.vencimientoCanon,
-        pagos: edicion.pagos.filter((pago) => pago.vendedorId === vendedorId),
-      });
-
-      if (resumen.estado === "VENCIDO") {
-        feriantesEnMora++;
-        montoAdeudado += resumen.saldo;
-      }
-    }
-  }
+  // Personas distintas, no permisos vencidos: el cartel del tablero dice «N
+  // feriantes con el canon vencido», y un mismo feriante que arrastra deuda de
+  // tres ediciones es una persona a la que llamar, no tres. El monto sí suma
+  // todos los permisos, que es lo que se adeuda en total.
+  const feriantesEnMora = new Set(
+    vencidos.map((permiso) => permiso.vendedorId),
+  ).size;
+  const montoAdeudado = sumarImportes(
+    vencidos.map((permiso) => permiso.resumen.saldo),
+  );
 
   // ------------------------------ Recaudación ------------------------------
   const nombresEdicion = new Map(

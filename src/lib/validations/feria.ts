@@ -64,7 +64,20 @@ export const edicionSchema = z
   .refine((datos) => datos.fechaFin >= datos.fechaInicio, {
     message: "La fecha de fin no puede ser anterior a la de inicio.",
     path: ["fechaFin"],
-  });
+  })
+  // Sin vencimiento, un canon impago nunca escala: el permiso queda PENDIENTE
+  // para siempre, no entra en "Permisos vencidos" y el responsable cree que
+  // está todo cobrado. La falla es hacia el lado tranquilizador, que es el
+  // peor: por eso se exige la fecha acá, donde el formulario no puede
+  // saltearla (tiene `noValidate`, así que el `required` del HTML no alcanza).
+  .refine(
+    (datos) => datos.montoCanon <= 0 || datos.vencimientoCanon !== null,
+    {
+      message:
+        "Si la edición cobra canon, cargá hasta cuándo hay tiempo de pagarlo.",
+      path: ["vencimientoCanon"],
+    },
+  );
 
 export type DatosEdicion = z.infer<typeof edicionSchema>;
 

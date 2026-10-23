@@ -30,14 +30,16 @@ import {
   Th,
 } from "@/components/ui/tabla";
 import {
-  calcularResumenCanon,
+  aCentavos,
+  calcularPermisos,
   detalleVencimiento,
   ESTADOS_PERMISO,
+  generaObligacionCanon,
+  sumarImportes,
   TONO_ESTADO_PERMISO,
 } from "@/lib/canon";
 import { prisma } from "@/lib/db";
 import {
-  aNumero,
   formatearFecha,
   formatearMoneda,
   formatearRangoFechas,
@@ -86,42 +88,43 @@ export default async function PaginaEdicion({
   if (!edicion) notFound();
 
   const ocupados = edicion.stands.filter((stand) => stand.vendedor !== null);
-  const montoCanon = aNumero(edicion.montoCanon);
+  const generaCanon = generaObligacionCanon(edicion);
 
-  // Canon esperado = canon × feriantes asignados.
-  const canonEsperado = montoCanon * ocupados.length;
-  const canonRecaudado = edicion.pagos
-    .filter((pago) => pago.estado === "PAGADO")
-    .reduce((suma, pago) => suma + aNumero(pago.monto), 0);
+  // Canon esperado = canon × feriantes asignados. En centavos, para que la
+  // comparación "recaudado ≥ esperado" no falle por un 1e-12 de punto flotante.
+  const canonEsperado = (aCentavos(edicion.montoCanon) * ocupados.length) / 100;
+  const canonRecaudado = sumarImportes(
+    edicion.pagos
+      .filter((pago) => pago.estado === "PAGADO")
+      .map((pago) => pago.monto),
+  );
 
-  const filasCanon = ocupados
-    .map((stand) => {
+  const filasCanon = calcularPermisos([edicion]).flatMap(
+    ({ stand, vendedorId, resumen }) => {
       const vendedor = stand.vendedor;
-      if (!vendedor) return null;
+      if (!vendedor) return [];
 
-      const pagos = edicion.pagos.filter(
-        (pago) => pago.vendedorId === vendedor.id,
-      );
-      const resumen = calcularResumenCanon({
-        montoCanon: edicion.montoCanon,
-        vencimientoCanon: edicion.vencimientoCanon,
-        pagos,
-      });
-
-      const ultimoPago = pagos
-        .filter((pago) => pago.estado === "PAGADO" && pago.fechaPago)
+      const ultimoPago = edicion.pagos
+        .filter(
+          (pago) =>
+            pago.vendedorId === vendedorId &&
+            pago.estado === "PAGADO" &&
+            pago.fechaPago,
+        )
         .sort(
           (a, b) => (b.fechaPago?.getTime() ?? 0) - (a.fechaPago?.getTime() ?? 0),
         )[0];
 
-      return {
-        standNumero: stand.numero,
-        vendedor,
-        resumen,
-        fechaUltimoPago: ultimoPago?.fechaPago ?? null,
-      };
-    })
-    .filter((fila): fila is NonNullable<typeof fila> => fila !== null);
+      return [
+        {
+          standNumero: stand.numero,
+          vendedor,
+          resumen,
+          fechaUltimoPago: ultimoPago?.fechaPago ?? null,
+        },
+      ];
+    },
+  );
 
   const titulo = edicion.nombre ?? "Edición sin nombre";
 
@@ -196,7 +199,11 @@ export default async function PaginaEdicion({
         <TarjetaMetrica
           etiqueta="Canon esperado"
           valor={formatearMoneda(canonEsperado)}
-          detalle="Canon × feriantes asignados"
+          detalle={
+            generaCanon
+              ? "Canon × feriantes asignados"
+              : "La edición está en borrador: todavía no se cobra"
+          }
         />
         <TarjetaMetrica
           etiqueta="Recaudado"
@@ -285,7 +292,9 @@ export default async function PaginaEdicion({
         {filasCanon.length === 0 ? (
           <TarjetaCuerpo>
             <p className="py-6 text-center text-sm text-slate-500">
-              Todavía no hay feriantes asignados a esta edición.
+              {!generaCanon && ocupados.length > 0
+                ? "La edición está en borrador, así que todavía no genera permisos. Publicala para empezar a controlar el canon."
+                : "Todavía no hay feriantes asignados a esta edición."}
             </p>
           </TarjetaCuerpo>
         ) : (
@@ -326,6 +335,13 @@ export default async function PaginaEdicion({
                     {fila.resumen.saldo > 0 ? (
                       <span className="font-medium text-red-600">
                         {formatearMoneda(fila.resumen.saldo)}
+                      </span>
+                    ) : fila.resumen.aFavor > 0 ? (
+                      <span
+                        className="font-medium text-amber-600"
+                        title="Cobrado de más. Revisá si el pago se cargó dos veces."
+                      >
+                        +{formatearMoneda(fila.resumen.aFavor)}
                       </span>
                     ) : (
                       <span className="text-slate-400">—</span>

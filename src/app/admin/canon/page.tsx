@@ -25,14 +25,15 @@ import {
   Th,
 } from "@/components/ui/tabla";
 import {
-  calcularResumenCanon,
+  calcularPermisos,
   detalleVencimiento,
   ESTADOS_PERMISO,
+  sumarImportes,
   TONO_ESTADO_PERMISO,
   type EstadoPermiso,
 } from "@/lib/canon";
 import { prisma } from "@/lib/db";
-import { aNumero, formatearFecha, formatearMoneda } from "@/lib/format";
+import { formatearFecha, formatearMoneda } from "@/lib/format";
 import { urlComprobante } from "@/lib/media";
 import {
   ESTADOS_PAGO,
@@ -55,7 +56,9 @@ export default async function PaginaCanon({
       ? (params.estado as EstadoPermiso)
       : "";
 
-  // Ediciones que cobran canon (las únicas con permisos que controlar).
+  // Se traen todas las ediciones, borradores incluidos: los pagos ya cargados
+  // tienen que seguir viéndose. Quién debe plata lo decide `calcularPermisos`,
+  // que saltea los borradores.
   const ediciones = await prisma.edicionFeria.findMany({
     orderBy: { fechaInicio: "desc" },
     include: {
@@ -64,6 +67,7 @@ export default async function PaginaCanon({
         where: { vendedorId: { not: null } },
         select: {
           numero: true,
+          vendedorId: true,
           vendedor: {
             select: { id: true, emprendimiento: true, slug: true },
           },
@@ -94,23 +98,17 @@ export default async function PaginaCanon({
     : ediciones;
 
   // ------------------------- Permisos (obligaciones) ------------------------
-  const permisos = edicionesFiltradas.flatMap((edicion) =>
-    edicion.stands
-      .filter((stand) => stand.vendedor !== null)
-      .map((stand) => {
-        const vendedor = stand.vendedor!;
-        const pagos = edicion.pagos.filter(
-          (pago) => pago.vendedorId === vendedor.id,
-        );
-        const resumen = calcularResumenCanon({
-          montoCanon: edicion.montoCanon,
-          vencimientoCanon: edicion.vencimientoCanon,
-          pagos,
-        });
+  const permisos = calcularPermisos(edicionesFiltradas).flatMap(
+    ({ edicion, stand, vendedorId, resumen }) => {
+      const vendedor = stand.vendedor;
+      if (!vendedor) return [];
 
-        const pagoPendiente = pagos.find((pago) => pago.estado === "PENDIENTE");
+      const pagoPendiente = edicion.pagos.find(
+        (pago) => pago.vendedorId === vendedorId && pago.estado === "PENDIENTE",
+      );
 
-        return {
+      return [
+        {
           clave: `${edicion.id}-${vendedor.id}`,
           edicionId: edicion.id,
           edicionEtiqueta: edicion.nombre
@@ -121,8 +119,9 @@ export default async function PaginaCanon({
           vencimiento: edicion.vencimientoCanon,
           resumen,
           pagoPendienteId: pagoPendiente?.id ?? null,
-        };
-      }),
+        },
+      ];
+    },
   );
 
   const permisosFiltrados = filtroEstado
@@ -143,11 +142,16 @@ export default async function PaginaCanon({
   // ------------------------------- Métricas --------------------------------
   const vencidos = permisos.filter((p) => p.resumen.estado === "VENCIDO");
   const pendientes = permisos.filter((p) => p.resumen.estado === "PENDIENTE");
-  const adeudado = vencidos.reduce((suma, p) => suma + p.resumen.saldo, 0);
-  const recaudado = edicionesFiltradas
-    .flatMap((edicion) => edicion.pagos)
-    .filter((pago) => pago.estado === "PAGADO")
-    .reduce((suma, pago) => suma + aNumero(pago.monto), 0);
+  const adeudado = sumarImportes(vencidos.map((p) => p.resumen.saldo));
+  const recaudado = sumarImportes(
+    edicionesFiltradas
+      .flatMap((edicion) => edicion.pagos)
+      .filter((pago) => pago.estado === "PAGADO")
+      .map((pago) => pago.monto),
+  );
+
+  // Plata cobrada de más: casi siempre es el mismo pago cargado dos veces.
+  const aFavor = sumarImportes(permisos.map((p) => p.resumen.aFavor));
 
   const pagos = edicionesFiltradas.flatMap((edicion) =>
     edicion.pagos.map((pago) => ({
@@ -175,7 +179,13 @@ export default async function PaginaCanon({
         <TarjetaMetrica
           etiqueta="Recaudado"
           valor={formatearMoneda(recaudado)}
-          detalle={filtroEdicion ? "En la edición filtrada" : "Histórico total"}
+          detalle={
+            aFavor > 0
+              ? `Incluye ${formatearMoneda(aFavor)} cobrados de más`
+              : filtroEdicion
+                ? "En la edición filtrada"
+                : "Histórico total"
+          }
           icono={IconoDinero}
           tono="verde"
         />
@@ -277,6 +287,13 @@ export default async function PaginaCanon({
                     {permiso.resumen.saldo > 0 ? (
                       <span className="font-semibold text-red-600">
                         {formatearMoneda(permiso.resumen.saldo)}
+                      </span>
+                    ) : permiso.resumen.aFavor > 0 ? (
+                      <span
+                        className="font-semibold text-amber-600"
+                        title="Cobrado de más. Revisá si el pago se cargó dos veces."
+                      >
+                        +{formatearMoneda(permiso.resumen.aFavor)}
                       </span>
                     ) : (
                       <span className="text-slate-400">—</span>

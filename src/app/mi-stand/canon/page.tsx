@@ -16,7 +16,7 @@ import {
   Th,
 } from "@/components/ui/tabla";
 import {
-  calcularResumenCanon,
+  calcularPermisos,
   detalleVencimiento,
   ESTADOS_PERMISO,
   TONO_ESTADO_PERMISO,
@@ -49,20 +49,23 @@ export default async function PaginaCanonFeriante() {
     },
   });
 
-  const permisos = stands.map((stand) => {
-    const resumen = calcularResumenCanon({
-      montoCanon: stand.edicion.montoCanon,
-      vencimientoCanon: stand.edicion.vencimientoCanon,
-      pagos: stand.edicion.pagos,
-    });
-
-    return {
-      standId: stand.id,
-      standNumero: stand.numero,
-      edicion: stand.edicion,
-      resumen,
-    };
-  });
+  // Se arma una "edición con un solo stand" por cada stand para pasar por el
+  // mismo `calcularPermisos` que el panel: el feriante y la Dirección tienen
+  // que ver el mismo estado, o la discusión en el mostrador no la gana nadie.
+  // De paso quedan afuera las ediciones en borrador, que todavía no cobran.
+  const permisos = calcularPermisos(
+    stands.map((stand) => ({
+      ...stand.edicion,
+      stands: [
+        { id: stand.id, numero: stand.numero, vendedorId: vendedor.id },
+      ],
+    })),
+  ).map(({ edicion, stand, resumen }) => ({
+    standId: stand.id,
+    standNumero: stand.numero,
+    edicion,
+    resumen,
+  }));
 
   const vencidos = permisos.filter(
     (permiso) => permiso.resumen.estado === "VENCIDO",
@@ -170,6 +173,10 @@ export default async function PaginaCanonFeriante() {
                     {permiso.resumen.saldo > 0 ? (
                       <span className="font-semibold text-red-600">
                         {formatearMoneda(permiso.resumen.saldo)}
+                      </span>
+                    ) : permiso.resumen.aFavor > 0 ? (
+                      <span className="font-semibold text-amber-600">
+                        {formatearMoneda(permiso.resumen.aFavor)} a favor
                       </span>
                     ) : (
                       <span className="text-slate-400">—</span>

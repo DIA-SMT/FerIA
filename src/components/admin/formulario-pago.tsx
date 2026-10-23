@@ -21,7 +21,7 @@ import {
   TarjetaPie,
 } from "@/components/ui/tarjeta";
 import { ESTADO_INICIAL, type EstadoFormulario } from "@/lib/form";
-import { formatearMoneda } from "@/lib/format";
+import { formatearMoneda, ZONA } from "@/lib/format";
 import { urlComprobante } from "@/lib/media";
 import { aOpciones, ESTADOS_PAGO, MEDIOS_PAGO } from "@/lib/labels";
 
@@ -278,6 +278,18 @@ function montoSugerido(
   return edicion ? String(edicion.montoCanon) : "";
 }
 
+/**
+ * Hoy en Tucumán, como `AAAA-MM-DD` para el `<input type="date">`.
+ *
+ * Esto corre en el navegador del empleado, pero igual no se usa `toISOString()`:
+ * eso da el día **UTC**, así que un pago cobrado en la oficina a las 21:30 se
+ * proponía fechado al día siguiente. `en-CA` da directamente `AAAA-MM-DD`.
+ */
 function hoyComoValor(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }

@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/db";
+import { hoyEnZona } from "@/lib/format";
 import {
   ejecutarAccion,
   estadoDeError,
@@ -36,7 +38,7 @@ export async function registrarPago(
     const [vendedor, edicion] = await Promise.all([
       prisma.vendedor.findUnique({
         where: { id: entrada.vendedorId },
-        select: { id: true, emprendimiento: true },
+        select: { id: true },
       }),
       prisma.edicionFeria.findUnique({
         where: { id: entrada.edicionId },
@@ -65,7 +67,12 @@ export async function registrarPago(
     });
 
     revalidarCanon(entrada.edicionId);
-    return estadoDeExito(`Pago registrado para ${vendedor.emprendimiento}.`);
+
+    // Se redirige como en `crearFeria` y `crearEdicion`: sin esto el
+    // formulario se quedaba con los mismos valores cargados y un segundo
+    // click —o un F5— registraba la misma plata dos veces. La pantalla de
+    // canon de esa edición ya muestra el pago recién cargado y el saldo nuevo.
+    redirect(`/admin/canon?edicion=${entrada.edicionId}`);
   });
 }
 
@@ -124,14 +131,11 @@ export async function marcarComoPagado(datos: FormData): Promise<void> {
   const pagoId = String(datos.get("pagoId") ?? "");
   if (!pagoId) return;
 
-  const hoy = new Date();
-  const fechaHoy = new Date(
-    Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate()),
-  );
-
+  // El día en Tucumán, no el del reloj UTC del servidor: un pago cobrado en
+  // la oficina a las 21:30 quedaba fechado al día siguiente.
   const pago = await prisma.pagoCanon.update({
     where: { id: pagoId },
-    data: { estado: "PAGADO", fechaPago: fechaHoy, medio: "EFECTIVO" },
+    data: { estado: "PAGADO", fechaPago: hoyEnZona(), medio: "EFECTIVO" },
     select: { edicionId: true },
   });
 
