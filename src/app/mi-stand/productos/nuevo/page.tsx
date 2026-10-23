@@ -1,3 +1,4 @@
+import { hayIAConfigurada } from "@/lib/ai";
 import Link from "next/link";
 
 import { crearProducto } from "@/actions/productos";
@@ -25,7 +26,7 @@ export default async function PaginaNuevoProducto() {
         </h1>
       </header>
 
-      <FormularioProducto accion={crearProducto} />
+      <FormularioProducto accion={crearProducto} hayIA={hayIAConfigurada()} />
     </div>
   );
 }

@@ -115,7 +115,10 @@ export async function mejorarFotoConIA(
   tipoMime: string,
   producto: ContextoProducto,
 ): Promise<Buffer> {
-  const cliente = obtenerClienteIA();
+  // Perfil `imagen`: más tiempo y sin reintentos. La generación tarda ~11 s,
+  // así que los 20 s del perfil de texto la cortaban por poco; y un reintento
+  // automático sobre un 429 factura una generación más por un solo click.
+  const cliente = obtenerClienteIA("imagen");
   const base64 = entrada.toString("base64");
 
   let respuesta;

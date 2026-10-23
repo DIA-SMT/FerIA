@@ -1,3 +1,4 @@
+import { hayIAConfigurada } from "@/lib/ai";
 import { FormularioPerfil } from "@/components/vendedor/formulario-perfil";
 import { requerirVendedorAprobado } from "@/lib/session";
 
@@ -18,6 +19,7 @@ export default async function PaginaPerfil() {
       </header>
 
       <FormularioPerfil
+        hayIA={hayIAConfigurada()}
         perfil={{
           emprendimiento: vendedor.emprendimiento,
           rubro: vendedor.rubro,

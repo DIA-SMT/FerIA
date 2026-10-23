@@ -40,6 +40,7 @@ export function SelectorDeFoto({
   descripcionProducto,
   onConfirmar,
   disponibles,
+  hayIA = true,
 }: {
   /** Se interpolan en el prompt de la IA para ambientar la escena. */
   nombreProducto: string;
@@ -51,6 +52,17 @@ export function SelectorDeFoto({
   onConfirmar: (elegida: Variante | null, descartadas: string[]) => void;
   /** Cuántas fotos más se pueden agregar. */
   disponibles: number;
+  /**
+   * Si la plataforma tiene `OPENROUTER_API_KEY` cargada. Llega por props y no
+   * se consulta acá: `hayIAConfigurada()` lee `process.env` del servidor y este
+   * componente es de cliente, donde esa variable no existe.
+   *
+   * ⚠️ Pendiente: el default es `true` para no apagarle la función a nadie,
+   * pero la cadena que lo monta —`productos/[id]`/`productos/nuevo` →
+   * `FormularioProducto` → acá— todavía no lo pasa, así que la casilla se
+   * sigue ofreciendo sin IA configurada.
+   */
+  hayIA?: boolean;
 }) {
   const [estado, generar, generando] = useActionState(
     generarVariantesDeFoto,
@@ -141,13 +153,19 @@ export function SelectorDeFoto({
           />
         </Campo>
 
-        <Casilla
-          name="usarIANueva"
-          ref={iaRef}
-          form={SIN_FORMULARIO}
-          etiqueta="Generar también una versión con IA"
-          ayuda="Reemplaza el fondo por un escenario de estudio. Tarda unos 10 segundos."
-        />
+        {/* Sin IA configurada la casilla no se ofrece: marcarla sólo llevaba a
+            esperar los diez segundos para recibir un error. Al no montarse,
+            `iaRef.current` queda en `null` y `pedirVariantes` nunca manda
+            `usarIA`, así que la acción tampoco intenta la generación. */}
+        {hayIA && (
+          <Casilla
+            name="usarIANueva"
+            ref={iaRef}
+            form={SIN_FORMULARIO}
+            etiqueta="Generar también una versión con IA"
+            ayuda="Reemplaza el fondo por un escenario de estudio. Tarda unos 10 segundos."
+          />
+        )}
 
         <Boton
           type="button"

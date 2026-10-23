@@ -40,7 +40,22 @@ export interface ValoresPerfil {
   logo: string | null;
 }
 
-export function FormularioPerfil({ perfil }: { perfil: ValoresPerfil }) {
+export function FormularioPerfil({
+  perfil,
+  hayIA = true,
+}: {
+  perfil: ValoresPerfil;
+  /**
+   * Si la plataforma tiene `OPENROUTER_API_KEY` cargada. Llega por props y no
+   * se consulta acá: `hayIAConfigurada()` lee `process.env` del servidor y este
+   * componente es de cliente, donde esa variable no existe.
+   *
+   * ⚠️ Pendiente: el default es `true` para no apagarle la función a nadie,
+   * pero `src/app/mi-stand/perfil/page.tsx` —el Server Component que monta
+   * esto— todavía no lo pasa, así que el botón se sigue ofreciendo sin IA.
+   */
+  hayIA?: boolean;
+}) {
   const [estado, accion] = useActionState(
     actualizarPerfilVendedor,
     ESTADO_INICIAL,
@@ -116,12 +131,17 @@ export function FormularioPerfil({ perfil }: { perfil: ValoresPerfil }) {
             />
           </Campo>
 
-          <AsistenteDeDescripcion
-            valor={descripcion}
-            nombreEmprendimiento={emprendimiento}
-            rubro={rubro}
-            onAplicar={setDescripcion}
-          />
+          {/* Sin IA configurada no se ofrece el botón de redactar: apretarlo
+              sólo devolvía el error de la acción. El campo de descripción
+              queda intacto y se escribe a mano, como siempre. */}
+          {hayIA && (
+            <AsistenteDeDescripcion
+              valor={descripcion}
+              nombreEmprendimiento={emprendimiento}
+              rubro={rubro}
+              onAplicar={setDescripcion}
+            />
+          )}
         </TarjetaCuerpo>
       </Tarjeta>
 

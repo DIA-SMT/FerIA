@@ -1,3 +1,4 @@
+import { hayIAConfigurada } from "@/lib/ai";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -40,6 +41,7 @@ export default async function PaginaEditarProducto({
       </header>
 
       <FormularioProducto
+        hayIA={hayIAConfigurada()}
         accion={actualizarProducto}
         producto={{
           id: producto.id,

@@ -37,11 +37,19 @@ interface PropsFormularioProducto {
     datos: FormData,
   ) => Promise<EstadoFormulario>;
   producto?: ValoresProducto;
+  /**
+   * Si la plataforma tiene la IA configurada. Viaja de parada en parada desde
+   * la página hasta `SelectorDeFoto`, que es quien ofrece mejorar la foto:
+   * `hayIAConfigurada()` lee `process.env` del servidor y esto es un componente
+   * de cliente, así que no puede consultarlo por su cuenta.
+   */
+  hayIA?: boolean;
 }
 
 export function FormularioProducto({
   accion,
   producto,
+  hayIA = true,
 }: PropsFormularioProducto) {
   const [estado, enviar] = useActionState(accion, ESTADO_INICIAL);
   const errores = estado.errores;
@@ -235,6 +243,7 @@ export function FormularioProducto({
             descripcionProducto={descripcion}
             onConfirmar={alConfirmarFoto}
             disponibles={espacioLibre}
+            hayIA={hayIA}
           />
         </TarjetaCuerpo>
 

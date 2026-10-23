@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import { EncabezadoPublico } from "@/components/public/encabezado-publico";
 import { PiePublico } from "@/components/public/pie-publico";
+import { hayIAConfigurada } from "@/lib/ai";
 
 export default function LayoutPublico({ children }: { children: ReactNode }) {
   return (
@@ -22,7 +23,11 @@ export default function LayoutPublico({ children }: { children: ReactNode }) {
 
       <PiePublico />
 
-      <AsistenteBurbuja />
+      {/* Sin OPENROUTER_API_KEY la burbuja se montaba igual en todas las
+          páginas públicas y le contestaba un error genérico a cada vecino que
+          la abría. Esto es un Server Component, así que la decisión se toma
+          acá y el componente del asistente ni siquiera llega al navegador. */}
+      {hayIAConfigurada() && <AsistenteBurbuja />}
     </div>
   );
 }
