@@ -79,6 +79,13 @@ function passwordDelEntorno(nombre: string): string {
   process.exit(1);
 }
 
+// Los telefonos y whatsapps de los feriantes de ejemplo estan en un rango
+// IMPOSIBLE a proposito (area 381, abonado arrancando en 0). No pasan
+// `normalizarWhatsapp` y esta bien que no pasen: son datos de demostracion y
+// no tienen que poder contactar a nadie. El "555" de ficcion es convencion
+// estadounidense; en Argentina no hay ningun rango reservado, asi que un
+// numero con forma valida siempre puede ser el de una persona real.
+
 const PASSWORD_ADMIN = passwordDelEntorno("SEED_PASSWORD_ADMIN");
 const PASSWORD_FERIANTE = passwordDelEntorno("SEED_PASSWORD_FERIANTE");
 
