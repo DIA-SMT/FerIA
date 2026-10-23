@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
-import { hoyUTC } from "@/lib/format";
+import { hoyEnZona } from "@/lib/format";
 
 /**
  * Consultas compartidas entre el market público y los paneles.
@@ -20,7 +20,7 @@ export const EDICIONES_PUBLICAS: Prisma.EdicionFeriaWhereInput = {
 export function edicionesVigentes(): Prisma.EdicionFeriaWhereInput {
   return {
     ...EDICIONES_PUBLICAS,
-    fechaFin: { gte: hoyUTC() },
+    fechaFin: { gte: hoyEnZona() },
   };
 }
 

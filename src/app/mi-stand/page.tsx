@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/tarjeta";
 import { EDICIONES_PUBLICAS } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearFechaHora, formatearRangoFechas, hoyUTC } from "@/lib/format";
+import { formatearFechaHora, formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
 import { obtenerVendedorActual } from "@/lib/session";
 
@@ -140,7 +140,7 @@ export default async function PaginaMiStand() {
   }
 
   // -------------------------------- Aprobada --------------------------------
-  const hoy = hoyUTC();
+  const hoy = hoyEnZona();
 
   const [asignaciones, productos, productosDisponibles] = await Promise.all([
     prisma.stand.findMany({

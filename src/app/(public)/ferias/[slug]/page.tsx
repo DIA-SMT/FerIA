@@ -19,7 +19,7 @@ import {
 import { ImagenPortada } from "@/components/ui/imagen";
 import { EDICIONES_PUBLICAS } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearRangoFechas, hoyUTC, truncar } from "@/lib/format";
+import { formatearRangoFechas, hoyEnZona, truncar } from "@/lib/format";
 import { linkGoogleMaps, linkGoogleMapsPorDireccion } from "@/lib/geo";
 import {
   CATEGORIAS_FERIA,
@@ -92,7 +92,7 @@ export default async function PaginaFeria({
 
   if (!feria) notFound();
 
-  const hoy = hoyUTC();
+  const hoy = hoyEnZona();
   const vigentes = feria.ediciones.filter((edicion) => edicion.fechaFin >= hoy);
   const mapa =
     linkGoogleMaps(feria.latitud, feria.longitud) ??

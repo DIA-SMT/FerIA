@@ -139,18 +139,23 @@ export default async function PaginaInicio() {
               className="animar-aparecer mt-9 flex flex-wrap gap-3"
               style={{ animationDelay: "360ms" }}
             >
+              {/* `transition-all` y no `transition-transform`: son la misma
+                  familia de utilidad, así que la del llamador reemplaza a la
+                  `transition-colors` del botón y se perdía la transición del
+                  fondo al pasar el mouse. Con `all` animan las dos. */}
               <BotonLink
                 href="/ferias"
                 variante="acento"
                 tamanio="lg"
-                className="shadow-lg shadow-acento-400/20 transition-transform hover:-translate-y-0.5"
+                className="shadow-lg shadow-acento-400/20 transition-all hover:-translate-y-0.5"
               >
                 Ver ferias
               </BotonLink>
               <BotonLink
                 href="/stands"
+                variante="vidrio"
                 tamanio="lg"
-                className="border border-white/30 bg-white/10 text-white backdrop-blur-sm transition-transform hover:-translate-y-0.5 hover:bg-white/20"
+                className="transition-all hover:-translate-y-0.5"
               >
                 Explorar stands
               </BotonLink>

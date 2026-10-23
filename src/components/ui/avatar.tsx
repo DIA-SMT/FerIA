@@ -8,14 +8,30 @@ interface PropsAvatar {
   nombre: string;
   /** Ruta en Supabase Storage, ej. `vendedores/abc.webp`. */
   imagen?: string | null;
-  tamanio?: "sm" | "md" | "lg";
+  tamanio?: "sm" | "md" | "lg" | "xl";
   className?: string;
 }
 
+/**
+ * El tamaño se elige acá y **no se pisa por `className`**.
+ *
+ * `cn` no resuelve conflictos entre utilidades de Tailwind: si el llamador
+ * manda `size-24`, conviven con el `size-16` de este mapa y gana la que Tailwind
+ * emita última en la hoja de estilos, no la del código. La vidriera del stand
+ * hacía exactamente eso y funcionaba de casualidad, porque Tailwind ordena por
+ * número y 24 > 16. Además dejaba a `next/image` pidiendo 64 px para algo que
+ * el CSS estiraba a 112.
+ *
+ * Por eso existe `xl`: es el tamaño que necesita la vidriera, con su `px`
+ * correcto. Si hace falta otro, se agrega acá.
+ */
 const TAMANIOS = {
   sm: { caja: "size-8 text-xs", px: 32 },
   md: { caja: "size-11 text-sm", px: 44 },
   lg: { caja: "size-16 text-lg", px: 64 },
+  // Responsive: 96 px en móvil y 112 desde `sm`. El `px` va al mayor de los dos
+  // para que el optimizador nunca sirva una imagen más chica que la mostrada.
+  xl: { caja: "size-24 text-2xl sm:size-28", px: 112 },
 } as const;
 
 /**

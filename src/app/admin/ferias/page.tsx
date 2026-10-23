@@ -16,7 +16,7 @@ import {
   Th,
 } from "@/components/ui/tabla";
 import { prisma } from "@/lib/db";
-import { formatearRangoFechas, hoyUTC } from "@/lib/format";
+import { formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import {
   CATEGORIAS_FERIA,
   ESTADOS_EDICION,
@@ -26,7 +26,7 @@ import {
 export const metadata = { title: "Ferias y ediciones" };
 
 export default async function PaginaAdminFerias() {
-  const hoy = hoyUTC();
+  const hoy = hoyEnZona();
 
   const ferias = await prisma.feria.findMany({
     orderBy: { nombre: "asc" },
