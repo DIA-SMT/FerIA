@@ -56,10 +56,31 @@ const supabase = createClient(
 );
 
 // --------------------------------------------------------------------------
-// Credenciales de ejemplo (documentadas en el README)
+// Credenciales de ejemplo
 // --------------------------------------------------------------------------
-const PASSWORD_ADMIN = "Ferias.2026";
-const PASSWORD_FERIANTE = "Feriante.2026";
+//
+// Salen del entorno y el seed se niega a correr sin ellas. Antes estaban
+// escritas acá, repetidas en `src/lib/accesos-demo.ts` y publicadas en una
+// tabla del README, en un repositorio público: o sea que la cuenta ADMIN del
+// deploy tenía contraseña conocida por cualquiera que abriera el repo.
+//
+// Que falten y aborte es la gracia: obliga a elegirlas en cada entorno en vez
+// de heredar siempre las mismas.
+function passwordDelEntorno(nombre: string): string {
+  const valor = process.env[nombre];
+  if (valor) return valor;
+
+  console.error(
+    `\n✗ Falta ${nombre}.\n` +
+      "  SEED_PASSWORD_ADMIN y SEED_PASSWORD_FERIANTE son las contraseñas con\n" +
+      "  las que el seed crea las cuentas de ejemplo. Poné ambas en el .env\n" +
+      "  (ver .env.example) y volvé a correr.\n",
+  );
+  process.exit(1);
+}
+
+const PASSWORD_ADMIN = passwordDelEntorno("SEED_PASSWORD_ADMIN");
+const PASSWORD_FERIANTE = passwordDelEntorno("SEED_PASSWORD_FERIANTE");
 
 // --------------------------------------------------------------------------
 // Utilidades
@@ -201,9 +222,8 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.ARTESANIAS,
     descripcion:
       "Telar criollo y a dos agujas con lana de oveja hilada a mano. Trabajamos con vellón teñido con tintes naturales de nogal, cebolla y cochinilla. Cada pieza es única y lleva entre dos y tres semanas de trabajo.",
-    whatsapp: "5493815551201",
-    telefono: "381 455-1201",
-    instagram: "tejidosdelcerro",
+    whatsapp: "5493810000001",
+    telefono: "381 000-0001",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -234,9 +254,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.ARTESANIAS,
     descripcion:
       "Cerámica utilitaria y decorativa cocida a leña, con motivos inspirados en la iconografía de los pueblos originarios del noroeste. Todas las piezas son aptas para uso alimentario.",
-    whatsapp: "5493815551202",
-    instagram: "alfareria.lacienaga",
-    facebook: "alfarerialacienaga",
+    whatsapp: "5493810000002",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -262,9 +280,8 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.GASTRONOMIA,
     descripcion:
       "Empanadas tucumanas de horno de barro, con la receta de la abuela: carne cortada a cuchillo, mucha cebolla de verdeo y comino. Hacemos también tamales y humita en chala por encargo.",
-    whatsapp: "5493815551203",
-    telefono: "381 421-3344",
-    instagram: "empanadasdoniarosa",
+    whatsapp: "5493810000003",
+    telefono: "381 000-0002",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -294,8 +311,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.PRODUCTOS_REGIONALES,
     descripcion:
       "Dulces artesanales de los Valles Calchaquíes elaborados con fruta de estación: cayote, higo, membrillo y tuna. Producción propia, sin conservantes ni colorantes.",
-    whatsapp: "5493815551204",
-    instagram: "dulcesdelvalle.tuc",
+    whatsapp: "5493810000004",
     sitioWeb: "https://dulcesdelvalle.example.com",
     estado: EstadoVendedor.APROBADO,
     productos: [
@@ -326,9 +342,8 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.MARROQUINERIA,
     descripcion:
       "Marroquinería en cuero vacuno curtido al vegetal, cosida a mano con hilo encerado. Trabajamos a medida: cintos, carteras, mochilas y fundas de cuchillo.",
-    whatsapp: "5493815551205",
-    telefono: "381 466-8899",
-    instagram: "cueroymonte",
+    whatsapp: "5493810000005",
+    telefono: "381 000-0003",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -354,8 +369,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.COSMETICA_NATURAL,
     descripcion:
       "Cosmética natural elaborada en Yerba Buena con aceites vegetales prensados en frío y hierbas del pedemonte. Sin parabenos, sin testeo en animales y con envases retornables.",
-    whatsapp: "5493815551206",
-    instagram: "yerbabuenanatural",
+    whatsapp: "5493810000006",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -386,8 +400,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.JOYERIA_Y_BIJOUTERIE,
     descripcion:
       "Orfebrería en plata 925 y alpaca con piedras de la región: rodocrosita, ónix y turquesa. Diseños contemporáneos con guiños a la iconografía andina. Hacemos alianzas y piezas a pedido.",
-    whatsapp: "5493815551207",
-    instagram: "platadelnorte.joyas",
+    whatsapp: "5493810000007",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -413,8 +426,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.DECORACION,
     descripcion:
       "Objetos de decoración en madera de algarrobo, cedro y palo santo, con madera de recuperación y poda urbana. Terminaciones con aceite de lino, sin barnices sintéticos.",
-    whatsapp: "5493815551208",
-    instagram: "maderanativa.tuc",
+    whatsapp: "5493810000008",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -440,8 +452,8 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.GASTRONOMIA,
     descripcion:
       "Comida regional para llevar: locro, guiso de mondongo, tamales y pastelitos de dulce de membrillo. Elaboración diaria con habilitación bromatológica municipal.",
-    whatsapp: "5493815551209",
-    telefono: "381 430-7712",
+    whatsapp: "5493810000009",
+    telefono: "381 000-0004",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -467,8 +479,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.HUERTA_Y_VIVERO,
     descripcion:
       "Plantines de especies nativas del pedemonte tucumano, aromáticas y hortalizas de estación. Asesoramos sobre huerta agroecológica en balcones y patios.",
-    whatsapp: "5493815551210",
-    instagram: "viverolslapachos",
+    whatsapp: "5493810000010",
     estado: EstadoVendedor.APROBADO,
     productos: [
       {
@@ -494,8 +505,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.LIBROS_Y_ARTE,
     descripcion:
       "Librería independiente especializada en autores del NOA, poesía y libro álbum infantil. También conseguimos títulos por encargo.",
-    whatsapp: "5493815551211",
-    instagram: "librosdeljardin",
+    whatsapp: "5493810000011",
     estado: EstadoVendedor.APROBADO,
     sinImagenes: true,
     productos: [
@@ -518,8 +528,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.INDUMENTARIA,
     descripcion:
       "Indumentaria de autor confeccionada con telas tejidas en telar y algodón orgánico. Producción de temporada corta y talles amplios.",
-    whatsapp: "5493815551212",
-    instagram: "telarandino.ok",
+    whatsapp: "5493810000012",
     estado: EstadoVendedor.PENDIENTE,
     sinImagenes: true,
     productos: [],
@@ -532,7 +541,7 @@ const VENDEDORES: DatosVendedor[] = [
     rubro: Rubro.JUGUETES,
     descripcion:
       "Juguetes de madera para primera infancia: encastres, rompecabezas y móviles, con maderas nativas de manejo sustentable y pinturas al agua.",
-    whatsapp: "5493815551213",
+    whatsapp: "5493810000013",
     estado: EstadoVendedor.PENDIENTE,
     sinImagenes: true,
     productos: [],
@@ -544,7 +553,7 @@ const VENDEDORES: DatosVendedor[] = [
     slug: "importados-lh",
     rubro: Rubro.OTROS,
     descripcion: "Venta de artículos de bazar y electrónica importada.",
-    whatsapp: "5493815551214",
+    whatsapp: "5493810000014",
     estado: EstadoVendedor.RECHAZADO,
     sinImagenes: true,
     motivoRechazo:
@@ -646,7 +655,48 @@ const MEDIOS: MedioPago[] = [
 // Ejecución
 // --------------------------------------------------------------------------
 
+/**
+ * Se niega a correr contra la base de producción.
+ *
+ * El seed borra las siete tablas antes de cargar. El 23/10/2026 se descubrió
+ * que el `.env` de desarrollo apuntaba al mismo proyecto de Supabase que sirve
+ * el sitio público: `npm run db:seed` o `npm run db:reset` desde cualquier
+ * máquina borraban producción con un tipeo, y el plan gratuito no tiene
+ * recuperación a un punto en el tiempo.
+ *
+ * La comparación es contra `PROYECTO_SUPABASE_PROD`, el ref del proyecto (la
+ * parte variable de `https://<ref>.supabase.co`). Va en el entorno y no escrita
+ * acá para que mudarse de proyecto no implique tocar código.
+ *
+ * `PERMITIR_SEED_EN_PROD=si` es la salida de emergencia, deliberadamente
+ * incómoda: sirve para la carga inicial de un proyecto nuevo y para nada más.
+ */
+function abortarSiEsProduccion(): void {
+  const refProd = process.env.PROYECTO_SUPABASE_PROD;
+  const url = process.env.DATABASE_URL ?? "";
+
+  if (!refProd || !url.includes(refProd)) return;
+
+  if (process.env.PERMITIR_SEED_EN_PROD === "si") {
+    console.warn(
+      "\n⚠ Corriendo el seed CONTRA PRODUCCIÓN porque PERMITIR_SEED_EN_PROD=si.\n" +
+        "  Esto borra las siete tablas, incluidos los feriantes y los pagos reales.\n",
+    );
+    return;
+  }
+
+  console.error(
+    `\n✗ DATABASE_URL apunta al proyecto de producción (${refProd}).\n` +
+      "  El seed borra las siete tablas antes de cargar, así que no corre acá.\n\n" +
+      "  Si querés datos de ejemplo, apuntá DATABASE_URL a un proyecto aparte.\n" +
+      "  Si de verdad necesitás sembrar producción, corré con PERMITIR_SEED_EN_PROD=si.\n",
+  );
+  process.exit(1);
+}
+
 async function main(): Promise<void> {
+  abortarSiEsProduccion();
+
   console.log("→ Preparando los buckets de Storage…");
   await asegurarBuckets();
 

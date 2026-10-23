@@ -23,36 +23,54 @@ export interface CuentaDemo {
   password: string;
 }
 
-/** Las mismas contraseñas que fija `prisma/seed.ts`. */
-const PASSWORD_ADMIN = "Ferias.2026";
-const PASSWORD_FERIANTE = "Feriante.2026";
+/**
+ * Las mismas contraseñas que fija `prisma/seed.ts`, leídas del entorno.
+ *
+ * Antes estaban escritas acá y en el seed, y además publicadas en una tabla
+ * del README — en un repositorio público. Una contraseña que vive en el código
+ * es una contraseña publicada: lo único que la protege es que nadie mire.
+ *
+ * Son las mismas dos variables que usa el seed, así que las cuentas de los
+ * accesos rápidos no pueden desincronizarse de las que existen en la base.
+ */
+const PASSWORD_ADMIN = process.env.SEED_PASSWORD_ADMIN;
+const PASSWORD_FERIANTE = process.env.SEED_PASSWORD_FERIANTE;
 
-const CUENTAS: CuentaDemo[] = [
-  {
-    etiqueta: "Municipal",
-    detalle: "Panel completo",
-    email: "admin@smt.gob.ar",
-    password: PASSWORD_ADMIN,
-  },
-  {
-    etiqueta: "Feriante aprobado",
-    detalle: "Tejidos del Cerro",
-    email: "tejidosdelcerro@example.com",
-    password: PASSWORD_FERIANTE,
-  },
-  {
-    etiqueta: "Feriante pendiente",
-    detalle: "Telar Andino",
-    email: "telarandino@example.com",
-    password: PASSWORD_FERIANTE,
-  },
-  {
-    etiqueta: "Feriante rechazado",
-    detalle: "Importados LH",
-    email: "importadoslh@example.com",
-    password: PASSWORD_FERIANTE,
-  },
-];
+/**
+ * Las cuentas, armadas con las contraseñas que vinieron del entorno.
+ *
+ * Es una función y no una constante justamente para que las contraseñas entren
+ * como `string` ya verificado: si faltan, `cuentasDemo` devuelve el arreglo
+ * vacío antes de llamar acá y nunca se arma una cuenta a medias.
+ */
+function cuentas(passwordAdmin: string, passwordFeriante: string): CuentaDemo[] {
+  return [
+    {
+      etiqueta: "Municipal",
+      detalle: "Panel completo",
+      email: "admin@smt.gob.ar",
+      password: passwordAdmin,
+    },
+    {
+      etiqueta: "Feriante aprobado",
+      detalle: "Tejidos del Cerro",
+      email: "tejidosdelcerro@example.com",
+      password: passwordFeriante,
+    },
+    {
+      etiqueta: "Feriante pendiente",
+      detalle: "Telar Andino",
+      email: "telarandino@example.com",
+      password: passwordFeriante,
+    },
+    {
+      etiqueta: "Feriante rechazado",
+      detalle: "Importados LH",
+      email: "importadoslh@example.com",
+      password: passwordFeriante,
+    },
+  ];
+}
 
 /**
  * Las cuentas a mostrar, o un arreglo vacío si el panel está apagado.
@@ -61,14 +79,30 @@ const CUENTAS: CuentaDemo[] = [
  * `ACCESOS_DEMO=true`. Si la variable no está, no se manda nada: el default es
  * el seguro.
  *
- * ⚠️ Prenderlo en una URL pública significa que cualquiera que la encuentre
- * entra como ADMIN con un click y puede aprobar feriantes, borrar ferias o
- * registrar pagos. Apagalo antes de que el sitio sea real.
+ * Hay dos barreras más, porque la variable sola no alcanzó:
+ *
+ * 1. En producción no se muestra **nunca**, diga lo que diga `ACCESOS_DEMO`.
+ *    El 23/10/2026 la variable quedó prendida en el deploy y durante semanas
+ *    cualquiera que entrara a `/ingresar` se hacía ADMIN del panel municipal
+ *    con un click. Una variable de entorno no es una barrera: es una nota que
+ *    alguien se tiene que acordar de borrar. Esta línea sí es una barrera.
+ * 2. Las contraseñas salen del entorno. Si no están, no hay cuentas que
+ *    mostrar aunque el panel esté habilitado, así que el panel no puede
+ *    funcionar sin que alguien cargue las credenciales a propósito.
  */
 export function cuentasDemo(): CuentaDemo[] {
+  // Primero y sin excepción: en producción esto no existe.
+  if (process.env.VERCEL_ENV === "production") return [];
+
   const habilitado =
     process.env.NODE_ENV === "development" ||
     process.env.ACCESOS_DEMO === "true";
 
-  return habilitado ? CUENTAS : [];
+  if (!habilitado) return [];
+
+  // Sin contraseñas en el entorno las cuentas no sirven para nada: el click
+  // intentaría ingresar con `undefined`. Mejor no ofrecerlas.
+  if (!PASSWORD_ADMIN || !PASSWORD_FERIANTE) return [];
+
+  return cuentas(PASSWORD_ADMIN, PASSWORD_FERIANTE);
 }

@@ -201,18 +201,32 @@ el `.env` y seguí desde el paso 4.
 
 ## Usuarios de ejemplo
 
-Los crea el seed en Supabase Auth. Cambiá estas contraseñas antes de cualquier
-despliegue real.
+Los crea el seed en Supabase Auth, con las contraseñas que vos elijas en el
+`.env`:
 
-| Rol                | Correo                        | Contraseña       |
-| ------------------ | ----------------------------- | ---------------- |
-| Personal municipal | `admin@smt.gob.ar`            | `Ferias.2026`    |
-| Feriante aprobado  | `tejidosdelcerro@example.com` | `Feriante.2026`  |
-| Feriante pendiente | `telarandino@example.com`     | `Feriante.2026`  |
-| Feriante rechazado | `importadoslh@example.com`    | `Feriante.2026`  |
+```bash
+SEED_PASSWORD_ADMIN="…"      # la cuenta del personal municipal
+SEED_PASSWORD_FERIANTE="…"   # las tres cuentas de feriante
+```
+
+El seed **aborta** si faltan. No hay valores por defecto y no están escritas en
+el código: elegilas por entorno.
+
+| Rol                | Correo                        | Contraseña               |
+| ------------------ | ----------------------------- | ------------------------ |
+| Personal municipal | `admin@smt.gob.ar`            | `SEED_PASSWORD_ADMIN`    |
+| Feriante aprobado  | `tejidosdelcerro@example.com` | `SEED_PASSWORD_FERIANTE` |
+| Feriante pendiente | `telarandino@example.com`     | `SEED_PASSWORD_FERIANTE` |
+| Feriante rechazado | `importadoslh@example.com`    | `SEED_PASSWORD_FERIANTE` |
 
 Todos los feriantes del seed usan la misma contraseña. Los correos están en
 `prisma/seed.ts`.
+
+> **Por qué no están acá las contraseñas.** Hasta octubre de 2026 esta tabla
+> traía los valores escritos, y este repositorio es público: la cuenta ADMIN del
+> sitio desplegado tenía contraseña conocida por cualquiera que lo abriera.
+> Borrarlas de acá no borra el historial de git — si alguna vez estuvieron
+> publicadas, hay que **rotarlas en Supabase**, no sólo sacarlas del archivo.
 
 ### Accesos rápidos en el login
 

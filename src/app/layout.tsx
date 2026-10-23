@@ -43,9 +43,21 @@ export const metadata: Metadata = {
     description:
       "Recorré las ferias de la ciudad y los stands online de cada feriante.",
   },
+  /**
+   * Indexación, apagada mientras el sitio muestre datos de ejemplo.
+   *
+   * El market estuvo publicando catorce emprendimientos inventados —con nombre
+   * y apellido de personas que no existen— como si fueran el padrón oficial de
+   * las ferias de la ciudad, indexable y firmado por la Municipalidad.
+   *
+   * Se prende de nuevo (`index: true`) recién cuando lo que se sirve sean
+   * feriantes reales. Google no desindexa comercios inventados atribuidos al
+   * municipio apretando un botón: sacarlos después cuesta mucho más que no
+   * dejarlos entrar.
+   */
   robots: {
-    index: true,
-    follow: true,
+    index: process.env.PERMITIR_INDEXACION === "true",
+    follow: process.env.PERMITIR_INDEXACION === "true",
   },
 };
 
