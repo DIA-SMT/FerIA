@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { EstadoEdicion, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 import { hoyEnZona } from "@/lib/format";
@@ -7,22 +7,82 @@ import { hoyEnZona } from "@/lib/format";
  * Consultas compartidas entre el market público y los paneles.
  *
  * Criterio general del market: sólo se muestran feriantes APROBADOS y
- * ediciones PUBLICADA o EN_CURSO (las que están en borrador o finalizadas no
- * son públicas).
+ * ediciones que el municipio publicó.
+ *
+ * Sobre la edición hay DOS preguntas distintas, y antes las dos se contestaban
+ * con la misma columna:
+ *
+ * · ¿Se publica? Es una decisión municipal, la toma alguien y por eso se
+ *   guarda: `EdicionFeria.estado`.
+ * · ¿Está en curso, es próxima o ya terminó? Eso lo contestan las fechas. No se
+ *   guarda, se deriva —igual que el estado del permiso de canon, ver
+ *   `src/lib/canon.ts`— porque a `estado` no lo transiciona ningún proceso: el
+ *   único lugar que lo escribe es el select del formulario de admin. Una
+ *   edición cargada como EN_CURSO mostraba el cartel verde semanas antes de
+ *   empezar, y la que de verdad arrancaba hoy se quedaba en PUBLICADA hasta que
+ *   alguien se acordara de entrar al panel a cambiarla.
  */
 
-/** Ediciones visibles para los vecinos. */
+/**
+ * Ediciones visibles para los vecinos.
+ *
+ * `EN_CURSO` sigue en la lista porque hay filas cargadas con ese valor y, como
+ * decisión de publicación, dice lo mismo que `PUBLICADA`: esta edición se
+ * muestra. Si además está pasando hoy ya no se lee de acá: sale de las fechas.
+ */
 export const EDICIONES_PUBLICAS: Prisma.EdicionFeriaWhereInput = {
   estado: { in: ["PUBLICADA", "EN_CURSO"] },
 };
 
-/** Ediciones vigentes: publicadas o en curso, que todavía no terminaron. */
-export function edicionesVigentes(): Prisma.EdicionFeriaWhereInput {
+/**
+ * Ediciones vigentes: publicadas y que todavía no terminaron.
+ *
+ * `hoy` es opcional para que quien ya lo calculó use el mismo valor al filtrar
+ * y al derivar la etapa, y no queden en distinto día si la consulta cae justo
+ * en la medianoche de Tucumán.
+ */
+export function edicionesVigentes(
+  hoy: Date = hoyEnZona(),
+): Prisma.EdicionFeriaWhereInput {
   return {
     ...EDICIONES_PUBLICAS,
-    fechaFin: { gte: hoyEnZona() },
+    fechaFin: { gte: hoy },
   };
 }
+
+/** En qué momento de su vida está una edición. Se deriva, no se guarda. */
+export type EtapaEdicion = "PROXIMA" | "EN_CURSO" | "FINALIZADA";
+
+/**
+ * Etapa de una edición, según las fechas.
+ *
+ * El criterio es el mismo que comprueba `prisma/refrescar-fechas.ts` al cerrar
+ * («abarca hoy»): `fechaInicio <= hoy && fechaFin >= hoy`. Son columnas `DATE`,
+ * así que el día de inicio y el de fin cuentan enteros, y `hoy` tiene que venir
+ * de `hoyEnZona()` —el día en Tucumán— y no del reloj UTC del servidor.
+ */
+export function etapaDeEdicion(
+  edicion: { fechaInicio: Date; fechaFin: Date },
+  hoy: Date = hoyEnZona(),
+): EtapaEdicion {
+  if (edicion.fechaFin < hoy) return "FINALIZADA";
+  if (edicion.fechaInicio > hoy) return "PROXIMA";
+  return "EN_CURSO";
+}
+
+/**
+ * La etapa derivada, dicha con los valores del enum.
+ *
+ * El resumen de feria lo consumen `TarjetaFeria` y el listado de `/ferias`, que
+ * lo tipan como `EstadoEdicion` y preguntan por `EN_CURSO`. Traducir acá hace
+ * que esos dos lean la etapa real —la de las fechas— sin cambiarles la forma.
+ * Ahí dentro `PUBLICADA` se lee «publicada y todavía no empezó».
+ */
+const ESTADO_POR_ETAPA: Record<EtapaEdicion, EstadoEdicion> = {
+  PROXIMA: "PUBLICADA",
+  EN_CURSO: "EN_CURSO",
+  FINALIZADA: "FINALIZADA",
+};
 
 /**
  * Ferias activas con su próxima edición vigente.
@@ -33,13 +93,14 @@ export function edicionesVigentes(): Prisma.EdicionFeriaWhereInput {
 export async function feriasConProximaEdicion(
   filtros?: { categoria?: Prisma.EnumCategoriaFeriaFilter; soloConEdiciones?: boolean },
 ) {
+  const hoy = hoyEnZona();
+  const vigentes = edicionesVigentes(hoy);
+
   const ferias = await prisma.feria.findMany({
     where: {
       activa: true,
       ...(filtros?.categoria ? { categoria: filtros.categoria } : {}),
-      ...(filtros?.soloConEdiciones
-        ? { ediciones: { some: edicionesVigentes() } }
-        : {}),
+      ...(filtros?.soloConEdiciones ? { ediciones: { some: vigentes } } : {}),
     },
     select: {
       id: true,
@@ -50,14 +111,13 @@ export async function feriasConProximaEdicion(
       direccion: true,
       imagen: true,
       ediciones: {
-        where: edicionesVigentes(),
+        where: vigentes,
         orderBy: { fechaInicio: "asc" },
         take: 1,
         select: {
           id: true,
           fechaInicio: true,
           fechaFin: true,
-          estado: true,
           _count: { select: { stands: { where: { vendedorId: { not: null } } } } },
         },
       },
@@ -79,7 +139,11 @@ export async function feriasConProximaEdicion(
         ? {
             fechaInicio: edicion.fechaInicio,
             fechaFin: edicion.fechaFin,
-            estado: edicion.estado,
+            // Ya no es la columna: es la etapa de las fechas, traducida al enum
+            // para no cambiarle la forma a quien consume este resumen. El
+            // `where` descarta las terminadas, así que sólo puede dar
+            // «en curso» o «todavía no empezó».
+            estado: ESTADO_POR_ETAPA[etapaDeEdicion(edicion, hoy)],
             standsOcupados: edicion._count.stands,
           }
         : null,
@@ -90,6 +154,10 @@ export async function feriasConProximaEdicion(
 /**
  * Ordena las ferias dejando primero las que tienen una edición en curso,
  * después las que tienen fecha próxima y al final las que no tienen ninguna.
+ *
+ * El `estado` que mira acá es el del resumen de `feriasConProximaEdicion`, que
+ * ya viene derivado de las fechas: una feria sube al principio porque está
+ * pasando hoy, no porque alguien se acordó de marcarla.
  */
 export function ordenarPorRelevancia<
   T extends {

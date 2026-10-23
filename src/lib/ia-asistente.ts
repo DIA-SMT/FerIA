@@ -1,5 +1,5 @@
 import { obtenerClienteIA } from "@/lib/ai";
-import { edicionesVigentes } from "@/lib/consultas";
+import { edicionesVigentes, etapaDeEdicion } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import { CATEGORIAS_FERIA, RUBROS } from "@/lib/labels";
@@ -80,6 +80,12 @@ function recortar(texto: string | null, tope: number): string {
  * de cachearlo bien.
  */
 export async function contextoDelSitio(): Promise<string> {
+  // Un solo «hoy» para todo el prompt: el que filtra las ediciones, el que
+  // decide cuál está en curso y el que se le dice al modelo al principio. Si
+  // cada uno lo calculara por su cuenta, una consulta a la medianoche de
+  // Tucumán podría armar un contexto que se contradice a sí mismo.
+  const hoy = hoyEnZona();
+
   const [ferias, vendedores] = await Promise.all([
     prisma.feria.findMany({
       where: { activa: true },
@@ -89,14 +95,13 @@ export async function contextoDelSitio(): Promise<string> {
         categoria: true,
         direccion: true,
         ediciones: {
-          where: edicionesVigentes(),
+          where: edicionesVigentes(hoy),
           orderBy: { fechaInicio: "asc" },
           select: {
             nombre: true,
             fechaInicio: true,
             fechaFin: true,
             horario: true,
-            estado: true,
           },
         },
       },
@@ -115,7 +120,7 @@ export async function contextoDelSitio(): Promise<string> {
           select: { nombre: true, descripcion: true },
         },
         stands: {
-          where: { edicion: edicionesVigentes() },
+          where: { edicion: edicionesVigentes(hoy) },
           select: { edicion: { select: { feria: { select: { nombre: true } } } } },
         },
       },
@@ -131,7 +136,12 @@ export async function contextoDelSitio(): Promise<string> {
             .map(
               (edicion) =>
                 `  · ${formatearRangoFechas(edicion.fechaInicio, edicion.fechaFin)}` +
-                `${edicion.estado === "EN_CURSO" ? " [EN CURSO AHORA]" : ""}` +
+                // «En curso» sale de las fechas y no del enum: el enum es la
+                // decisión de publicar y no lo mueve ningún proceso. Con el
+                // flag, el asistente podía anunciar «EN CURSO AHORA» una feria
+                // que recién empieza la semana que viene —y mandar a alguien a
+                // una plaza vacía— o no decir nada de la que está puesta hoy.
+                `${etapaDeEdicion(edicion, hoy) === "EN_CURSO" ? " [EN CURSO AHORA]" : ""}` +
                 ` — ${edicion.horario}`,
             )
             .join("\n");
@@ -166,7 +176,7 @@ export async function contextoDelSitio(): Promise<string> {
     );
   });
 
-  return `Hoy es ${formatearFechaLarga(hoyEnZona())}.
+  return `Hoy es ${formatearFechaLarga(hoy)}.
 
 FERIAS (las fechas y direcciones válidas son ÚNICAMENTE estas):
 ${bloquesFeria.join("\n")}

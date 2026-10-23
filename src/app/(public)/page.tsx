@@ -25,11 +25,10 @@ export const metadata = {
 };
 
 export default async function PaginaInicio() {
-  const [ferias, stands, totalFeriantes, totalFerias] = await Promise.all([
+  const [ferias, stands, totalFeriantes] = await Promise.all([
     feriasConProximaEdicion({ soloConEdiciones: true }),
     vendedoresAprobados({ limite: 8 }),
     prisma.vendedor.count({ where: { estado: "APROBADO" } }),
-    prisma.feria.count({ where: { activa: true } }),
   ]);
 
   const feriasDestacadas = ordenarPorRelevancia(ferias).slice(0, 6);
@@ -161,16 +160,29 @@ export default async function PaginaInicio() {
               </BotonLink>
             </div>
 
+            {/*
+              El número de ferias sale de la MISMA lista que la grilla de más
+              abajo, no de un `count` aparte de las ferias con el flag `activa`.
+              Con el `count`, la home se contradecía sola: verificado en
+              producción, el mismo HTML decía «Ferias activas: 5» arriba y «Por
+              ahora no hay ferias programadas» abajo, porque `activa` es un flag
+              de la feria y la grilla pide ediciones vigentes. Eran dos
+              preguntas distintas con la misma etiqueta.
+              Cambiar sólo el texto no alcanzaba: mientras fueran dos consultas,
+              podían volver a discrepar. Con una sola lista, el 0 y el cartel de
+              vacío aparecen juntos o no aparece ninguno; por eso la etiqueta
+              usa las mismas palabras que ese cartel.
+            */}
             <dl
               className="animar-aparecer mt-12 flex gap-10 border-t border-white/15 pt-6"
               style={{ animationDelay: "460ms" }}
             >
               <div>
                 <dt className="text-[11px] font-medium tracking-widest text-celeste-200 uppercase">
-                  Ferias activas
+                  Ferias programadas
                 </dt>
                 <dd className="mt-1.5 text-3xl font-bold text-white tabular-nums">
-                  {formatearNumero(totalFerias)}
+                  {formatearNumero(ferias.length)}
                 </dd>
               </div>
               {/* Separador fino, en lugar de dejar los dos números sueltos. */}

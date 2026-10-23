@@ -17,15 +17,35 @@ import {
   IconoUsuarios,
 } from "@/components/ui/iconos";
 import { ImagenPortada } from "@/components/ui/imagen";
-import { EDICIONES_PUBLICAS } from "@/lib/consultas";
+import {
+  EDICIONES_PUBLICAS,
+  etapaDeEdicion,
+  type EtapaEdicion,
+} from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearRangoFechas, hoyEnZona, truncar } from "@/lib/format";
 import { linkGoogleMaps, linkGoogleMapsPorDireccion } from "@/lib/geo";
-import {
-  CATEGORIAS_FERIA,
-  ESTADOS_EDICION,
-  TONO_ESTADO_EDICION,
-} from "@/lib/labels";
+import { CATEGORIAS_FERIA, type TonoBadge } from "@/lib/labels";
+
+/**
+ * Etiquetas de la etapa derivada.
+ *
+ * No se reusan `ESTADOS_EDICION` ni `TONO_ESTADO_EDICION`: ésos nombran el enum
+ * de la base, que acá sólo decide si la edición se publica. Al vecino
+ * «Publicada» no le dice nada —si la está viendo, está publicada—; lo que le
+ * sirve saber es si es la que viene o la que está pasando ahora.
+ */
+const ETIQUETA_ETAPA: Record<EtapaEdicion, string> = {
+  PROXIMA: "Próxima",
+  EN_CURSO: "En curso",
+  FINALIZADA: "Finalizada",
+};
+
+const TONO_ETAPA: Record<EtapaEdicion, TonoBadge> = {
+  PROXIMA: "azul",
+  EN_CURSO: "verde",
+  FINALIZADA: "neutro",
+};
 
 async function obtenerFeria(slug: string) {
   return prisma.feria.findFirst({
@@ -92,8 +112,13 @@ export default async function PaginaFeria({
 
   if (!feria) notFound();
 
+  // Un solo `hoy` para toda la página: el mismo que decide qué ediciones siguen
+  // en pie y el que después calcula la etiqueta de cada una.
   const hoy = hoyEnZona();
-  const vigentes = feria.ediciones.filter((edicion) => edicion.fechaFin >= hoy);
+  const vigentes = feria.ediciones.filter(
+    (edicion) => etapaDeEdicion(edicion, hoy) !== "FINALIZADA",
+  );
+  const proxima = vigentes[0];
   const mapa =
     linkGoogleMaps(feria.latitud, feria.longitud) ??
     linkGoogleMapsPorDireccion(feria.direccion);
@@ -180,6 +205,7 @@ export default async function PaginaFeria({
                     const ocupados = edicion.stands.filter(
                       (stand) => stand.vendedorId !== null,
                     ).length;
+                    const etapa = etapaDeEdicion(edicion, hoy);
 
                     return (
                       <li
@@ -201,10 +227,10 @@ export default async function PaginaFeria({
                             </p>
                           </div>
                           <Badge
-                            tono={TONO_ESTADO_EDICION[edicion.estado]}
-                            conPunto={edicion.estado === "EN_CURSO"}
+                            tono={TONO_ETAPA[etapa]}
+                            conPunto={etapa === "EN_CURSO"}
                           >
-                            {ESTADOS_EDICION[edicion.estado]}
+                            {ETIQUETA_ETAPA[etapa]}
                           </Badge>
                         </div>
 
@@ -299,19 +325,21 @@ export default async function PaginaFeria({
                 <IconoEnlaceExterno className="size-4" />
               </BotonLink>
 
-              {vigentes[0] && (
+              {proxima && (
                 <div className="border-t border-slate-100 pt-4">
                   <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                     <IconoCalendario className="size-4 text-municipal-500" />
-                    Próxima fecha
+                    {/* Si la primera edición de la lista arranca hoy o antes, no
+                        es «la próxima»: es la que el vecino puede ir a ver hoy
+                        mismo, y llamarla próxima lo manda a esperar. */}
+                    {etapaDeEdicion(proxima, hoy) === "EN_CURSO"
+                      ? "Está pasando ahora"
+                      : "Próxima fecha"}
                   </h2>
                   <p className="mt-2 text-sm font-medium text-slate-900">
-                    {formatearRangoFechas(
-                      vigentes[0].fechaInicio,
-                      vigentes[0].fechaFin,
-                    )}
+                    {formatearRangoFechas(proxima.fechaInicio, proxima.fechaFin)}
                   </p>
-                  <p className="text-sm text-slate-600">{vigentes[0].horario}</p>
+                  <p className="text-sm text-slate-600">{proxima.horario}</p>
                 </div>
               )}
 
