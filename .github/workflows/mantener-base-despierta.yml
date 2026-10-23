@@ -10,6 +10,14 @@
 # cuente como actividad. Una consulta al Postgres cuenta seguro, y de paso
 # comprueba que la base tenga datos.
 #
+# Los chequeos del sitio van contra `/api/salud`, no contra el HTML. Antes se
+# buscaba el literal «Ferias activas» en la portada, pero ese texto es la
+# etiqueta fija del contador del hero: aparece igual con el sitio vacío, así
+# que el monitor daba verde con «Por ahora no hay ferias programadas», y
+# cualquiera que reescribiera la etiqueta lo rompía sin enterarse. El endpoint
+# devuelve números y un estado, y responde 503 por su cuenta cuando no hay
+# ninguna edición vigente o cuando la base no contesta.
+#
 # ⚠️ DOS COSAS QUE HAY QUE SABER:
 #
 # 1. Los workflows programados corren SÓLO desde la rama por defecto. Este
@@ -37,10 +45,18 @@ concurrency:
   group: mantener-base-despierta
   cancel-in-progress: false
 
+env:
+  # La URL de producción, en un solo lugar: si mañana el sitio pasa a un
+  # dominio municipal, se cambia acá y no en cada `curl`.
+  SITIO: https://fer-ia.vercel.app
+
 jobs:
   despertar:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 10 y no 5: el job instala postgresql-client en frio (~60 s) y ahora hace
+    # seis peticiones HTTP de hasta 45 s cada una. Con 5 el peor caso realista
+    # se pasaba, y un timeout del runner se lee igual que un sitio caido.
+    timeout-minutes: 10
 
     steps:
       - name: Consultar la base
@@ -86,23 +102,82 @@ jobs:
             exit 1
           fi
 
-      - name: Revisar que el sitio sirva contenido, no sólo el cascarón
+      - name: Revisar que el sitio tenga algo para mostrar
         run: |
           set -euo pipefail
 
           # El parámetro con la fecha evita que Vercel devuelva una respuesta
           # cacheada: hace falta que la petición llegue a renderizar de nuevo.
-          url="https://fer-ia.vercel.app/?keepalive=$(date +%s)"
-          html=$(curl -sS --fail --max-time 45 "${url}")
+          url="${SITIO}/api/salud?keepalive=$(date +%s)"
 
-          # Un 200 no alcanza como señal: con la base caída, el sitio devuelve
-          # 200 igual, con el layout y «Cargando contenido…» y nada más. Este
-          # texto vive dentro del contenido que depende de los datos, así que
-          # su ausencia es exactamente el síntoma que hubo que diagnosticar a
-          # mano el 8/9.
-          if ! printf '%s' "${html}" | grep -q "Ferias activas"; then
-            echo "::error::El sitio responde pero no renderiza el contenido."
+          # Sin `--fail`: el 503 del endpoint es información, no un error de
+          # transporte, y queremos leer el cuerpo para saber cuál de los dos
+          # casos es. El código viaja pegado al final con `-w`.
+          if ! respuesta=$(curl -sS --max-time 45 -w $'\n%{http_code}' "${url}"); then
+            echo "::error::No se pudo consultar ${SITIO}/api/salud."
             exit 1
           fi
 
-          echo "El sitio sirve el contenido completo."
+          codigo=$(printf '%s' "${respuesta}" | tail -n1)
+          cuerpo=$(printf '%s' "${respuesta}" | sed '$d')
+          echo "HTTP ${codigo} — ${cuerpo}"
+
+          if [ "${codigo}" != "200" ]; then
+            echo "::error::/api/salud respondió ${codigo}: el sitio está sin ediciones vigentes o sin base."
+            exit 1
+          fi
+
+          # Se comprueba también el JSON porque un 200 no alcanza como señal:
+          # una página de error de la plataforma, o un redirect a un login,
+          # también devuelven 200 con otro cuerpo. Y `edicionesVigentes` es el
+          # dato que el chequeo viejo —un grep de la etiqueta del hero— no
+          # llegaba a mirar nunca.
+          if ! printf '%s' "${cuerpo}" |
+            jq -e '.estado == "ok" and .edicionesVigentes > 0' >/dev/null; then
+            echo "::error::/api/salud devolvió 200 pero el contenido no es el esperado."
+            exit 1
+          fi
+
+          echo "El sitio tiene ferias y ediciones vigentes para mostrar."
+
+      - name: Revisar los códigos de respuesta de las páginas
+        run: |
+          set -euo pipefail
+
+          sello=$(date +%s)
+          fallo=0
+
+          comprobar() {
+            ruta="$1"
+            esperado="$2"
+
+            if ! codigo=$(curl -sS -o /dev/null --max-time 45 \
+              -w '%{http_code}' "${SITIO}${ruta}?keepalive=${sello}"); then
+              echo "::error::No se pudo consultar ${ruta}."
+              fallo=1
+              return
+            fi
+
+            if [ "${codigo}" = "${esperado}" ]; then
+              echo "OK  ${ruta} → ${codigo}"
+            else
+              echo "::error::${ruta} devolvió ${codigo} y se esperaba ${esperado}."
+              fallo=1
+            fi
+          }
+
+          comprobar "/" 200
+          comprobar "/ferias" 200
+          comprobar "/stands" 200
+
+          # Un slug inexistente tiene que dar 404 de verdad, no 200 con la
+          # pantalla de «no encontramos esta página»: hasta el 23/10 respondía
+          # 200 porque el `loading.tsx` de `(public)` empezaba a streamear la
+          # respuesta antes de que corriera `notFound()`, y una vez enviado el
+          # status ya no se puede cambiar. Google indexa esas URLs muertas como
+          # páginas válidas, así que el chequeo queda acá para que no vuelva a
+          # pasar sin que nadie lo note.
+          comprobar "/stands/no-existe" 404
+          comprobar "/ferias/no-existe" 404
+
+          exit "${fallo}"

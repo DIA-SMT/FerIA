@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
+import { EsqueletoGrilla } from "@/components/public/esqueleto-grilla";
 import { FiltrosDirectorio } from "@/components/public/filtros-directorio";
 import { TarjetaStand } from "@/components/public/tarjeta-stand";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
@@ -17,7 +19,24 @@ export const metadata: Metadata = {
 
 const RUBROS_VALIDOS = new Set(Object.keys(RUBROS));
 
-export default async function PaginaStands({
+export default function PaginaStands({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; rubro?: string; feria?: string }>;
+}) {
+  // El esqueleto de carga va acá y no en un `loading.tsx` del grupo: colgado
+  // del grupo envolvía también las fichas de feria y de stand, y ahí el límite
+  // de streaming se comía el código 404 — ver el comentario largo en
+  // src/components/public/esqueleto-grilla.tsx. Esta pantalla nunca llama a
+  // `notFound()`, así que acá el límite no hace daño.
+  return (
+    <Suspense fallback={<EsqueletoGrilla />}>
+      <ContenidoStands searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function ContenidoStands({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; rubro?: string; feria?: string }>;

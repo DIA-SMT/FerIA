@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 
+import { EsqueletoGrilla } from "@/components/public/esqueleto-grilla";
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
 import { Badge } from "@/components/ui/badge";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
@@ -19,7 +21,24 @@ export const metadata: Metadata = {
 
 const CATEGORIAS_VALIDAS = new Set(Object.keys(CATEGORIAS_FERIA));
 
-export default async function PaginaFerias({
+export default function PaginaFerias({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
+  // El esqueleto de carga va acá y no en un `loading.tsx` del grupo: colgado
+  // del grupo envolvía también las fichas de feria y de stand, y ahí el límite
+  // de streaming se comía el código 404 — ver el comentario largo en
+  // src/components/public/esqueleto-grilla.tsx. Esta pantalla nunca llama a
+  // `notFound()`, así que acá el límite no hace daño.
+  return (
+    <Suspense fallback={<EsqueletoGrilla />}>
+      <ContenidoFerias searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function ContenidoFerias({
   searchParams,
 }: {
   searchParams: Promise<{ categoria?: string }>;

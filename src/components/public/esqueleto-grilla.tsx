@@ -1,5 +1,18 @@
-/** Esqueleto de carga del market, con la misma grilla que las páginas reales. */
-export default function CargandoPublico() {
+/**
+ * Esqueleto de carga de los listados del market, con la misma grilla que las
+ * páginas reales.
+ *
+ * Vivía en `(public)/loading.tsx`, o sea colgado de TODAS las páginas públicas.
+ * Eso envolvía también las fichas de feria y de stand en un límite de
+ * streaming, y hacía que `/stands/no-existe` respondiera HTTP 200 con la
+ * pantalla de «no encontramos esta página»: el status ya había salido cuando
+ * corría `notFound()`. Google indexaba URLs muertas como páginas válidas.
+ *
+ * Ahora es un componente común, y lo usan con `<Suspense>` las dos páginas de
+ * listado —que nunca llaman a `notFound()`—. Las fichas quedan sin límite por
+ * encima, así que su 404 sale con su código.
+ */
+export function EsqueletoGrilla() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <span className="sr-only" role="status">

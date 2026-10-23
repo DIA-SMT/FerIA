@@ -99,6 +99,28 @@ export default async function PaginaStand({
   const { slug } = await params;
   const vendedor = await obtenerStand(slug);
 
+  /**
+   * El 404 se decide acá, y tiene que decidirse ANTES de que salga el primer
+   * byte de la respuesta: el status viaja en la cabecera, así que una vez que
+   * Next empezó a streamear, `notFound()` alcanza a cambiar el cuerpo pero no
+   * el código.
+   *
+   * Hasta el 23/10 había un `loading.tsx` en `(public)` que envolvía todas las
+   * páginas del market en un Suspense. El cascarón salía apenas este
+   * componente se quedaba esperando la consulta, y entonces
+   * /stands/no-existe respondía **HTTP 200** con la pantalla de «no
+   * encontramos esta página». Para un buscador eso no es una URL muerta: es
+   * una página válida, y la indexa. Por eso se borró ese `loading.tsx`: sin
+   * límite de streaming por encima, la página se renderiza entera antes de
+   * responder y el 404 sale con su código.
+   *
+   * Si alguien quiere devolver el esqueleto de carga, va con un `<Suspense>`
+   * propio dentro de las páginas de listado (/ferias y /stands), que es donde
+   * tenía sentido —el esqueleto era una grilla de tarjetas, que no se parece
+   * en nada a esta pantalla—. Un `loading.tsx` por encima de esta ruta vuelve
+   * a convertir el 404 en 200 sin romper nada visible, que es lo que lo hace
+   * difícil de notar.
+   */
   if (!vendedor) notFound();
 
   const hoy = hoyEnZona();
