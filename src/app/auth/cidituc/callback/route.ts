@@ -75,8 +75,10 @@ export async function GET(request: Request): Promise<NextResponse> {
   // Sin ficha la persona entra igual, pero a completar su alta: no es un
   // error, es alguien que todavía no se postuló a ninguna feria.
   if (!vinculo.tieneFicha) {
-    const destino = new URL("/registro", request.url);
-    destino.searchParams.set("origen", "cidituc");
+    // Sin ficha va a la encuesta, que es el alta de feriante desde que CiDiTuc
+    // es la puerta: el registro con correo y contraseña quedó para el personal
+    // municipal.
+    const destino = new URL("/encuesta", request.url);
     const respuesta = NextResponse.redirect(destino);
     respuesta.cookies.delete(borradoCookie(COOKIE_ESTADO));
     return respuesta;

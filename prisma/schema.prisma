@@ -100,6 +100,13 @@ enum ModoEntrega {
   ACUERDA_CON_FERIANTE
 }
 
+/// Estado de la postulación de un feriante a una feria.
+enum EstadoPostulacion {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+}
+
 /// Día de la semana en que abre una edición.
 ///
 /// Un enum y no un número: `2` no se lee, y el orden del enum es el orden en
@@ -234,10 +241,11 @@ model Vendedor {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  productos Producto[]
-  stands    Stand[]
-  pagos     PagoCanon[]
-  pedidos   Pedido[]
+  productos     Producto[]
+  stands        Stand[]
+  pagos         PagoCanon[]
+  pedidos       Pedido[]
+  postulaciones Postulacion[]
 
   // Idempotencia de la importación. Postgres admite varios NULL en un índice
   // único, así que las fichas propias (idExterno null) no chocan entre sí.
@@ -270,7 +278,8 @@ model Feria {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  ediciones EdicionFeria[]
+  ediciones     EdicionFeria[]
+  postulaciones Postulacion[]
 
   @@index([categoria])
   @@index([activa])
@@ -529,4 +538,46 @@ model ItemPedido {
   @@index([pedidoId])
   @@index([productoId])
   @@map("items_pedido")
+}
+
+/// Postulación de un feriante a una feria.
+///
+/// Es la pieza que faltaba en el circuito: hasta ahora un feriante se
+/// registraba una sola vez, la Dirección lo aprobaba, y después alguien del
+/// panel le asignaba un stand a mano sin que el feriante hubiera pedido nada.
+/// Funcionaba con once feriantes. Con el padrón de Feria Digital adentro no.
+///
+/// Va contra la FERIA y no contra la edición a propósito. Lo que se decide acá
+/// es «esta persona es feriante de la Feria de Artesanos», que es lo que el
+/// feriante ve cuando entra. En qué edición y en qué número de puesto se
+/// resuelve después, por `Stand`, que es donde está la capacidad y las fechas:
+/// aceptar una postulación no obliga a tener resuelto el mapa de la edición.
+model Postulacion {
+  id String @id @default(cuid())
+
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  feriaId String
+  feria   Feria  @relation(fields: [feriaId], references: [id], onDelete: Cascade)
+
+  estado EstadoPostulacion @default(PENDIENTE)
+
+  /// Lo que el feriante quiera contar: qué lleva, desde cuándo produce, si ya
+  /// participó. Es el cuerpo de la encuesta y lo lee quien decide.
+  mensaje String?
+
+  /// Por qué se rechazó, si se rechazó. Lo ve el feriante.
+  motivoRechazo String?
+  revisadoEn    DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Una sola postulación por feriante y por feria: si lo rechazaron y vuelve a
+  // postularse, se reabre la misma en vez de acumular filas que cuentan la
+  // misma historia dos veces.
+  @@unique([vendedorId, feriaId])
+  @@index([estado])
+  @@map("postulaciones")
 }

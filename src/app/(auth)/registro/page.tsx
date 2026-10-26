@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { FormularioRegistro } from "@/components/auth/formulario-registro";
 import { Alerta } from "@/components/ui/alerta";
 import { Tarjeta, TarjetaCuerpo } from "@/components/ui/tarjeta";
+import { hayIngresoCidituc } from "@/lib/cidituc";
 
 export const metadata: Metadata = {
   title: "Registro de feriantes",
@@ -16,6 +18,15 @@ export default async function PaginaRegistro({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  /*
+    Con CiDiTuc prendido esta pantalla deja de existir para el feriante: el alta
+    pasó a ser «entrá con tu Ciudadano Digital y completá la encuesta», y un
+    registro paralelo con correo y contraseña crearía cuentas que después no
+    coinciden con ninguna ficha del padrón. Se redirige en vez de borrarse
+    porque hay enlaces viejos dando vueltas, en correos y en el buscador.
+  */
+  if (hayIngresoCidituc()) redirect("/ingresar");
+
   const { error } = await searchParams;
 
   return (

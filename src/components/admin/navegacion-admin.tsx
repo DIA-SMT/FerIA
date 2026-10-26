@@ -10,6 +10,7 @@ import {
   IconoBandeja,
   IconoCerrar,
   IconoDinero,
+  IconoDocumento,
   IconoGrafico,
   IconoMenu,
   IconoTienda,
@@ -28,6 +29,7 @@ const ICONOS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   panel: IconoGrafico,
   ferias: IconoTienda,
   solicitudes: IconoBandeja,
+  postulaciones: IconoDocumento,
   feriantes: IconoUsuarios,
   canon: IconoDinero,
 };

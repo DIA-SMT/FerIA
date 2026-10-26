@@ -1,4 +1,5 @@
 import { obtenerClienteIA } from "@/lib/ai";
+import { hayIngresoCidituc } from "@/lib/cidituc";
 import { edicionesVigentes, etapaDeEdicion } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
@@ -79,6 +80,33 @@ function recortar(texto: string | null, tope: number): string {
  * con este volumen (decenas de productos) el costo de armarlo es menor que el
  * de cachearlo bien.
  */
+/**
+ * Cómo se da de alta un feriante, según qué puerta esté abierta.
+ *
+ * Migue no puede explicar el circuito viejo cuando el nuevo está prendido: lo
+ * mandaría a un formulario que redirige, y peor, le haría creer que tiene que
+ * inventarse una contraseña cuando lo que necesita es su Ciudadano Digital.
+ */
+function altaDeFeriante(): string {
+  if (hayIngresoCidituc()) {
+    return (
+      "Quien quiera vender en las ferias entra con su Ciudadano Digital (CiDiTuc) desde " +
+      "[la página de ingreso](/ingresar) y completa una encuesta con los datos de su " +
+      "emprendimiento y a qué feria quiere sumarse. No hace falta registrarse aparte ni " +
+      "crear una contraseña. La postulación queda pendiente hasta que la Dirección de " +
+      "Ferias y Mercados la revisa; al aceptarse, la persona gestiona su vidriera, su " +
+      "catálogo y su canon desde su panel."
+    );
+  }
+
+  return (
+    "Quien quiera vender en las ferias se registra en [el formulario de registro](/registro). " +
+    "La solicitud queda pendiente hasta que el municipio la revisa; al aprobarse, la persona " +
+    "gestiona su vidriera, su catálogo y su canon desde su panel, entrando por " +
+    "[la página de ingreso](/ingresar)."
+  );
+}
+
 export async function contextoDelSitio(): Promise<string> {
   // Un solo «hoy» para todo el prompt: el que filtra las ediciones, el que
   // decide cuál está en curso y el que se le dice al modelo al principio. Si
@@ -188,7 +216,7 @@ CÓMO FUNCIONA LA PLATAFORMA:
 - Es el sitio oficial de las ferias itinerantes de la Municipalidad de San Miguel de Tucumán. Difunde ferias y catálogos: no vende, no cobra y no hace envíos.
 - Comprar: la persona interesada le escribe al feriante desde el botón de contacto de su página de stand. El precio y la entrega se acuerdan entre ellos; el municipio no interviene.
 - Las fotos de los productos pueden estar mejoradas con inteligencia artificial: son ilustrativas.
-- Quien quiera vender en las ferias se registra en [el formulario de registro](/registro). La solicitud queda pendiente hasta que el municipio la revisa; al aprobarse, la persona gestiona su vidriera, su catálogo y su canon desde su panel, entrando por [la página de ingreso](/ingresar).
+- ${altaDeFeriante()}
 - El canon (lo que se paga por participar de una edición) lo registra la Dirección de Ferias y Mercados; cada feriante ve el suyo en su panel. Las consultas sobre canon o trámites se hacen ante esa Dirección.
 - Los términos y condiciones están al pie de todas las páginas del sitio.`;
 }

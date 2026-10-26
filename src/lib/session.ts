@@ -104,9 +104,10 @@ export async function obtenerVendedorActual(): Promise<{
   });
 
   if (!vendedor) {
-    // Un usuario con rol VENDEDOR siempre debería tener perfil; si no lo tiene,
-    // el registro quedó a medias y hay que rehacerlo.
-    redirect("/registro?error=perfil-incompleto");
+    // Dejó de ser un caso raro y pasó a ser el camino normal: quien entra por
+    // CiDiTuc por primera vez tiene cuenta y no tiene ficha, así que lo que
+    // falta no es rehacer un registro a medias sino completar la encuesta.
+    redirect("/encuesta");
   }
 
   return { sesion, vendedor };

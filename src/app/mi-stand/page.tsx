@@ -15,23 +15,60 @@ import {
   TarjetaCuerpo,
   TarjetaEncabezado,
 } from "@/components/ui/tarjeta";
+import { MisFerias } from "@/components/vendedor/mis-ferias";
 import { EDICIONES_PUBLICAS } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearFechaHora, formatearRangoFechas, hoyEnZona } from "@/lib/format";
+import { resumenHorario } from "@/lib/horarios";
 import { RUBROS } from "@/lib/labels";
 import { obtenerVendedorActual } from "@/lib/session";
 
 export const metadata = { title: "Resumen" };
 
+/**
+ * Las ferias del feriante y las que le quedan por pedir.
+ *
+ * Va en una función porque las tres ramas de la pantalla —pendiente, rechazada
+ * y aprobada— muestran lo mismo: a qué ferias pertenece. Es justamente el dato
+ * que antes no existía en ningún lado.
+ */
+async function ferias(vendedorId: string) {
+  const postulaciones = await prisma.postulacion.findMany({
+    where: { vendedorId },
+    orderBy: { creadoEn: "desc" },
+    select: {
+      id: true,
+      estado: true,
+      motivoRechazo: true,
+      creadoEn: true,
+      revisadoEn: true,
+      feria: { select: { nombre: true, slug: true } },
+    },
+  });
+
+  // Sólo las que todavía no pidió: volver a postularse a la misma feria lo
+  // resuelve la acción reabriendo la postulación, pero ofrecerlo en la lista
+  // haría pensar que son dos pedidos distintos.
+  const yaPedidas = postulaciones.map((postulacion) => postulacion.feria.slug);
+  const disponibles = await prisma.feria.findMany({
+    where: { activa: true, slug: { notIn: yaPedidas } },
+    orderBy: { nombre: "asc" },
+    select: { id: true, nombre: true },
+  });
+
+  return { postulaciones, disponibles };
+}
+
 export default async function PaginaMiStand() {
   const { vendedor } = await obtenerVendedorActual();
+  const { postulaciones, disponibles } = await ferias(vendedor.id);
 
   // -------------------------- Pendiente de aprobación ------------------------
   if (vendedor.estado === "PENDIENTE") {
     return (
       <>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Tu solicitud está en revisión
+          Tu postulación está en revisión
         </h1>
 
         <Alerta
@@ -39,11 +76,18 @@ export default async function PaginaMiStand() {
           titulo="Pendiente de aprobación"
           className="mt-4"
         >
-          La Dirección de Ferias y Mercados está revisando los datos de{" "}
-          <strong>{vendedor.emprendimiento}</strong>. Cuando la aprueben vas a
+          La Dirección de Ferias y Mercados está revisando la postulación de{" "}
+          <strong>{vendedor.emprendimiento}</strong>. Cuando la acepten vas a
           poder editar tu vidriera, cargar tu catálogo y ser asignado a un stand
           en las próximas ediciones.
         </Alerta>
+
+        <div className="mt-6">
+          <MisFerias
+            postulaciones={postulaciones}
+            feriasDisponibles={disponibles}
+          />
+        </div>
 
         <Tarjeta className="mt-6">
           <TarjetaEncabezado titulo="Datos que presentaste" />
@@ -135,6 +179,18 @@ export default async function PaginaMiStand() {
             </ol>
           </TarjetaCuerpo>
         </Tarjeta>
+
+        {/*
+          Postularse de nuevo sigue siendo posible desde acá: aceptar una
+          postulación vuelve a publicar la ficha, así que un rechazo no es una
+          puerta cerrada.
+        */}
+        <div className="mt-6">
+          <MisFerias
+            postulaciones={postulaciones}
+            feriasDisponibles={disponibles}
+          />
+        </div>
       </>
     );
   }
@@ -239,6 +295,14 @@ export default async function PaginaMiStand() {
         </Tarjeta>
       </div>
 
+      {/* ------------------------- Ferias de las que es parte ---------------- */}
+      <div className="mt-6">
+        <MisFerias
+          postulaciones={postulaciones}
+          feriasDisponibles={disponibles}
+        />
+      </div>
+
       {/* ---------------------------- Asignaciones --------------------------- */}
       <Tarjeta className="mt-6">
         <TarjetaEncabezado
@@ -259,39 +323,43 @@ export default async function PaginaMiStand() {
             />
           ) : (
             <ul className="divide-y divide-slate-100">
-              {asignaciones.map((stand) => (
-                <li
-                  key={stand.id}
-                  className="flex flex-wrap items-start justify-between gap-3 py-4 first:pt-0 last:pb-0"
-                >
-                  <div className="min-w-0">
-                    <Link
-                      href={`/ferias/${stand.edicion.feria.slug}`}
-                      className="font-semibold text-slate-900 transition-colors hover:text-municipal-700"
-                    >
-                      {stand.edicion.feria.nombre}
-                    </Link>
-                    {stand.edicion.nombre && (
-                      <p className="text-sm text-municipal-600">
-                        {stand.edicion.nombre}
+              {asignaciones.map((stand) => {
+                const horario = resumenHorario(stand.edicion);
+
+                return (
+                  <li
+                    key={stand.id}
+                    className="flex flex-wrap items-start justify-between gap-3 py-4 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/ferias/${stand.edicion.feria.slug}`}
+                        className="font-semibold text-slate-900 transition-colors hover:text-municipal-700"
+                      >
+                        {stand.edicion.feria.nombre}
+                      </Link>
+                      {stand.edicion.nombre && (
+                        <p className="text-sm text-municipal-600">
+                          {stand.edicion.nombre}
+                        </p>
+                      )}
+                      <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
+                        <IconoCalendario className="size-4 shrink-0 text-slate-400" />
+                        {formatearRangoFechas(
+                          stand.edicion.fechaInicio,
+                          stand.edicion.fechaFin,
+                        )}
+                        {horario ? ` · ${horario}` : ""}
                       </p>
-                    )}
-                    <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
-                      <IconoCalendario className="size-4 shrink-0 text-slate-400" />
-                      {formatearRangoFechas(
-                        stand.edicion.fechaInicio,
-                        stand.edicion.fechaFin,
-                      )}{" "}
-                      · {stand.edicion.horario}
-                    </p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-600">
-                      <IconoUbicacion className="size-4 shrink-0 text-slate-400" />
-                      {stand.edicion.feria.direccion}
-                    </p>
-                  </div>
-                  <Badge tono="amarillo">Stand {stand.numero}</Badge>
-                </li>
-              ))}
+                      <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-600">
+                        <IconoUbicacion className="size-4 shrink-0 text-slate-400" />
+                        {stand.edicion.feria.direccion}
+                      </p>
+                    </div>
+                    <Badge tono="amarillo">Stand {stand.numero}</Badge>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </TarjetaCuerpo>

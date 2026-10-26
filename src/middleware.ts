@@ -7,6 +7,7 @@ import { actualizarSesion } from "@/lib/supabase/middleware";
  *
  *   /admin/*     → sólo ADMIN
  *   /mi-stand/*  → sólo VENDEDOR
+ *   /encuesta    → cualquiera con sesión (todavía no tiene ficha de feriante)
  *   /ingresar, /registro → redirigen al panel si ya hay sesión
  *
  * El rol se lee de `app_metadata` del JWT, que sólo se puede escribir con la
@@ -22,6 +23,9 @@ export async function middleware(peticion: NextRequest) {
 
   const esRutaAdmin = nextUrl.pathname.startsWith("/admin");
   const esRutaVendedor = nextUrl.pathname.startsWith("/mi-stand");
+  // La encuesta es el paso entre el ingreso por CiDiTuc y tener ficha: pide
+  // sesión, pero no rol de feriante, porque la ficha todavía no existe.
+  const esEncuesta = nextUrl.pathname === "/encuesta";
   const esRutaDeAcceso =
     nextUrl.pathname === "/ingresar" || nextUrl.pathname === "/registro";
 
@@ -40,7 +44,7 @@ export async function middleware(peticion: NextRequest) {
     return redirigirA(rol === "ADMIN" ? "/admin" : "/mi-stand");
   }
 
-  if (esRutaAdmin || esRutaVendedor) {
+  if (esRutaAdmin || esRutaVendedor || esEncuesta) {
     if (!usuario) {
       const url = new URL("/ingresar", nextUrl);
       // Para volver a donde quería entrar después de iniciar sesión.
@@ -56,5 +60,11 @@ export async function middleware(peticion: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/mi-stand/:path*", "/ingresar", "/registro"],
+  matcher: [
+    "/admin/:path*",
+    "/mi-stand/:path*",
+    "/encuesta",
+    "/ingresar",
+    "/registro",
+  ],
 };

@@ -6,15 +6,22 @@ import { IconoEnlaceExterno } from "@/components/ui/iconos";
  * Es un enlace y no un botón de formulario: la ruta `/auth/cidituc/ingresar`
  * planta la cookie del `state` y redirige al Derivador.
  *
- * Va primero y con más peso visual que el formulario de correo y contraseña, a
- * propósito: para el feriante del padrón importado, CiDiTuc es la única puerta
- * que funciona —su ficha existe pero nunca tuvo contraseña acá—. El correo y
- * la contraseña quedan para quien se registró antes de todo esto.
+ * Para el feriante es la única puerta: su ficha viene del padrón importado de
+ * Feria Digital y nunca tuvo contraseña acá. El correo y la contraseña quedan
+ * para el personal municipal, en la pantalla del panel.
  *
  * Esto **no** aparece para el vecino que compra: el carrito y el pedido no
  * piden cuenta en ningún momento.
  */
-export function BotonCidituc() {
+export function BotonCidituc({
+  /**
+   * El separador «o» sólo tiene sentido si abajo viene otra forma de entrar.
+   * Solo en la pantalla, deja una raya suelta al final de la tarjeta.
+   */
+  conSeparador = true,
+}: {
+  conSeparador?: boolean;
+}) {
   return (
     <div>
       <a
@@ -29,11 +36,13 @@ export function BotonCidituc() {
         Con tu CUIL y la clave de Ciudadano Digital de San Miguel de Tucumán.
       </p>
 
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-slate-200" />
-        <span className="text-xs font-medium text-slate-400">o</span>
-        <span className="h-px flex-1 bg-slate-200" />
-      </div>
+      {conSeparador && (
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs font-medium text-slate-400">o</span>
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+      )}
     </div>
   );
 }

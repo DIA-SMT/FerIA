@@ -28,9 +28,13 @@ export default async function LayoutAdmin({
   // Doble barrera: el middleware ya filtró, pero las páginas no confían en él.
   const sesion = await requerirAdmin();
 
-  const pendientes = await prisma.vendedor.count({
-    where: { estado: "PENDIENTE" },
-  });
+  // Dos bandejas distintas: las solicitudes resuelven el alta de una ficha y
+  // las postulaciones, quién entra a qué feria. Los contadores van juntos en
+  // una sola ida a la base porque el layout corre en cada pantalla del panel.
+  const [pendientes, postulacionesPendientes] = await Promise.all([
+    prisma.vendedor.count({ where: { estado: "PENDIENTE" } }),
+    prisma.postulacion.count({ where: { estado: "PENDIENTE" } }),
+  ]);
 
   const entradas: EntradaMenu[] = [
     { href: "/admin", texto: "Estadísticas", icono: "panel" },
@@ -40,6 +44,12 @@ export default async function LayoutAdmin({
       texto: "Solicitudes",
       icono: "solicitudes",
       contador: pendientes,
+    },
+    {
+      href: "/admin/postulaciones",
+      texto: "Postulaciones",
+      icono: "postulaciones",
+      contador: postulacionesPendientes,
     },
     { href: "/admin/feriantes", texto: "Feriantes", icono: "feriantes" },
     { href: "/admin/canon", texto: "Canon y permisos", icono: "canon" },

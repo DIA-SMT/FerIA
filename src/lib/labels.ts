@@ -4,6 +4,7 @@ import type {
   EstadoEdicion,
   EstadoPago,
   EstadoPedido,
+  EstadoPostulacion,
   EstadoVendedor,
   MedioPago,
   ModoEntrega,
@@ -102,6 +103,18 @@ export const TONO_ESTADO_PEDIDO: Record<EstadoPedido, TonoBadge> = {
   CONFIRMADO: "azul",
   ENTREGADO: "verde",
   CANCELADO: "neutro",
+};
+
+export const ESTADOS_POSTULACION: Record<EstadoPostulacion, string> = {
+  PENDIENTE: "Esperando respuesta",
+  ACEPTADA: "Aceptada",
+  RECHAZADA: "Rechazada",
+};
+
+export const TONO_ESTADO_POSTULACION: Record<EstadoPostulacion, TonoBadge> = {
+  PENDIENTE: "amarillo",
+  ACEPTADA: "verde",
+  RECHAZADA: "rojo",
 };
 
 export const DIAS_SEMANA: Record<DiaSemana, string> = {
