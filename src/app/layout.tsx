@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Baloo_2, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
@@ -12,6 +12,28 @@ import "./globals.css";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--fuente-institucional",
+  display: "swap",
+});
+
+/**
+ * Tipografía de rótulo, sólo para el globo de Migue.
+ *
+ * Inter es excelente para leer y por eso es la institucional, pero en el globo
+ * de un personaje se lee como lo que es: texto de sistema metido en un dibujo.
+ * Baloo es redonda y gruesa, que es lo que hace que el nombre se lea como
+ * rótulo y no como contenido.
+ *
+ * Es deliberadamente de un solo uso. Si aparece en un título, en un botón o en
+ * una tarjeta, deja de ser la voz de Migue y pasa a ser decoración.
+ *
+ * `next/font` la descarga en tiempo de build y la sirve desde nuestro dominio:
+ * el navegador del vecino nunca le pide nada a Google, así que esto no suma
+ * un tercero a la política de privacidad.
+ */
+const baloo = Baloo_2({
+  subsets: ["latin"],
+  weight: ["600", "800"],
+  variable: "--fuente-globo",
   display: "swap",
 });
 
@@ -69,7 +91,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es-AR" className={inter.variable}>
+    <html lang="es-AR" className={`${inter.variable} ${baloo.variable}`}>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

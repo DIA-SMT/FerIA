@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -12,6 +13,7 @@ import {
 
 import { preguntarAlAsistente } from "@/actions/asistente";
 import { IconoCerrar, IconoEnviar } from "@/components/ui/iconos";
+import { useAsistente } from "@/components/public/estado-asistente";
 import type { TurnoAsistente } from "@/lib/ia-asistente";
 
 /**
@@ -77,7 +79,25 @@ function TextoConEnlaces({ texto }: { texto: string }) {
 }
 
 export function AsistenteBurbuja() {
-  const [abierto, setAbierto] = useState(false);
+  // El estado de apertura vive en el contexto y no acá porque el buscador de
+  // la portada también la abre. `useAsistente` puede devolver `null` sólo si
+  // alguien monta la burbuja fuera del proveedor; el layout público siempre la
+  // monta adentro, así que el respaldo es defensivo y no un caso real.
+  const asistente = useAsistente();
+  const [abiertoLocal, setAbiertoLocal] = useState(false);
+  const abierto = asistente?.abierto ?? abiertoLocal;
+  const setAbierto = useCallback(
+    (valor: boolean) => {
+      if (asistente) {
+        if (valor) asistente.abrir();
+        else asistente.cerrar();
+        return;
+      }
+      setAbiertoLocal(valor);
+    },
+    [asistente],
+  );
+
   const [mensajes, setMensajes] = useState<TurnoAsistente[]>([SALUDO]);
   const [borrador, setBorrador] = useState("");
   const [pendiente, iniciarTransicion] = useTransition();
@@ -103,33 +123,65 @@ export function AsistenteBurbuja() {
     }
     document.addEventListener("keydown", alTeclear);
     return () => document.removeEventListener("keydown", alTeclear);
-  }, [abierto]);
+  }, [abierto, setAbierto]);
+
+  /*
+    El historial que ve el modelo sale de una ref y no del estado.
+
+    Hace falta porque `preguntar` lo llaman dos lugares: el formulario del chat
+    —donde el estado del render alcanza— y un efecto, cuando la consulta viene
+    del buscador de la portada. Desde el efecto, `mensajes` sería el valor de un
+    render anterior.
+
+    El primer intento fue leerlo desde adentro del updater de `setMensajes`.
+    Parecía elegante y está prohibido: React corre el updater durante el render
+    y ahí no se puede llamar a `startTransition`. La consola tiraba «Cannot call
+    startTransition while rendering» y la pregunta no se mandaba nunca.
+  */
+  const mensajesRef = useRef<TurnoAsistente[]>([SALUDO]);
+  useEffect(() => {
+    mensajesRef.current = mensajes;
+  }, [mensajes]);
+
+  const preguntar = useCallback((pregunta: string) => {
+    // La conversación menos el saludo fijo, que el modelo no necesita ver.
+    const historial = mensajesRef.current.slice(1);
+
+    setMensajes((previos) => [...previos, { rol: "usuario", texto: pregunta }]);
+
+    iniciarTransicion(async () => {
+      const respuesta = await preguntarAlAsistente(historial, pregunta);
+      setMensajes((actuales) => [
+        ...actuales,
+        { rol: "asistente", texto: respuesta.texto },
+      ]);
+    });
+  }, []);
 
   function enviar() {
     const pregunta = borrador.trim();
     if (!pregunta || pendiente) return;
-
-    // El historial que ve el modelo es la conversación menos el saludo fijo.
-    const historial = mensajes.slice(1);
-
-    setMensajes((previos) => [...previos, { rol: "usuario", texto: pregunta }]);
     setBorrador("");
-
-    iniciarTransicion(async () => {
-      const respuesta = await preguntarAlAsistente(historial, pregunta);
-      setMensajes((previos) => [
-        ...previos,
-        { rol: "asistente", texto: respuesta.texto },
-      ]);
-    });
+    preguntar(pregunta);
   }
+
+  // Una consulta que vino del buscador de la portada. Se limpia ANTES de
+  // mandarla: si se limpiara después, el efecto volvería a correr con la misma
+  // consulta todavía puesta y la preguntaría dos veces, que acá además son dos
+  // llamadas pagas al modelo.
+  useEffect(() => {
+    const pregunta = asistente?.consultaPendiente;
+    if (!pregunta || pendiente) return;
+    asistente.limpiarConsulta();
+    preguntar(pregunta);
+  }, [asistente, pendiente, preguntar]);
 
   return (
     <>
       {/* z-50: por encima del encabezado (z-30) y del menú móvil (z-40). */}
       <button
         type="button"
-        onClick={() => setAbierto((estado) => !estado)}
+        onClick={() => setAbierto(!abierto)}
         aria-expanded={abierto}
         aria-label={
           abierto ? "Cerrar a Migue" : "Abrir a Migue, el asistente de ferias"

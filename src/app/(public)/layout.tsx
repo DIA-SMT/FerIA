@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ProveedorCarrito } from "@/components/carrito/estado-carrito";
 import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import { EncabezadoPublico } from "@/components/public/encabezado-publico";
+import { ProveedorAsistente } from "@/components/public/estado-asistente";
 import { PiePublico } from "@/components/public/pie-publico";
 import { hayIAConfigurada } from "@/lib/ai";
 import { hayPedidos } from "@/lib/marketplace";
@@ -36,7 +37,17 @@ export default function LayoutPublico({ children }: { children: ReactNode }) {
     </div>
   );
 
-  if (!hayPedidos()) return contenido;
+  // El proveedor del asistente envuelve TODO el layout y no sólo la burbuja:
+  // el buscador de la portada también lo consume, para mandarle la consulta
+  // directo. Sin IA configurada no se monta, y ahí `useAsistente()` devuelve
+  // `null` y el buscador vuelve a ser un formulario común.
+  const conAsistente = hayIAConfigurada() ? (
+    <ProveedorAsistente>{contenido}</ProveedorAsistente>
+  ) : (
+    contenido
+  );
 
-  return <ProveedorCarrito>{contenido}</ProveedorCarrito>;
+  if (!hayPedidos()) return conAsistente;
+
+  return <ProveedorCarrito>{conAsistente}</ProveedorCarrito>;
 }

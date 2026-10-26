@@ -1,11 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { BuscadorHero } from "@/components/public/buscador-hero";
 import {
-  IconoBuscar,
   IconoCalendario,
   IconoChevronDerecha,
-  IconoFlechaDerecha,
   IconoTienda,
   IconoUbicacion,
   IconoUsuarios,
@@ -184,7 +183,7 @@ export function HeroInicio() {
 
       <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:items-center lg:gap-8">
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-6">
             <p
               className="animar-aparecer text-xs font-semibold tracking-[0.2em] text-municipal-700 uppercase"
               style={{ animationDelay: "60ms" }}
@@ -216,49 +215,14 @@ export function HeroInicio() {
             </p>
 
             {/*
-              Un formulario común con `method` GET, no un componente de
-              cliente: el navegador arma solo `/stands?q=…`, que es una ruta que
-              ya existe. Así el buscador de la portada anda sin JavaScript.
-
-              El texto de ayuda invita a buscar por nombre de feria, y eso sólo
-              es cierto desde que `vendedoresAprobados` también mira el nombre
-              de la feria en la que participa cada stand. La frase se escribió
-              después de que la búsqueda la cumpliera, no antes.
+              El buscador va en su propio componente de cliente porque lo que
+              se escribe acá va directo a Migue: se abre la burbuja con la
+              pregunta ya enviada. Sigue siendo un formulario GET de verdad y
+              el JavaScript sólo intercepta el envío, así que sin JavaScript o
+              sin IA configurada busca en el directorio como siempre. Ver
+              src/components/public/buscador-hero.tsx.
             */}
-            <form
-              action="/stands"
-              className="animar-aparecer mt-8 max-w-2xl"
-              style={{ animationDelay: "360ms" }}
-              role="search"
-            >
-              <label htmlFor="q-inicio" className="sr-only">
-                Buscar una feria, un producto o un emprendimiento
-              </label>
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-lg shadow-slate-900/5 focus-within:border-municipal-400 focus-within:ring-2 focus-within:ring-municipal-500/20">
-                <IconoBuscar className="ml-2 size-5 shrink-0 text-slate-400" />
-                <input
-                  id="q-inicio"
-                  name="q"
-                  type="search"
-                  placeholder="¿Qué producto o feria estás buscando?"
-                  className="min-w-0 flex-1 bg-transparent text-base text-slate-900 placeholder:text-slate-500 focus:outline-none"
-                />
-                {/* Redondo y sin texto, como la referencia. El nombre va en
-                    `aria-label`: sin eso, un lector de pantalla anuncia
-                    «botón» y no hay forma de saber qué hace. */}
-                <button
-                  type="submit"
-                  aria-label="Buscar"
-                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-municipal-500 text-white transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600"
-                >
-                  <IconoFlechaDerecha className="size-5" />
-                </button>
-              </div>
-              <p className="mt-3 text-sm text-slate-600">
-                Buscá por nombre de la feria, producto o emprendimiento. Ej.:
-                frutas, artesanías, yerba, Feria Parque Avellaneda.
-              </p>
-            </form>
+            <BuscadorHero />
           </div>
 
           {/*
@@ -267,7 +231,7 @@ export function HeroInicio() {
             asistente sigue a un toque en la burbuja de abajo a la derecha.
           */}
           <div
-            className="animar-aparecer relative hidden lg:col-span-5 lg:block lg:self-end"
+            className="animar-aparecer relative hidden lg:col-span-6 lg:block lg:self-end"
             style={{ animationDelay: "560ms" }}
           >
             {/*
@@ -291,10 +255,13 @@ export function HeroInicio() {
                 una caja blanca al lado de un personaje.
               */}
               <div className="absolute top-0 -left-12 z-10 w-[13.5rem] -rotate-3 rounded-[2.25rem] rounded-br-xl bg-white px-6 py-5 text-center shadow-xl">
-                <p className="text-3xl leading-none font-bold tracking-tight text-municipal-600">
+                {/* `font-globo` existe sólo para esto: el nombre de Migue
+                    escrito con la institucional se leía como texto de sistema
+                    metido dentro de un dibujo. Ver src/app/layout.tsx. */}
+                <p className="font-globo -rotate-1 text-4xl leading-none font-extrabold text-municipal-600">
                   Migue
                 </p>
-                <p className="mt-2 text-sm leading-snug font-semibold text-municipal-800">
+                <p className="font-globo mt-1.5 text-base leading-tight font-semibold text-municipal-800">
                   te acompaña en las ferias
                 </p>
                 <span

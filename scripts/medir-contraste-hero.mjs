@@ -9,11 +9,12 @@ import sharp from "sharp";
 // Paradas de `.velo-hero-claro`, en pares [posición, opacidad del blanco].
 const VELO = [
   [0.0, 1.0],
-  [0.34, 1.0],
-  [0.46, 0.96],
-  [0.56, 0.92],
-  [0.7, 0.7],
-  [0.86, 0.32],
+  [0.3, 1.0],
+  [0.42, 0.96],
+  [0.5, 0.92],
+  [0.6, 0.55],
+  [0.72, 0.18],
+  [0.84, 0.0],
   [1.0, 0.0],
 ];
 
@@ -55,8 +56,8 @@ const TEXTOS = {
 
 (async () => {
   const anchoPantalla = Number(process.argv[2] ?? 1440);
-  // El bloque de texto son 7 de 12 columnas del grid, dentro de max-w-7xl.
-  const fraccionTexto = 7 / 12;
+  // El bloque de texto son 6 de 12 columnas del grid, dentro de max-w-7xl.
+  const fraccionTexto = 6 / 12;
 
   const { data, info } = await sharp("public/hero-feria-dia.webp")
     .raw()

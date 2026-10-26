@@ -19,6 +19,9 @@
   --font-sans:
     var(--fuente-institucional), ui-sans-serif, system-ui, sans-serif;
 
+  /* Sólo para el globo de Migue. Ver el comentario en src/app/layout.tsx. */
+  --font-globo: var(--fuente-globo), var(--fuente-institucional), sans-serif;
+
   /* Azul institucional — primario */
   --color-municipal-50: #eff6ff;
   --color-municipal-100: #dbeafe;
@@ -166,21 +169,29 @@
     luminosa y el texto va oscuro, así que lo que hay que sostener es el blanco
     del fondo y no el blanco de la letra.
 
-    Las paradas vuelven a ser estructurales. El bloque de texto llega al 55 %
-    del ancho a 1440 px, y hasta ahí el velo no baja del 92 %: con menos, los
-    toldos de colores asoman detrás del párrafo y el gris del texto secundario
-    —que es el más flojo de la zona— se cae por debajo de AA.
+    Las paradas son estructurales, no estéticas. El bloque de texto llega al
+    50 % del ancho a 1440 px —seis de doce columnas— y hasta ahí el velo no baja
+    del 92 %: con menos, los toldos de colores asoman detrás del párrafo y el
+    gris del texto secundario, que es el más flojo de la zona, se cae por debajo
+    de AA.
+
+    La primera versión sostenía ese 92 % hasta el 56 % del ancho y recién ahí
+    empezaba a abrir. Tapaba de más: la foto quedaba lavada y el hero perdía la
+    feria, que es lo único que tiene para mostrar. Ahora cae a pico apenas pasa
+    la columna de texto, así que el blanco cubre lo que tiene que cubrir y ni un
+    píxel más. Cualquier cambio en estas paradas se vuelve a medir con
+    `node scripts/medir-contraste-hero.mjs`.
   */
   .velo-hero-claro {
     background-image: linear-gradient(
       90deg,
       #fff 0%,
-      #fff 34%,
-      color-mix(in srgb, #fff 96%, transparent) 46%,
-      color-mix(in srgb, #fff 92%, transparent) 56%,
-      color-mix(in srgb, #fff 70%, transparent) 70%,
-      color-mix(in srgb, #fff 32%, transparent) 86%,
-      color-mix(in srgb, #fff 0%, transparent) 100%
+      #fff 30%,
+      color-mix(in srgb, #fff 96%, transparent) 42%,
+      color-mix(in srgb, #fff 92%, transparent) 50%,
+      color-mix(in srgb, #fff 55%, transparent) 60%,
+      color-mix(in srgb, #fff 18%, transparent) 72%,
+      color-mix(in srgb, #fff 0%, transparent) 84%
     );
   }
 }
