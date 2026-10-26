@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
 import { ESTADOS_VENDEDOR, TONO_ESTADO_VENDEDOR } from "@/lib/labels";
+import { hayPedidos } from "@/lib/marketplace";
 import { obtenerVendedorActual } from "@/lib/session";
 
 export const metadata = {
@@ -35,6 +36,11 @@ export default async function LayoutMiStand({
       ? [
           { href: "/mi-stand/perfil", texto: "Mi vidriera" },
           { href: "/mi-stand/productos", texto: "Catálogo" },
+          // La pestaña aparece sólo con los pedidos habilitados: si no, lleva
+          // a una lista que nunca va a tener nada.
+          ...(hayPedidos()
+            ? [{ href: "/mi-stand/pedidos", texto: "Pedidos" }]
+            : []),
           { href: "/mi-stand/canon", texto: "Canon" },
         ]
       : []),
