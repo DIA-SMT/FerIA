@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { ComponentType, SVGProps } from "react";
 
 /**
  * Íconos en SVG inline.
@@ -9,6 +9,9 @@ import type { SVGProps } from "react";
  */
 
 type PropsIcono = SVGProps<SVGSVGElement>;
+
+/** Cualquiera de los íconos de este archivo, para poder mapearlos por clave. */
+export type ComponenteIcono = ComponentType<SVGProps<SVGSVGElement>>;
 
 function Base({ children, ...props }: PropsIcono) {
   return (
@@ -380,6 +383,133 @@ export function IconoDocumento(props: PropsIcono) {
     <Base {...props}>
       <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z" />
       <path d="M14 3v5h5" />
+    </Base>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rubros y categorías
+//
+// Un ícono por rubro en vez del mismo marbete repetido doce veces. La grilla de
+// rubros de la portada mostraba la misma etiqueta en las cuatro tarjetas, así
+// que el ícono no distinguía nada: ocupaba lugar y no decía cuál era cuál.
+//
+// Siguen siendo trazos del mismo juego —mismo `viewBox`, mismo grosor, mismo
+// `currentColor`— para que no parezcan pegados de otra librería.
+// ---------------------------------------------------------------------------
+
+/** Artesanías: una vasija de barro. */
+export function IconoVasija(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M9 4h6" />
+      <path d="M10 4c0 1.8-4 2.7-4 7.5A6 6 0 0 0 12 18a6 6 0 0 0 6-6.5C18 6.7 14 5.8 14 4" />
+    </Base>
+  );
+}
+
+/** Gastronomía: tenedor y cuchillo. */
+export function IconoCubiertos(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M7 3v4a2 2 0 0 0 4 0V3" />
+      <path d="M9 9v12" />
+      <path d="M17 21V3c1.8 1.6 1.8 7.4 0 9.5H17" />
+    </Base>
+  );
+}
+
+/** Indumentaria: una remera. */
+export function IconoRemera(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M8.5 3 5 5l-2 3.5 3 1.5v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9l3-1.5L19 5l-3.5-2a3.5 3.5 0 0 1-7 0Z" />
+    </Base>
+  );
+}
+
+/** Marroquinería: una cartera. */
+export function IconoCartera(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M4 8h16l-1.2 12.1a1 1 0 0 1-1 .9H6.2a1 1 0 0 1-1-.9L4 8Z" />
+      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+    </Base>
+  );
+}
+
+/** Joyería y bijouterie: una gema tallada. */
+export function IconoGema(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M6 3h12l3 6-9 12L3 9l3-6Z" />
+      <path d="M3 9h18" />
+      <path d="m9 3-2 6 5 12M15 3l2 6-5 12" />
+    </Base>
+  );
+}
+
+/** Decoración: una lámpara de mesa. */
+export function IconoLampara(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M6 9 9 3h6l3 6H6Z" />
+      <path d="M12 9v9" />
+      <path d="M8 21h8l-1-3H9l-1 3Z" />
+    </Base>
+  );
+}
+
+/** Cosmética natural: una gota. */
+export function IconoGota(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M12 3s6 6.5 6 10.5a6 6 0 0 1-12 0C6 9.5 12 3 12 3Z" />
+      <path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5" />
+    </Base>
+  );
+}
+
+/** Libros y arte: un libro abierto. */
+export function IconoLibro(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M12 6.5C10.5 5 8 4.5 4 4.5v13c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-13c-4 0-6.5.5-8 2Z" />
+      <path d="M12 6.5V21" />
+    </Base>
+  );
+}
+
+/** Productos regionales: un frasco de conserva. */
+export function IconoFrasco(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M9 3h6v3H9z" />
+      <path d="M7.5 6h9v13a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2V6Z" />
+      <path d="M7.5 11h9" />
+    </Base>
+  );
+}
+
+/** Huerta y vivero: un plantín en maceta. */
+export function IconoPlantin(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M6 14h12l-1.2 6a1 1 0 0 1-1 .8H8.2a1 1 0 0 1-1-.8L6 14Z" />
+      <path d="M12 14V8" />
+      <path d="M12 10c-3 0-4-1.5-4-4 3 0 4 1.5 4 4Z" />
+      <path d="M12 11c3 0 4-1.5 4-4-3 0-4 1.5-4 4Z" />
+    </Base>
+  );
+}
+
+/** Juguetes: un trompo. */
+export function IconoTrompo(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M12 4v3" />
+      <path d="M4.5 7h15" />
+      <path d="M4.5 7 12 20.5 19.5 7" />
     </Base>
   );
 }

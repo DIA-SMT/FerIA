@@ -5,14 +5,19 @@ import { TarjetaFeria } from "@/components/public/tarjeta-feria";
 import { BotonLink } from "@/components/ui/boton";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import {
+  ICONOS_CATEGORIA,
+  ICONOS_RUBRO,
+} from "@/components/ui/iconos-por-clave";
+import {
   IconoChat,
   IconoChevronDerecha,
-  IconoEtiqueta,
   IconoReloj,
   IconoTienda,
   IconoUbicacion,
 } from "@/components/ui/iconos";
+import { ImagenPortada } from "@/components/ui/imagen";
 import { hayIAConfigurada } from "@/lib/ai";
+import { cn } from "@/lib/cn";
 import {
   EDICIONES_PUBLICAS,
   feriasConProximaEdicion,
@@ -27,6 +32,27 @@ import {
   semanaDe,
 } from "@/lib/horarios";
 import { RUBROS } from "@/lib/labels";
+import type { CategoriaFeria } from "@prisma/client";
+
+/**
+ * El color del círculo de cada categoría, en la agenda de la semana.
+ *
+ * Van saturados con el glifo en blanco. Medido: el más flojo es
+ * `emerald-600` 3,8:1 y `orange-600` 3,6:1, sobre el piso de 3:1 que la WCAG
+ * pide para un objeto gráfico (1.4.11) —no son texto—; el resto pasa incluso
+ * el 4,5:1 de texto normal. `amber-600` quedó afuera: da 3,19:1 y raspa.
+ *
+ * Es local a propósito: hoy lo usa una sola sección, y mudarlo a `labels.ts`
+ * mezclaría clases de Tailwind con las etiquetas, que hoy son texto puro.
+ */
+const COLOR_CATEGORIA: Record<CategoriaFeria, string> = {
+  ARTESANIAS: "bg-orange-600",
+  EMPRENDEDORES: "bg-municipal-500",
+  GASTRONOMIA: "bg-rose-600",
+  PRODUCTOS_REGIONALES: "bg-emerald-600",
+  LIBROS_Y_ARTE: "bg-violet-600",
+  MIXTA: "bg-slate-500",
+};
 
 export const metadata = {
   title: "Ferias Municipales — San Miguel de Tucumán",
@@ -62,7 +88,15 @@ export default async function PaginaInicio() {
         horaApertura: true,
         horaCierre: true,
         horario: true,
-        feria: { select: { nombre: true, slug: true, direccion: true } },
+        feria: {
+          select: {
+            nombre: true,
+            slug: true,
+            direccion: true,
+            categoria: true,
+            imagen: true,
+          },
+        },
       },
     }),
     prisma.vendedor.groupBy({
@@ -113,6 +147,12 @@ export default async function PaginaInicio() {
             {agenda.map(({ fecha, edicion }) => {
               const etiqueta = etiquetaDeFecha(fecha);
               const horario = resumenHorario(edicion);
+              const IconoCategoria = ICONOS_CATEGORIA[edicion.feria.categoria];
+
+              // Las dos fechas son medianoche UTC —`hoyEnZona` la construye así
+              // y `semanaDe` suma días enteros—, así que comparar el instante
+              // es exacto y no hace falta normalizar nada.
+              const esHoy = fecha.getTime() === hoy.getTime();
 
               return (
                 <Link
@@ -124,39 +164,85 @@ export default async function PaginaInicio() {
                   // ancho mínimo es el texto entero. Sin esto la tarjeta medía
                   // 491 px dentro de una columna de 343 y la portada entera
                   // desbordaba a lo ancho en el teléfono.
-                  className="group flex min-w-0 gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                  className="group flex min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-md"
                 >
-                  <span
-                    className="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg bg-municipal-50 leading-none text-municipal-700"
-                    aria-hidden="true"
-                  >
-                    <span className="text-[10px] font-semibold tracking-wide">
-                      {etiqueta.dia}
+                  <span className="flex min-w-0 gap-3">
+                    {/*
+                      El taco de fecha se pinta de ámbar cuando el día es hoy.
+                      Es información y no adorno: en una agenda de siete días lo
+                      primero que se busca es «cuál es hoy».
+                    */}
+                    <span
+                      className={cn(
+                        "flex size-14 shrink-0 flex-col items-center justify-center rounded-lg leading-none",
+                        esHoy
+                          ? "bg-acento-100 text-acento-900"
+                          : "bg-municipal-50 text-municipal-700",
+                      )}
+                      aria-hidden="true"
+                    >
+                      <span className="text-[10px] font-semibold tracking-wide">
+                        {etiqueta.dia}
+                      </span>
+                      <span className="mt-0.5 text-xl font-bold tabular-nums">
+                        {etiqueta.numero}
+                      </span>
+                      <span className="mt-0.5 text-[10px] font-medium">
+                        {etiqueta.mes}
+                      </span>
                     </span>
-                    <span className="mt-0.5 text-xl font-bold tabular-nums">
-                      {etiqueta.numero}
-                    </span>
-                    <span className="mt-0.5 text-[10px] font-medium">
-                      {etiqueta.mes}
-                    </span>
+
+                    {/*
+                      `alt` vacío porque el nombre de la feria va escrito justo
+                      abajo: anunciarlo dos veces es ruido para quien escucha.
+                    */}
+                    <ImagenPortada
+                      src={edicion.feria.imagen}
+                      alt=""
+                      icono={IconoTienda}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="aspect-[16/10] min-w-0 flex-1 rounded-lg"
+                    />
                   </span>
 
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-slate-900 group-hover:text-municipal-700">
-                      {edicion.feria.nombre}
+                  <span className="mt-3 flex min-w-0 items-start gap-2.5">
+                    <span
+                      className={cn(
+                        "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-white",
+                        COLOR_CATEGORIA[edicion.feria.categoria],
+                      )}
+                      aria-hidden="true"
+                    >
+                      <IconoCategoria className="size-5" />
                     </span>
-                    {horario && (
-                      <span className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
-                        <IconoReloj className="size-3.5 shrink-0" />
-                        {horario}
+
+                    <span className="min-w-0 flex-1">
+                      <span className="lineas-2 block font-semibold text-slate-900 group-hover:text-municipal-700">
+                        {edicion.feria.nombre}
                       </span>
-                    )}
-                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
-                      <IconoUbicacion className="size-3.5 shrink-0" />
-                      <span className="truncate">
-                        {edicion.feria.direccion}
+                      {/*
+                        El horario se deja envolver en dos líneas en vez de
+                        recortarse: una feria con horas distintas por día —«de
+                        18 a 24, sábados y domingos de 12 a 24»— no entra en
+                        una línea de 215 px, y cortada deja justo el dato que
+                        nadie puede adivinar. La dirección sí se recorta: está
+                        completa a un clic, en la página de la feria.
+                      */}
+                      {horario && (
+                        <span className="mt-1 flex items-start gap-1.5 text-sm text-slate-600">
+                          <IconoReloj className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
+                          <span className="lineas-2">{horario}</span>
+                        </span>
+                      )}
+                      <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
+                        <IconoUbicacion className="size-3.5 shrink-0 text-municipal-500" />
+                        <span className="truncate">
+                          {edicion.feria.direccion}
+                        </span>
                       </span>
                     </span>
+
+                    <IconoChevronDerecha className="mt-2 size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </Link>
               );
@@ -220,32 +306,39 @@ export default async function PaginaInicio() {
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                {porRubro.map((fila) => (
-                  <Link
-                    key={fila.rubro}
-                    href={`/stands?rubro=${fila.rubro}`}
-                    className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-                  >
-                    <span
-                      className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-municipal-50 text-municipal-600"
-                      aria-hidden="true"
+                {porRubro.map((fila) => {
+                  // Un ícono por rubro: antes las cuatro tarjetas mostraban el
+                  // mismo marbete, o sea que el ícono ocupaba lugar sin decir
+                  // cuál era cuál.
+                  const IconoRubro = ICONOS_RUBRO[fila.rubro];
+
+                  return (
+                    <Link
+                      key={fila.rubro}
+                      href={`/stands?rubro=${fila.rubro}`}
+                      className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                     >
-                      <IconoEtiqueta className="size-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-slate-900 group-hover:text-municipal-700">
-                        {RUBROS[fila.rubro]}
+                      <span
+                        className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-municipal-50 text-municipal-600"
+                        aria-hidden="true"
+                      >
+                        <IconoRubro className="size-5" />
                       </span>
-                      <span className="block text-sm text-slate-600">
-                        {formatearNumero(fila._count)}{" "}
-                        {fila._count === 1
-                          ? "emprendimiento"
-                          : "emprendimientos"}
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold text-slate-900 group-hover:text-municipal-700">
+                          {RUBROS[fila.rubro]}
+                        </span>
+                        <span className="block text-sm text-slate-600">
+                          {formatearNumero(fila._count)}{" "}
+                          {fila._count === 1
+                            ? "emprendimiento"
+                            : "emprendimientos"}
+                        </span>
                       </span>
-                    </span>
-                    <IconoChevronDerecha className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                ))}
+                      <IconoChevronDerecha className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 

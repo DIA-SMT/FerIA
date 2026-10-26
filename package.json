@@ -17,6 +17,7 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "db:importar": "tsx prisma/importar-feria-digital.ts",
+    "db:admin": "tsx --env-file-if-exists=.env prisma/crear-admin.ts",
     "test": "vitest run",
     "test:ver": "vitest"
   },
