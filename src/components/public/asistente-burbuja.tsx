@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   useEffect,
@@ -10,8 +11,23 @@ import {
 } from "react";
 
 import { preguntarAlAsistente } from "@/actions/asistente";
-import { IconoCerrar, IconoChat, IconoEnviar } from "@/components/ui/iconos";
+import { IconoCerrar, IconoEnviar } from "@/components/ui/iconos";
 import type { TurnoAsistente } from "@/lib/ia-asistente";
+
+/**
+ * La cara de Migue, para la burbuja y el encabezado del chat.
+ *
+ * Es un cuadrado ya recortado y no el dibujo de cuerpo entero. El primer
+ * intento fue encuadrar la cabeza del dibujo grande con `scale` y
+ * `object-position`, y no funcionó: lo que entraba en el círculo de 56 px era
+ * la mano, no la cara. Un recorte que depende de dos números calibrados a ojo
+ * se desencuadra apenas cambia el tamaño del contenedor.
+ *
+ * El archivo salió de `migue.webp` con un `extract` de 640×640 sobre la
+ * cabeza, reducido a 320. Conserva la transparencia, así que apoya limpio
+ * sobre el círculo azul.
+ */
+const MIGUE_CARA = "/migue-cara.webp";
 
 /**
  * La burbuja del asistente, presente en todas las páginas públicas.
@@ -116,31 +132,49 @@ export function AsistenteBurbuja() {
         onClick={() => setAbierto((estado) => !estado)}
         aria-expanded={abierto}
         aria-label={
-          abierto ? "Cerrar el asistente" : "Abrir el asistente de ferias"
+          abierto ? "Cerrar a Migue" : "Abrir a Migue, el asistente de ferias"
         }
-        className="fixed right-4 bottom-4 z-50 flex size-14 items-center justify-center rounded-full bg-municipal-500 text-white shadow-lg transition-all hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600 active:scale-95"
+        className="fixed right-4 bottom-4 z-50 flex size-14 items-center justify-center overflow-hidden rounded-full bg-municipal-500 text-white shadow-lg transition-all hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600 active:scale-95"
       >
+        {/* Cerrada muestra la cara y abierta la cruz. La cara es lo que hace
+            que alguien la toque: un ícono de chat genérico, en un sitio
+            municipal, se lee como «formulario de contacto». */}
         {abierto ? (
           <IconoCerrar className="size-6" />
         ) : (
-          <IconoChat className="size-6" />
+          <Image
+            src={MIGUE_CARA}
+            alt=""
+            width={320}
+            height={320}
+            className="size-full object-cover"
+          />
         )}
       </button>
 
       {abierto && (
         <section
           role="dialog"
-          aria-label="Asistente de ferias"
+          aria-label="Migue, el asistente de ferias"
           className="animar-aparecer fixed right-4 bottom-21 z-50 flex h-[min(32rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
         >
-          <header className="flex items-center gap-2.5 border-b border-slate-200 bg-municipal-500 px-4 py-3">
-            <IconoChat className="size-5 shrink-0 text-white" />
+          {/* La cara va acá y no sólo en la portada: es lo que convierte una
+              ventana de chat anónima en alguien con quien se habla. El recorte
+              redondo toma la cabeza, que es la parte reconocible del dibujo. */}
+          <header className="flex items-center gap-3 border-b border-slate-200 bg-municipal-500 px-4 py-3">
+            <span className="size-10 shrink-0 overflow-hidden rounded-full bg-white/15 ring-1 ring-white/30">
+              <Image
+                src={MIGUE_CARA}
+                alt=""
+                width={320}
+                height={320}
+                className="size-full object-cover"
+              />
+            </span>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white">
-                Asistente de ferias
-              </h2>
+              <h2 className="text-sm font-semibold text-white">Migue</h2>
               <p className="text-[11px] text-white/80">
-                Municipalidad de San Miguel de Tucumán
+                Asistente de las ferias municipales
               </p>
             </div>
           </header>

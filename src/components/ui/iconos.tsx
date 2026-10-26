@@ -206,6 +206,14 @@ export function IconoMas(props: PropsIcono) {
   );
 }
 
+export function IconoFlechaDerecha(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </Base>
+  );
+}
+
 export function IconoMenos(props: PropsIcono) {
   return (
     <Base {...props}>

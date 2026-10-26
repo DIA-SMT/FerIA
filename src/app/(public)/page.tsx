@@ -1,22 +1,32 @@
-import Image from "next/image";
 import Link from "next/link";
 
+import { HeroInicio } from "@/components/public/hero-inicio";
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
-import { TarjetaStand } from "@/components/public/tarjeta-stand";
 import { BotonLink } from "@/components/ui/boton";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import {
+  IconoChat,
   IconoChevronDerecha,
+  IconoEtiqueta,
+  IconoReloj,
   IconoTienda,
-  IconoUsuarios,
+  IconoUbicacion,
 } from "@/components/ui/iconos";
+import { hayIAConfigurada } from "@/lib/ai";
 import {
+  EDICIONES_PUBLICAS,
   feriasConProximaEdicion,
   ordenarPorRelevancia,
-  vendedoresAprobados,
 } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearNumero } from "@/lib/format";
+import { formatearNumero, hoyEnZona } from "@/lib/format";
+import {
+  agendaDeLaSemana,
+  etiquetaDeFecha,
+  resumenHorario,
+  semanaDe,
+} from "@/lib/horarios";
+import { RUBROS } from "@/lib/labels";
 
 export const metadata = {
   title: "Ferias Municipales — San Miguel de Tucumán",
@@ -25,261 +35,250 @@ export const metadata = {
 };
 
 export default async function PaginaInicio() {
-  const [ferias, stands, totalFeriantes] = await Promise.all([
+  const hoy = hoyEnZona();
+  const semana = semanaDe(hoy);
+  const [primerDia, ultimoDia] = [semana[0] as Date, semana[6] as Date];
+
+  // El `count` de feriantes aprobados se fue con los contadores del hero: era
+  // su único consumidor, y una consulta que no alimenta nada es una consulta
+  // que igual cruza a São Paulo en cada visita a la portada.
+  const [ferias, edicionesSemana, porRubro] = await Promise.all([
     feriasConProximaEdicion({ soloConEdiciones: true }),
-    vendedoresAprobados({ limite: 8 }),
-    prisma.vendedor.count({ where: { estado: "APROBADO" } }),
+    // Las que se cruzan con esta semana: empiezan antes de que termine y
+    // terminan después de que empieza.
+    prisma.edicionFeria.findMany({
+      where: {
+        ...EDICIONES_PUBLICAS,
+        fechaInicio: { lte: ultimoDia },
+        fechaFin: { gte: primerDia },
+        feria: { activa: true },
+      },
+      orderBy: { fechaInicio: "asc" },
+      select: {
+        id: true,
+        fechaInicio: true,
+        fechaFin: true,
+        diasSemana: true,
+        horaApertura: true,
+        horaCierre: true,
+        horario: true,
+        feria: { select: { nombre: true, slug: true, direccion: true } },
+      },
+    }),
+    prisma.vendedor.groupBy({
+      by: ["rubro"],
+      where: { estado: "APROBADO" },
+      _count: true,
+      orderBy: { _count: { rubro: "desc" } },
+      take: 4,
+    }),
   ]);
 
   const feriasDestacadas = ordenarPorRelevancia(ferias).slice(0, 6);
 
+  // Una tarjeta por feria y por día. La agenda devuelve los días con algo, y
+  // acá se aplana para que cada tarjeta sea «esta feria, este día».
+  const agenda = agendaDeLaSemana(semana, edicionesSemana)
+    .flatMap((dia) =>
+      dia.ediciones.map((edicion) => ({ fecha: dia.fecha, edicion })),
+    )
+    .slice(0, 4);
+
   return (
     <>
-      {/* ------------------------------- Hero ------------------------------- */}
-      {/*
-        Foto de fondo con velo institucional. El velo no es decorativo: es lo
-        que sostiene el contraste del texto blanco sobre una imagen que tiene
-        zonas claras (los toldos iluminados). Va opaco a la izquierda, donde
-        está el texto, y se abre hacia la derecha para dejar ver la feria.
-      */}
-      <section className="relative isolate overflow-hidden bg-municipal-950">
-        {/* La foto va en su propio contenedor porque el que se acerca es él: si
-            el `scale` fuera sobre el `Image` con `fill`, pelearía con el
-            `object-position`. */}
-        <div className="animar-acercar absolute inset-0" aria-hidden="true">
-          <Image
-            src="/hero-feria-nocturna.webp"
-            // Vacío a propósito: es una imagen de ambiente y el h1 ya dice de
-            // qué se trata. Anunciarla sería ruido para un lector de pantalla.
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-right"
-          />
-        </div>
+      <HeroInicio />
 
-        {/*
-          Dos velos, según el ancho, porque el texto no ocupa la misma
-          proporción de la pantalla:
-
-          · Hasta `lg` el texto abarca casi todo el ancho, así que el velo es
-            parejo y parejo tiene que ser: un degradé horizontal dejaría las
-            últimas palabras de cada línea sobre los toldos iluminados.
-          · Desde `lg` el texto llega como máximo al 55 % del ancho, y ahí entra
-            `velo-hero`, que abre hacia la derecha sin escalón.
-
-          Contraste contra blanco, componiendo foto + velo + resplandor y
-          midiendo el píxel más claro del 55 % izquierdo, que es el peor caso
-          para texto blanco: 12,1:1 a 1440 px, 12,1:1 a 1024 px y 10,6:1 a
-          375 px. AAA pide 7:1.
-
-          Acá había además una trama de puntos blancos al 18 %. Se sacó porque no
-          gustaba, y de paso subió el contraste: eran lo más claro de la zona de
-          texto y el peor píxel estaba en 8,0:1, contra los 12,1:1 de ahora.
-        */}
-        <div
-          className="absolute inset-0 bg-municipal-950/85 lg:hidden"
-          aria-hidden="true"
-        />
-        <div className="velo-hero absolute inset-0 hidden lg:block" aria-hidden="true" />
-
-        {/* Resplandor celeste detrás del texto: da profundidad al azul plano
-            del lado izquierdo, que era lo más chato del hero. */}
-        <div
-          className="absolute top-1/2 -left-32 size-[34rem] -translate-y-1/2 rounded-full bg-celeste-500/20 blur-3xl"
-          aria-hidden="true"
-        />
-
-        {/* Base que engancha con la sección clara de abajo, para que el corte no
-            sea una línea recta. */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-municipal-950 to-transparent"
-          aria-hidden="true"
-        />
-
-        {/* Los bloques entran escalonados, de arriba hacia abajo. El retraso va
-            inline porque es un dato de este hero y no una escala reutilizable. */}
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-          <div className="max-w-2xl">
-            <p
-              className="animar-aparecer inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-medium tracking-wide text-white ring-1 ring-white/25 backdrop-blur-sm"
-              style={{ animationDelay: "60ms" }}
-            >
-              <span
-                className="animar-latir size-1.5 rounded-full bg-acento-400"
-                aria-hidden="true"
-              />
-              Municipalidad de San Miguel de Tucumán
-            </p>
-
-            <h1
-              className="animar-aparecer mt-6 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl"
-              style={{ animationDelay: "160ms" }}
-            >
-              Las ferias de la ciudad,
-              {/* El amarillo va en su propia línea: partido a mitad de frase por
-                  el salto de línea se leía como un error de maquetado. */}
-              <span className="mt-1 block text-acento-400">
-                ahora también online
-              </span>
-            </h1>
-
-            <p
-              className="animar-aparecer mt-6 max-w-xl text-lg leading-relaxed text-white/85"
-              style={{ animationDelay: "260ms" }}
-            >
-              Artesanos, emprendedores y cocineros de San Miguel de Tucumán en un
-              solo lugar. Mirá qué ferias hay esta semana, recorré cada stand y
-              escribile directamente a quien produce.
-            </p>
-
-            <div
-              className="animar-aparecer mt-9 flex flex-wrap gap-3"
-              style={{ animationDelay: "360ms" }}
-            >
-              {/* `transition-all` y no `transition-transform`: son la misma
-                  familia de utilidad, así que la del llamador reemplaza a la
-                  `transition-colors` del botón y se perdía la transición del
-                  fondo al pasar el mouse. Con `all` animan las dos. */}
-              <BotonLink
-                href="/ferias"
-                variante="acento"
-                tamanio="lg"
-                className="shadow-lg shadow-acento-400/20 transition-all hover:-translate-y-0.5"
-              >
-                Ver ferias
-              </BotonLink>
-              <BotonLink
-                href="/stands"
-                variante="vidrio"
-                tamanio="lg"
-                className="transition-all hover:-translate-y-0.5"
-              >
-                Explorar stands
-              </BotonLink>
+      {/* -------------------------- Ferias de la semana --------------------- */}
+      {agenda.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                Ferias de esta semana
+              </h2>
+              <p className="mt-1 text-slate-600">
+                Organizate y disfrutá de las ferias de tu barrio.
+              </p>
             </div>
-
-            {/*
-              El número de ferias sale de la MISMA lista que la grilla de más
-              abajo, no de un `count` aparte de las ferias con el flag `activa`.
-              Con el `count`, la home se contradecía sola: verificado en
-              producción, el mismo HTML decía «Ferias activas: 5» arriba y «Por
-              ahora no hay ferias programadas» abajo, porque `activa` es un flag
-              de la feria y la grilla pide ediciones vigentes. Eran dos
-              preguntas distintas con la misma etiqueta.
-              Cambiar sólo el texto no alcanzaba: mientras fueran dos consultas,
-              podían volver a discrepar. Con una sola lista, el 0 y el cartel de
-              vacío aparecen juntos o no aparece ninguno; por eso la etiqueta
-              usa las mismas palabras que ese cartel.
-            */}
-            <dl
-              className="animar-aparecer mt-12 flex gap-10 border-t border-white/15 pt-6"
-              style={{ animationDelay: "460ms" }}
+            <Link
+              href="/ferias"
+              className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
             >
-              <div>
-                <dt className="text-[11px] font-medium tracking-widest text-celeste-200 uppercase">
-                  Ferias programadas
-                </dt>
-                <dd className="mt-1.5 text-3xl font-bold text-white tabular-nums">
-                  {formatearNumero(ferias.length)}
-                </dd>
-              </div>
-              {/* Separador fino, en lugar de dejar los dos números sueltos. */}
-              <div className="w-px self-stretch bg-white/15" aria-hidden="true" />
-              <div>
-                <dt className="text-[11px] font-medium tracking-widest text-celeste-200 uppercase">
-                  Feriantes
-                </dt>
-                <dd className="mt-1.5 text-3xl font-bold text-white tabular-nums">
-                  {formatearNumero(totalFeriantes)}
-                </dd>
-              </div>
-            </dl>
+              Ver todas las ferias
+              <IconoChevronDerecha className="size-4" />
+            </Link>
           </div>
-        </div>
-      </section>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {agenda.map(({ fecha, edicion }) => {
+              const etiqueta = etiquetaDeFecha(fecha);
+              const horario = resumenHorario(edicion);
+
+              return (
+                <Link
+                  key={`${edicion.id}-${fecha.toISOString()}`}
+                  href={`/ferias/${edicion.feria.slug}`}
+                  // `min-w-0` es obligatorio acá, no decorativo: un ítem de
+                  // grid tiene `min-width: auto`, la dirección de abajo usa
+                  // `truncate` —o sea `white-space: nowrap`— y entonces su
+                  // ancho mínimo es el texto entero. Sin esto la tarjeta medía
+                  // 491 px dentro de una columna de 343 y la portada entera
+                  // desbordaba a lo ancho en el teléfono.
+                  className="group flex min-w-0 gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <span
+                    className="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg bg-municipal-50 leading-none text-municipal-700"
+                    aria-hidden="true"
+                  >
+                    <span className="text-[10px] font-semibold tracking-wide">
+                      {etiqueta.dia}
+                    </span>
+                    <span className="mt-0.5 text-xl font-bold tabular-nums">
+                      {etiqueta.numero}
+                    </span>
+                    <span className="mt-0.5 text-[10px] font-medium">
+                      {etiqueta.mes}
+                    </span>
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-slate-900 group-hover:text-municipal-700">
+                      {edicion.feria.nombre}
+                    </span>
+                    {horario && (
+                      <span className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
+                        <IconoReloj className="size-3.5 shrink-0" />
+                        {horario}
+                      </span>
+                    )}
+                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
+                      <IconoUbicacion className="size-3.5 shrink-0" />
+                      <span className="truncate">
+                        {edicion.feria.direccion}
+                      </span>
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ------------------------------ Ferias ------------------------------ */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              Ferias en curso y próximas
-            </h2>
-            <p className="mt-1 text-slate-600">
-              Fechas confirmadas por la Dirección de Ferias y Mercados.
-            </p>
-          </div>
-          <Link
-            href="/ferias"
-            className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-          >
-            Ver todas
-            <IconoChevronDerecha className="size-4" />
-          </Link>
-        </div>
-
-        {feriasDestacadas.length === 0 ? (
-          <EstadoVacio
-            icono={IconoTienda}
-            className="mt-8"
-            titulo="Por ahora no hay ferias programadas"
-            descripcion="Cuando la municipalidad publique las próximas fechas, van a aparecer acá."
-          />
-        ) : (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {feriasDestacadas.map((feria, indice) => (
-              <TarjetaFeria
-                key={feria.slug}
-                feria={feria}
-                prioridad={indice < 3}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ------------------------------ Stands ------------------------------ */}
       <section className="border-y border-slate-200 bg-slate-50">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                Stands para recorrer
+                Ferias en curso y próximas
               </h2>
               <p className="mt-1 text-slate-600">
-                Emprendimientos locales con su vidriera online.
+                Fechas confirmadas por la Dirección de Ferias y Mercados.
               </p>
             </div>
             <Link
-              href="/stands"
+              href="/ferias"
               className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
             >
-              Ver el directorio
+              Ver todas
               <IconoChevronDerecha className="size-4" />
             </Link>
           </div>
 
-          {stands.length === 0 ? (
+          {feriasDestacadas.length === 0 ? (
             <EstadoVacio
-              icono={IconoUsuarios}
+              icono={IconoTienda}
               className="mt-8 bg-white"
-              titulo="Todavía no hay stands publicados"
-              descripcion="Los feriantes aprobados por la municipalidad aparecen en este directorio."
+              titulo="Por ahora no hay ferias programadas"
+              descripcion="Cuando la municipalidad publique las próximas fechas, van a aparecer acá."
             />
           ) : (
-            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {stands.map((stand) => (
-                <TarjetaStand key={stand.slug} stand={stand} />
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {feriasDestacadas.map((feria, indice) => (
+                <TarjetaFeria
+                  key={feria.slug}
+                  feria={feria}
+                  prioridad={indice < 3}
+                />
               ))}
             </div>
           )}
         </div>
       </section>
 
+      {/* --------------------------- Qué vas a encontrar -------------------- */}
+      {porRubro.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="lg:grid lg:grid-cols-3 lg:gap-10">
+            <div className="lg:col-span-2">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                Qué vas a encontrar
+              </h2>
+              <p className="mt-1 text-slate-600">
+                Productos locales, frescos y con identidad tucumana.
+              </p>
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {porRubro.map((fila) => (
+                  <Link
+                    key={fila.rubro}
+                    href={`/stands?rubro=${fila.rubro}`}
+                    className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                  >
+                    <span
+                      className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-municipal-50 text-municipal-600"
+                      aria-hidden="true"
+                    >
+                      <IconoEtiqueta className="size-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold text-slate-900 group-hover:text-municipal-700">
+                        {RUBROS[fila.rubro]}
+                      </span>
+                      <span className="block text-sm text-slate-600">
+                        {formatearNumero(fila._count)}{" "}
+                        {fila._count === 1
+                          ? "emprendimiento"
+                          : "emprendimientos"}
+                      </span>
+                    </span>
+                    <IconoChevronDerecha className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/*
+              Migue sólo si la IA está configurada. Sin `OPENROUTER_API_KEY` la
+              burbuja del asistente ni se monta —ver el layout público—, así que
+              invitar a hablar con él sería mandar a la gente a un botón que no
+              existe.
+            */}
+            {hayIAConfigurada() && (
+              <aside className="mt-10 flex flex-col justify-center rounded-2xl border border-municipal-100 bg-municipal-50 p-6 lg:mt-0">
+                <span
+                  className="flex size-11 items-center justify-center rounded-lg bg-municipal-500 text-white"
+                  aria-hidden="true"
+                >
+                  <IconoChat className="size-5" />
+                </span>
+                <h3 className="mt-4 text-lg font-bold text-slate-900">
+                  ¿Buscás algo en particular?
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Migue te ayuda a encontrarlo y te dice en qué feria y en qué
+                  stand lo podés conseguir. Está abajo a la derecha, en todas
+                  las páginas.
+                </p>
+              </aside>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* --------------------------- Ser feriante --------------------------- */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-2xl border border-municipal-100 bg-municipal-50">
           <div className="grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-2">
             <div>
@@ -325,8 +324,12 @@ export default async function PaginaInicio() {
                     {indice + 1}
                   </span>
                   <div>
-                    <p className="font-semibold text-slate-900">{paso.titulo}</p>
-                    <p className="mt-0.5 text-sm text-slate-600">{paso.texto}</p>
+                    <p className="font-semibold text-slate-900">
+                      {paso.titulo}
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-600">
+                      {paso.texto}
+                    </p>
                   </div>
                 </li>
               ))}

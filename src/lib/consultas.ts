@@ -90,9 +90,10 @@ const ESTADO_POR_ETAPA: Record<EtapaEdicion, EstadoEdicion> = {
  * Se traen todas las ediciones vigentes de cada feria y se toma la primera:
  * Prisma no permite ordenar la feria por un campo de la relación.
  */
-export async function feriasConProximaEdicion(
-  filtros?: { categoria?: Prisma.EnumCategoriaFeriaFilter; soloConEdiciones?: boolean },
-) {
+export async function feriasConProximaEdicion(filtros?: {
+  categoria?: Prisma.EnumCategoriaFeriaFilter;
+  soloConEdiciones?: boolean;
+}) {
   const hoy = hoyEnZona();
   const vigentes = edicionesVigentes(hoy);
 
@@ -118,7 +119,9 @@ export async function feriasConProximaEdicion(
           id: true,
           fechaInicio: true,
           fechaFin: true,
-          _count: { select: { stands: { where: { vendedorId: { not: null } } } } },
+          _count: {
+            select: { stands: { where: { vendedorId: { not: null } } } },
+          },
         },
       },
     },
@@ -196,6 +199,23 @@ export async function vendedoresAprobados(filtros?: {
       {
         productos: {
           some: { nombre: { contains: filtros.busqueda, mode: "insensitive" } },
+        },
+      },
+      // También por el nombre de la feria en la que participa. El buscador de
+      // la portada invita a escribir «Feria Parque Avellaneda», y sin esto esa
+      // búsqueda no devolvía nada: el nombre de la feria no está en ninguna
+      // columna del vendedor. Lo que se espera al buscar una feria es ver
+      // quiénes están en ella, que es justo lo que devuelve.
+      {
+        stands: {
+          some: {
+            edicion: {
+              ...EDICIONES_PUBLICAS,
+              feria: {
+                nombre: { contains: filtros.busqueda, mode: "insensitive" },
+              },
+            },
+          },
         },
       },
     ];

@@ -16,7 +16,8 @@
 --------------------------------------------------------------------------- */
 
 @theme {
-  --font-sans: var(--fuente-institucional), ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    var(--fuente-institucional), ui-sans-serif, system-ui, sans-serif;
 
   /* Azul institucional — primario */
   --color-municipal-50: #eff6ff;
@@ -58,10 +59,10 @@
   --color-acento-950: #3e2506;
 
   /* Sombras suaves para tarjetas del área pública */
-  --shadow-tarjeta: 0 1px 2px 0 rgb(15 23 42 / 0.04),
-    0 4px 16px -4px rgb(15 23 42 / 0.08);
-  --shadow-tarjeta-hover: 0 2px 4px 0 rgb(15 23 42 / 0.06),
-    0 12px 32px -8px rgb(15 23 42 / 0.14);
+  --shadow-tarjeta:
+    0 1px 2px 0 rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
+  --shadow-tarjeta-hover:
+    0 2px 4px 0 rgb(15 23 42 / 0.06), 0 12px 32px -8px rgb(15 23 42 / 0.14);
 }
 
 @layer base {
@@ -158,6 +159,30 @@
     );
   }
 
+  /*
+    Velo claro, para el hero de día de la portada.
+
+    Es el mismo mecanismo que `velo-hero` pero al revés: la foto nueva es
+    luminosa y el texto va oscuro, así que lo que hay que sostener es el blanco
+    del fondo y no el blanco de la letra.
+
+    Las paradas vuelven a ser estructurales. El bloque de texto llega al 55 %
+    del ancho a 1440 px, y hasta ahí el velo no baja del 92 %: con menos, los
+    toldos de colores asoman detrás del párrafo y el gris del texto secundario
+    —que es el más flojo de la zona— se cae por debajo de AA.
+  */
+  .velo-hero-claro {
+    background-image: linear-gradient(
+      90deg,
+      #fff 0%,
+      #fff 34%,
+      color-mix(in srgb, #fff 96%, transparent) 46%,
+      color-mix(in srgb, #fff 92%, transparent) 56%,
+      color-mix(in srgb, #fff 70%, transparent) 70%,
+      color-mix(in srgb, #fff 32%, transparent) 86%,
+      color-mix(in srgb, #fff 0%, transparent) 100%
+    );
+  }
 }
 
 /*
