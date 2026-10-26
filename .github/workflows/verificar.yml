@@ -1,0 +1,64 @@
+# Tipos, linter y pruebas en cada push y en cada pull request.
+#
+# Qué NO está acá: `npm run build`. No por olvido —lo corre Vercel en cada
+# deploy, que es el momento en que de verdad importa, y acá necesitaría las
+# variables de Supabase para que `prisma generate` y el build de Next no se
+# quejen—. Duplicarlo sería pagar dos veces lo mismo y además guardar
+# credenciales de producción en los secretos del repo sin necesidad.
+#
+# Lo que sí está es lo que no necesita entorno y hoy no corría en ningún lado:
+# `tsc` ya atajó errores reales de este proyecto —el `reduce` de la suma de
+# importes y los `usuario` que pasaron a ser nulos— y las pruebas encontraron
+# un rubro del padrón mal traducido el día que se escribieron.
+
+name: Verificar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Si llegan dos pushes seguidos, el primero se cancela: lo que importa es que
+# la punta de la rama esté sana, no el historial de cada commit intermedio.
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Tipos, linter y pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # `tsc` necesita los tipos que Prisma genera a partir del schema. No
+      # toca la base: lee el archivo y escribe en node_modules.
+      #
+      # Las variables son de utilería y están a la vista a propósito: Prisma
+      # valida que el datasource se pueda resolver antes de generar, y acá no
+      # hay `.env`. Nadie se conecta a esto, y poner las de producción en los
+      # secretos del repo para generar tipos sería regalar la base.
+      - name: Generar el cliente de Prisma
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npx prisma generate
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Linter
+        run: npm run lint
+
+      - name: Pruebas
+        run: npm test

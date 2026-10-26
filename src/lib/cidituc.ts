@@ -164,7 +164,9 @@ function texto(valor: unknown): string | null {
  * teléfono, barrio— leemos sólo lo que vamos a usar: lo que no se guarda no se
  * puede filtrar.
  */
-function personaDeRespuesta(cuerpo: unknown): PersonaCidituc | null {
+// Exportada para poder probarla: es la función que decide si alguien entra y
+// con qué documento, y lo hace sobre una respuesta que viene de otro sistema.
+export function personaDeRespuesta(cuerpo: unknown): PersonaCidituc | null {
   if (!cuerpo || typeof cuerpo !== "object") return null;
 
   const envoltorio = cuerpo as Record<string, unknown>;

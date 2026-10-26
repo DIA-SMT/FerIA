@@ -16,7 +16,9 @@
     "db:fechas": "tsx prisma/refrescar-fechas.ts",
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
-    "db:importar": "tsx prisma/importar-feria-digital.ts"
+    "db:importar": "tsx prisma/importar-feria-digital.ts",
+    "test": "vitest run",
+    "test:ver": "vitest"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -43,7 +45,8 @@
     "prisma": "^6.3.0",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^5.0.5"
   },
   "allowScripts": {
     "prisma": true,

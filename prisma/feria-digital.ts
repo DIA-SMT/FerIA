@@ -243,8 +243,12 @@ const RUBROS_EXACTOS: Record<string, Rubro> = {
  */
 const RUBROS_POR_PALABRA: Array<[RegExp, Rubro]> = [
   [/MARROQUINERIA|\bCUERO\b/, Rubro.MARROQUINERIA],
-  [/ARTESANIA|ARTESANAL/, Rubro.ARTESANIAS],
-  [/GASTRONOM|COMIDA|PASTELERIA|PANADERIA|REPOSTERIA/, Rubro.GASTRONOMIA],
+  // El **sustantivo**: «artesanía en madera», «artesanías regionales».
+  [/ARTESANIA/, Rubro.ARTESANIAS],
+  [
+    /GASTRONOM|COMIDA|PASTELERIA|PANADERIA|REPOSTERIA|CERVEZA|HELADO/,
+    Rubro.GASTRONOMIA,
+  ],
   [/REGIONAL/, Rubro.PRODUCTOS_REGIONALES],
   [/INDUMENTARIA|\bROPA\b|TEXTIL|TEJIDO/, Rubro.INDUMENTARIA],
   [/JOYERIA|BIJOU|ORFEBRERIA/, Rubro.JOYERIA_Y_BIJOUTERIE],
@@ -253,6 +257,16 @@ const RUBROS_POR_PALABRA: Array<[RegExp, Rubro]> = [
   [/LIBRO|\bARTE\b|PINTURA|ILUSTRACION/, Rubro.LIBROS_Y_ARTE],
   [/PLANTA|VIVERO|HUERTA|JARDIN/, Rubro.HUERTA_Y_VIVERO],
   [/JUGUETE|INFANTIL/, Rubro.JUGUETES],
+  /*
+    El **adjetivo**, y va último a propósito.
+
+    «Artesanal» califica cualquier cosa: pastelería artesanal, cerveza
+    artesanal, cosmética artesanal. Estaba junto al sustantivo y arriba de
+    todo, así que se llevaba a ARTESANIAS a media feria gastronómica —lo
+    encontró la prueba de `PASTELERÍA ARTESANAL`—. Acá abajo sólo atrapa lo
+    que ninguna categoría concreta reclamó, que es para lo que sirve.
+  */
+  [/ARTESANAL/, Rubro.ARTESANIAS],
 ];
 
 export interface RubroTraducido {
