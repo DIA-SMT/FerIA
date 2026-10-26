@@ -317,6 +317,74 @@ Cómo funciona:
 > plataforma no publica precios» y que el municipio no interviene en la venta.
 > Eso lo firma la Dirección de Ferias y Mercados y Legales, no un deploy.
 
+### Ingreso con CiDiTuc
+
+[CiDiTuc](https://cidituc.smt.gob.ar/) es la identidad digital del municipio.
+Acá es **sólo para feriantes**: el vecino que compra no necesita cuenta, y el
+carrito y el pedido no piden sesión en ningún momento.
+
+No es OpenID Connect. No hay `client_id` ni `client_secret`: se manda a la
+persona al Derivador, vuelve con un token en la URL y ese token se valida
+consultando su perfil. Si el backend contesta el perfil, el token es bueno.
+
+```
+/auth/cidituc/ingresar   planta la cookie del state y redirige al Derivador
+/auth/cidituc/callback   verifica el state, consulta el perfil y abre la sesión
+```
+
+El token de CiDiTuc **no se guarda**: sirve para esa consulta y nada más. De
+ahí en adelante la sesión es la de siempre, la de Supabase Auth — CiDiTuc no
+la reemplaza, sólo prueba quién es la persona. El puente está en
+`src/lib/cidituc-feriante.ts` y usa `generateLink` + `verifyOtp`, que es la
+forma estándar de federar una identidad externa sin que nadie reciba un correo.
+
+**La identidad es el documento, no el correo.** Al volver de CiDiTuc se busca
+la ficha del feriante por DNI, normalizando a dígitos de los dos lados: así una
+ficha del padrón importado —que existe pero nunca tuvo contraseña acá— queda
+enganchada a la cuenta de su dueño la primera vez que entra. Eso es
+exactamente para lo que `Vendedor.usuarioId` es opcional.
+
+Quien entra sin ficha no es un error: es alguien que todavía no se postuló, y
+va a `/registro` a completar su alta.
+
+**El alta la hace DITEC, no nosotros.** Hay que pedirles que agreguen nuestra
+clave y la URL del callback a los **dos** mapas de
+`src/components/Login/Login.jsx` del repo `derivador` (`APPS_EXTERNAS` y el
+mapa de respaldo; el respaldo no es opcional, porque Vite hornea las `VITE_*`
+al compilar y sin él el bundle sale con `callbackUrl: undefined`). Mergear no
+alcanza: hay que verificar el bundle **desplegado**.
+
+La URL que hay que registrar es la del **dominio definitivo**:
+
+```
+clave:    feria
+callback: https://feria.smt.gob.ar/auth/cidituc/callback
+```
+
+No la de Vercel. Cambiarla después obliga a otro deploy de ellos, así que el
+orden correcto es: primero el dominio apuntando acá, después el alta en el
+Derivador, y al final el flag.
+
+> `CIDITUC_INGRESO_HABILITADO=true` va **último**, después de ese `curl`. Antes,
+> la persona entra bien a CiDiTuc y queda varada en su pantalla sin mensaje.
+
+#### Mudanza a `feria.smt.gob.ar`
+
+El dominio está cableado en tres lugares y ninguno es el código de CiDiTuc,
+que trabaja contra la URL del pedido que recibe:
+
+| Dónde | Qué cambiar |
+| ----- | ----------- |
+| Vercel | Agregar el dominio al proyecto, y el CNAME en el DNS de `smt.gob.ar` |
+| `NEXT_PUBLIC_APP_URL` | A `https://feria.smt.gob.ar` — gobierna `metadataBase`, o sea las URLs canónicas y las de Open Graph |
+| `.github/workflows/mantener-base-despierta.yml` | La variable `SITIO` |
+
+Conviene hacerlo **antes** de pedirle el alta a DITEC, por lo de arriba.
+
+La guía completa, con las trampas que costaron caro en el Presupuesto
+Participativo y en el Portal del Becario, está en el documento «Integrar el
+login de CIDITUC» de la Dirección.
+
 ### Importar el padrón de Mi Feria Digital
 
 [Mi Feria Digital](https://miferiadigital.smt.gob.ar/) es la otra plataforma de
