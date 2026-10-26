@@ -100,6 +100,20 @@ enum ModoEntrega {
   ACUERDA_CON_FERIANTE
 }
 
+/// Día de la semana en que abre una edición.
+///
+/// Un enum y no un número: `2` no se lee, y el orden del enum es el orden en
+/// que se muestran, que acá empieza en lunes y no en domingo.
+enum DiaSemana {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
 /// Categoría general de la feria (define el perfil del evento).
 enum CategoriaFeria {
   ARTESANIAS
@@ -270,10 +284,37 @@ model EdicionFeria {
 
   /// Nombre opcional de la edición, ej. "Edición Aniversario".
   nombre      String?
-  fechaInicio DateTime @db.Date
-  fechaFin    DateTime @db.Date
-  /// Texto libre, ej. "Sábados y domingos de 17 a 23 h".
-  horario     String
+  fechaInicio DateTime    @db.Date
+  fechaFin    DateTime    @db.Date
+  /// Días de la semana en que abre, ej. `[SABADO, DOMINGO]`.
+  ///
+  /// Junto con `horaApertura` y `horaCierre` reemplazan a `horario` como
+  /// fuente para las tarjetas de la portada: ahí hace falta imprimir «Sáb ·
+  /// 8:00 a 14:00», y eso no se puede sacar de una frase en prosa sin
+  /// adivinarla.
+  diasSemana  DiaSemana[] @default([])
+
+  /// Hora de apertura y de cierre, en formato "HH:MM" de 24 horas.
+  ///
+  /// Texto y no una columna `TIME` a propósito. Es exactamente lo que produce
+  /// y consume un `<input type="time">`, así que no hay conversión en ninguno
+  /// de los dos sentidos; ordena bien alfabéticamente; y sobre todo no arrastra
+  /// zona horaria, que en este proyecto ya nos costó caro. Una feria abre a las
+  /// ocho de la mañana de Tucumán, no a un instante absoluto.
+  horaApertura String? @db.VarChar(5)
+  horaCierre   String? @db.VarChar(5)
+
+  /// Aclaración de horario en texto libre, ej. "Sábados y domingos de 17 a 23 h".
+  ///
+  /// Era el único dato de horario y ahora es el complemento: lo que no entra en
+  /// días y horas —«se suspende por lluvia», «el último domingo del mes no
+  /// abre»— sigue acá. Pasó a opcional para no obligar a repetir en prosa lo
+  /// que ya dicen los campos de arriba.
+  ///
+  /// Mientras una edición no tenga días y horas cargados, la pantalla cae de
+  /// nuevo en este texto. Así la Dirección puede ir completando de a poco en
+  /// vez de recargar las ferias existentes de golpe.
+  horario String?
 
   estado         EstadoEdicion @default(BORRADOR)
   cantidadStands Int           @default(0)

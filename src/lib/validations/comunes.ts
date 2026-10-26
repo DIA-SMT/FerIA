@@ -77,6 +77,26 @@ export function enteroOpcional(min: number, max: number, etiqueta: string) {
   );
 }
 
+/**
+ * Hora de un `<input type="time">`: "HH:MM" en 24 horas, o nada.
+ *
+ * Se valida la forma y no sólo que no esté vacío porque el campo puede llegar
+ * desde fuera del formulario. La misma expresión está como CHECK en la base:
+ * un "8" o un "08:00:00" guardado por otra vía se rompería recién al pintar la
+ * tarjeta, que es el peor lugar para enterarse.
+ */
+export function horaOpcional(etiqueta: string) {
+  return z
+    .string()
+    .trim()
+    .optional()
+    .transform((valor) => (valor && valor.length > 0 ? valor : null))
+    .refine(
+      (valor) => valor === null || /^([01]\d|2[0-3]):[0-5]\d$/.test(valor),
+      { message: `${etiqueta} tiene que ser una hora válida, como 08:00.` },
+    );
+}
+
 /** Entero dentro de un rango. */
 export function entero(min: number, max: number, etiqueta: string) {
   return z.coerce

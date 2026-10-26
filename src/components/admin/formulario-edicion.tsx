@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import type { EstadoEdicion } from "@prisma/client";
+import type { DiaSemana, EstadoEdicion } from "@prisma/client";
 
 import { Alerta } from "@/components/ui/alerta";
 import { estilosBoton } from "@/components/ui/boton";
 import { BotonEnvio } from "@/components/ui/boton-envio";
-import { Campo, Entrada, Seleccion } from "@/components/ui/campo";
+import { Campo, Casilla, Entrada, Seleccion } from "@/components/ui/campo";
+import { DIAS_SEMANA } from "@/lib/labels";
+import { DIAS_EN_ORDEN } from "@/lib/horarios";
 import {
   Tarjeta,
   TarjetaCuerpo,
@@ -22,7 +24,10 @@ export interface ValoresEdicion {
   nombre: string | null;
   fechaInicio: string;
   fechaFin: string;
-  horario: string;
+  horario: string | null;
+  diasSemana: DiaSemana[];
+  horaApertura: string | null;
+  horaCierre: string | null;
   estado: EstadoEdicion;
   cantidadStands: number;
   montoCanon: number;
@@ -125,19 +130,71 @@ export function FormularioEdicion({
             </Campo>
           </div>
 
+          {/* Días y horas son lo que la portada imprime en la tarjeta de cada
+              feria de la semana («Sáb · 8:00 a 14:00»). Mientras estén vacíos
+              la pantalla cae al texto libre de más abajo, así que se pueden
+              completar de a poco sin que nada deje de mostrarse. */}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium text-slate-700">
+              Días que abre
+            </legend>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {DIAS_EN_ORDEN.map((dia) => (
+                <Casilla
+                  key={dia}
+                  name="diasSemana"
+                  value={dia}
+                  etiqueta={DIAS_SEMANA[dia]}
+                  defaultChecked={edicion?.diasSemana.includes(dia) ?? false}
+                />
+              ))}
+            </div>
+            {errores?.diasSemana && (
+              <p className="text-xs font-medium text-red-600">
+                {errores.diasSemana.join(" ")}
+              </p>
+            )}
+          </fieldset>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo
+              htmlFor="horaApertura"
+              etiqueta="Abre a las"
+              errores={errores?.horaApertura}
+            >
+              <Entrada
+                name="horaApertura"
+                type="time"
+                defaultValue={edicion?.horaApertura ?? ""}
+                errores={errores?.horaApertura}
+              />
+            </Campo>
+
+            <Campo
+              htmlFor="horaCierre"
+              etiqueta="Cierra a las"
+              errores={errores?.horaCierre}
+            >
+              <Entrada
+                name="horaCierre"
+                type="time"
+                defaultValue={edicion?.horaCierre ?? ""}
+                errores={errores?.horaCierre}
+              />
+            </Campo>
+          </div>
+
           <Campo
             htmlFor="horario"
-            etiqueta="Horario"
-            ayuda="Texto libre, tal como se le muestra al vecino."
+            etiqueta="Aclaración de horario"
+            ayuda="Opcional, para lo que no entra arriba: «se suspende por lluvia», «el último domingo no abre»."
             errores={errores?.horario}
-            requerido
           >
             <Entrada
               name="horario"
-              defaultValue={edicion?.horario}
-              placeholder="Ej. Viernes a domingo de 17 a 22 h"
+              defaultValue={edicion?.horario ?? ""}
+              placeholder="Ej. Se suspende por lluvia"
               errores={errores?.horario}
-              required
             />
           </Campo>
         </TarjetaCuerpo>
@@ -208,7 +265,9 @@ export function FormularioEdicion({
         <TarjetaPie>
           <Link
             href={
-              edicion ? `/admin/ediciones/${edicion.id}` : `/admin/ferias/${feriaId}`
+              edicion
+                ? `/admin/ediciones/${edicion.id}`
+                : `/admin/ferias/${feriaId}`
             }
             className={estilosBoton("contorno")}
           >

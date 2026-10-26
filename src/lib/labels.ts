@@ -1,5 +1,6 @@
 import type {
   CategoriaFeria,
+  DiaSemana,
   EstadoEdicion,
   EstadoPago,
   EstadoPedido,
@@ -101,6 +102,16 @@ export const TONO_ESTADO_PEDIDO: Record<EstadoPedido, TonoBadge> = {
   CONFIRMADO: "azul",
   ENTREGADO: "verde",
   CANCELADO: "neutro",
+};
+
+export const DIAS_SEMANA: Record<DiaSemana, string> = {
+  LUNES: "Lunes",
+  MARTES: "Martes",
+  MIERCOLES: "Miércoles",
+  JUEVES: "Jueves",
+  VIERNES: "Viernes",
+  SABADO: "Sábado",
+  DOMINGO: "Domingo",
 };
 
 export const MODOS_ENTREGA: Record<ModoEntrega, string> = {

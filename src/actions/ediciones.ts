@@ -69,6 +69,20 @@ async function sincronizarStands(
   return { ocupadosFuera };
 }
 
+/**
+ * Los campos del formulario de edición, con los días de la semana juntados.
+ *
+ * `Object.fromEntries` se queda con el ÚLTIMO valor de cada nombre repetido, y
+ * los días son siete casillas que comparten el mismo `name`: sin esto se
+ * guardaría un solo día, el de más abajo en la pantalla, sin ningún error.
+ */
+function camposDeEdicion(datos: FormData): Record<string, unknown> {
+  return {
+    ...Object.fromEntries(datos),
+    diasSemana: datos.getAll("diasSemana").map(String),
+  };
+}
+
 export async function crearEdicion(
   _estado: EstadoFormulario,
   datos: FormData,
@@ -76,7 +90,7 @@ export async function crearEdicion(
   return ejecutarAccion(async () => {
     await requerirAdmin();
 
-    const validacion = edicionSchema.safeParse(Object.fromEntries(datos));
+    const validacion = edicionSchema.safeParse(camposDeEdicion(datos));
     if (!validacion.success) return estadoDesdeZod(validacion.error);
 
     const entrada = validacion.data;
@@ -94,6 +108,9 @@ export async function crearEdicion(
           nombre: entrada.nombre,
           fechaInicio: entrada.fechaInicio,
           fechaFin: entrada.fechaFin,
+          diasSemana: entrada.diasSemana,
+          horaApertura: entrada.horaApertura,
+          horaCierre: entrada.horaCierre,
           horario: entrada.horario,
           estado: entrada.estado,
           cantidadStands: entrada.cantidadStands,
@@ -119,9 +136,10 @@ export async function actualizarEdicion(
     await requerirAdmin();
 
     const edicionId = String(datos.get("edicionId") ?? "");
-    if (!edicionId) return estadoDeError("Falta el identificador de la edición.");
+    if (!edicionId)
+      return estadoDeError("Falta el identificador de la edición.");
 
-    const validacion = edicionSchema.safeParse(Object.fromEntries(datos));
+    const validacion = edicionSchema.safeParse(camposDeEdicion(datos));
     if (!validacion.success) return estadoDesdeZod(validacion.error);
 
     const entrada = validacion.data;
@@ -133,6 +151,9 @@ export async function actualizarEdicion(
           nombre: entrada.nombre,
           fechaInicio: entrada.fechaInicio,
           fechaFin: entrada.fechaFin,
+          diasSemana: entrada.diasSemana,
+          horaApertura: entrada.horaApertura,
+          horaCierre: entrada.horaCierre,
           horario: entrada.horario,
           estado: entrada.estado,
           cantidadStands: entrada.cantidadStands,
