@@ -1,9 +1,6 @@
-import {
-  calcularPermisos,
-  EDICIONES_CON_OBLIGACION,
-  sumarImportes,
-} from "@/lib/canon";
+import { calcularPermisos, EDICIONES_CON_OBLIGACION } from "@/lib/canon";
 import { edicionesVigentes } from "@/lib/consultas";
+import { sumarImportes } from "@/lib/dinero";
 import { prisma } from "@/lib/db";
 import { aNumero } from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
@@ -100,9 +97,8 @@ export async function obtenerEstadisticas() {
   // feriantes con el canon vencido», y un mismo feriante que arrastra deuda de
   // tres ediciones es una persona a la que llamar, no tres. El monto sí suma
   // todos los permisos, que es lo que se adeuda en total.
-  const feriantesEnMora = new Set(
-    vencidos.map((permiso) => permiso.vendedorId),
-  ).size;
+  const feriantesEnMora = new Set(vencidos.map((permiso) => permiso.vendedorId))
+    .size;
   const montoAdeudado = sumarImportes(
     vencidos.map((permiso) => permiso.resumen.saldo),
   );

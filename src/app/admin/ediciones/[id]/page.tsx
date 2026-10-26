@@ -30,15 +30,14 @@ import {
   Th,
 } from "@/components/ui/tabla";
 import {
-  aCentavos,
   calcularPermisos,
   detalleVencimiento,
   ESTADOS_PERMISO,
   generaObligacionCanon,
-  sumarImportes,
   TONO_ESTADO_PERMISO,
 } from "@/lib/canon";
 import { prisma } from "@/lib/db";
+import { aCentavos, sumarImportes } from "@/lib/dinero";
 import {
   formatearFecha,
   formatearMoneda,
@@ -64,7 +63,12 @@ export default async function PaginaEdicion({
           orderBy: { numero: "asc" },
           include: {
             vendedor: {
-              select: { id: true, emprendimiento: true, rubro: true, slug: true },
+              select: {
+                id: true,
+                emprendimiento: true,
+                rubro: true,
+                slug: true,
+              },
             },
           },
         },
@@ -112,7 +116,8 @@ export default async function PaginaEdicion({
             pago.fechaPago,
         )
         .sort(
-          (a, b) => (b.fechaPago?.getTime() ?? 0) - (a.fechaPago?.getTime() ?? 0),
+          (a, b) =>
+            (b.fechaPago?.getTime() ?? 0) - (a.fechaPago?.getTime() ?? 0),
         )[0];
 
       return [
@@ -153,7 +158,10 @@ export default async function PaginaEdicion({
         }
         migas={[
           { href: "/admin/ferias", texto: "Ferias" },
-          { href: `/admin/ferias/${edicion.feria.id}`, texto: edicion.feria.nombre },
+          {
+            href: `/admin/ferias/${edicion.feria.id}`,
+            texto: edicion.feria.nombre,
+          },
           { texto: titulo },
         ]}
         acciones={

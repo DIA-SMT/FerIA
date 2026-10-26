@@ -28,18 +28,14 @@ import {
   calcularPermisos,
   detalleVencimiento,
   ESTADOS_PERMISO,
-  sumarImportes,
   TONO_ESTADO_PERMISO,
   type EstadoPermiso,
 } from "@/lib/canon";
 import { prisma } from "@/lib/db";
+import { sumarImportes } from "@/lib/dinero";
 import { formatearFecha, formatearMoneda } from "@/lib/format";
 import { urlComprobante } from "@/lib/media";
-import {
-  ESTADOS_PAGO,
-  MEDIOS_PAGO,
-  TONO_ESTADO_PAGO,
-} from "@/lib/labels";
+import { ESTADOS_PAGO, MEDIOS_PAGO, TONO_ESTADO_PAGO } from "@/lib/labels";
 
 export const metadata = { title: "Canon y permisos" };
 
@@ -384,7 +380,9 @@ export default async function PaginaCanon({
                     {pago.vendedor.emprendimiento}
                   </Td>
                   <Td className="text-slate-600">{pago.edicionEtiqueta}</Td>
-                  <Td className="tabular-nums">{formatearMoneda(pago.monto)}</Td>
+                  <Td className="tabular-nums">
+                    {formatearMoneda(pago.monto)}
+                  </Td>
                   <Td className="whitespace-nowrap text-slate-500">
                     {formatearFecha(pago.fechaPago)}
                   </Td>
