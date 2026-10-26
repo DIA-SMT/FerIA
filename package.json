@@ -15,7 +15,8 @@
     "db:seed": "prisma db seed",
     "db:fechas": "tsx prisma/refrescar-fechas.ts",
     "db:reset": "prisma migrate reset",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:importar": "tsx prisma/importar-feria-digital.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

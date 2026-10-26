@@ -271,12 +271,56 @@ Dos detalles de esa separación, que no son casuales:
 | `npm run db:deploy`  | **Aplica las migraciones.** Es el comando a usar con Supabase. |
 | `npm run db:migrate` | Crea una migración nueva a partir de cambios en el schema.    |
 | `npm run db:seed`    | Buckets + usuarios + datos de ejemplo (borra todo antes).     |
+| `npm run db:importar` | Importa el padrón de Mi Feria Digital. Ver abajo.           |
 | `npm run db:studio`  | Prisma Studio, para inspeccionar la base.                    |
 
 > `db:migrate` (`prisma migrate dev`) necesita crear una *shadow database* para
 > calcular el diff. Contra Supabase eso a veces falla por permisos: si te pasa,
 > escribí el archivo SQL a mano en `prisma/migrations/` y aplicalo con
 > `db:deploy`, que es lo que hacen las dos migraciones actuales.
+
+### Importar el padrón de Mi Feria Digital
+
+[Mi Feria Digital](https://miferiadigital.smt.gob.ar/) es la otra plataforma de
+ferias del municipio: un catálogo sobre Firestore con el padrón real de
+emprendimientos verificados por la Dirección. `db:importar` trae esas fichas
+acá.
+
+```bash
+npm run db:importar -- padron.json              # simulacro, no escribe nada
+npm run db:importar -- padron.json --aplicar    # escribe
+```
+
+El simulacro **no necesita base**: se puede correr sobre un export para ver qué
+entraría, qué se cae y cómo quedarían traducidos los rubros, antes de aplicar
+ninguna migración. Deja un `padron.json.reporte.json` con el detalle de cada
+ficha omitida, para devolvérselo a la Dirección y que corrija el origen.
+
+Acepta el export en las formas en que puede llegar: un arreglo plano, un
+`{ emprendedores: [...] }`, la respuesta de la API REST de Firestore
+(`{ documents: [...] }`) o un objeto indexado por id.
+
+| Opción | Qué hace |
+| ------ | -------- |
+| `--aplicar` | Escribe en la base. Sin esto sólo simula. |
+| `--aprobar` | Las fichas entran `APROBADO` en vez de `PENDIENTE`. |
+| `--con-productos` | Crea los productos del padrón, ocultos. |
+
+Tres cosas que conviene saber antes de correrlo:
+
+- **No publica a nadie.** Las fichas entran en `PENDIENTE`. Publicar cientos de
+  fichas con nombre, teléfono y correo de personas reales en un dominio nuevo
+  necesita el aviso del art. 6 de la Ley 25.326 y que los términos digan de
+  dónde salieron esos datos. `--aprobar` existe para cuando esa decisión esté
+  tomada por escrito.
+- **No trae las imágenes.** Los logos de ellos son URLs de su Firebase Storage
+  y nuestras columnas guardan rutas de nuestro bucket. Migrarlas es otro
+  trabajo; el reporte dice cuántas fichas tienen logo.
+- **No pisa lo que editó una persona.** Si alguien ya reclamó su ficha, la
+  importación la saltea: sus datos son más nuevos que los del padrón.
+
+Es idempotente: la ficha se identifica por `(origen, idExterno)`, así que
+correrlo de nuevo actualiza en vez de duplicar.
 
 ---
 
