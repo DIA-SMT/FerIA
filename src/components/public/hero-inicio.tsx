@@ -267,15 +267,41 @@ export function HeroInicio() {
             asistente sigue a un toque en la burbuja de abajo a la derecha.
           */}
           <div
-            className="animar-aparecer relative hidden lg:col-span-5 lg:block"
+            className="animar-aparecer relative hidden lg:col-span-5 lg:block lg:self-end"
             style={{ animationDelay: "560ms" }}
           >
-            <div className="relative ml-auto w-[22rem] xl:w-[26rem]">
-              <p className="absolute top-2 -left-8 z-10 max-w-[12rem] rounded-2xl rounded-br-sm bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-lg ring-1 ring-slate-200">
-                Hola, soy{" "}
-                <span className="font-semibold text-municipal-700">Migue</span>.
-                Preguntame qué feria hay hoy o dónde conseguir algo.
-              </p>
+            {/*
+              El margen negativo es lo que lo saca de flotar. Antes la figura
+              terminaba en el aire a media altura del hero y se leía como una
+              calcomanía pegada encima; ahora baja hasta meterse detrás de la
+              fila de accesos, que viene después en el DOM y por lo tanto se
+              dibuja encima. El corte deja de ser un borde en el vacío y pasa a
+              ser una tarjeta que lo tapa, que es como se para una figura
+              detrás de algo.
+
+              Por lo mismo se le sacó el `drop-shadow`: una sombra suelta sobre
+              una foto es justo lo que hace ver pegado lo que debería estar
+              dentro de la escena.
+            */}
+            <div className="relative -mb-20 ml-auto w-[24rem] xl:w-[28rem]">
+              {/*
+                Globo de historieta, no un recuadro con texto adentro: radios
+                desparejos, una inclinación mínima y una cola que lo ata a
+                Migue. Sin la cola, una caja blanca al lado de un personaje es
+                una caja blanca al lado de un personaje.
+              */}
+              <div className="absolute top-0 -left-12 z-10 w-[13.5rem] -rotate-3 rounded-[2.25rem] rounded-br-xl bg-white px-6 py-5 text-center shadow-xl">
+                <p className="text-3xl leading-none font-bold tracking-tight text-municipal-600">
+                  Migue
+                </p>
+                <p className="mt-2 text-sm leading-snug font-semibold text-municipal-800">
+                  te acompaña en las ferias
+                </p>
+                <span
+                  className="absolute right-10 -bottom-2 size-6 rotate-45 rounded-[0.35rem] bg-white"
+                  aria-hidden="true"
+                />
+              </div>
               <Image
                 src="/migue.webp"
                 // Nombrado y descripto porque no es ambiente: es un personaje
@@ -285,8 +311,8 @@ export function HeroInicio() {
                 width={1315}
                 height={1197}
                 priority
-                sizes="(max-width: 1280px) 22rem, 26rem"
-                className="h-auto w-full drop-shadow-xl"
+                sizes="(max-width: 1280px) 24rem, 28rem"
+                className="h-auto w-full"
               />
             </div>
           </div>
