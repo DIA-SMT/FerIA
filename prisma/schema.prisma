@@ -23,7 +23,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Pooler de transacciones (puerto 6543): lo usa la aplicación.
   url       = env("DATABASE_URL")
   // Conexión directa (puerto 5432): la usan las migraciones.
@@ -62,6 +62,42 @@ enum MedioPago {
   TARJETA_DEBITO
   TARJETA_CREDITO
   OTRO
+}
+
+/// De dónde salió la ficha del feriante.
+///
+/// `PROPIO` es quien se registró en esta plataforma. `FERIA_DIGITAL` es el
+/// padrón importado de miferiadigital.smt.gob.ar — ver
+/// `prisma/importar-feria-digital.ts`. La distinción no es decorativa: una
+/// ficha importada no tiene cuenta todavía (`usuarioId` en null) y sus datos
+/// los cargó el municipio, no la persona.
+enum OrigenVendedor {
+  PROPIO
+  FERIA_DIGITAL
+}
+
+/// Estado de un pedido del vecino a un feriante.
+///
+/// No hay estado de pago: el municipio no cobra. El dinero se acuerda entre las
+/// partes y la plataforma sólo transporta el pedido. Si alguna vez se integra
+/// el cobro, va en un modelo aparte y no acá.
+enum EstadoPedido {
+  /// Enviado al feriante, todavía sin respuesta.
+  PENDIENTE
+  /// El feriante lo tomó y se comprometió a prepararlo.
+  CONFIRMADO
+  /// Entregado al vecino.
+  ENTREGADO
+  /// Cancelado por cualquiera de las dos partes.
+  CANCELADO
+}
+
+/// Cómo recibe el vecino lo que pidió.
+enum ModoEntrega {
+  /// Lo retira en el puesto, durante una edición concreta de la feria.
+  RETIRO_EN_FERIA
+  /// Lo arreglan entre ellos (delivery propio, punto de encuentro, etc.).
+  ACUERDA_CON_FERIANTE
 }
 
 /// Categoría general de la feria (define el perfil del evento).
@@ -111,9 +147,45 @@ model Usuario {
 
 /// Perfil del feriante. Relación 1-1 con Usuario.
 model Vendedor {
-  id        String  @id @default(cuid())
-  usuarioId String  @unique @db.Uuid
-  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id String @id @default(cuid())
+
+  /// Cuenta que controla esta ficha, cuando alguien la controla.
+  ///
+  /// Pasó a ser opcional con la importación del padrón de Feria Digital: esas
+  /// 867 fichas son registros del municipio que todavía nadie reclamó. Cuando
+  /// la persona entre por primera vez (hoy Supabase Auth, mañana CiDiTuc) se le
+  /// engancha su `usuarioId` y recién ahí puede editarla.
+  ///
+  /// Ojo al leer este campo: `usuario` es null en la mayoría de las filas.
+  ///
+  /// Borrar la cuenta ya no borra la ficha (`SetNull`, antes `Cascade`). Con
+  /// `usuarioId` obligatorio el cascade era correcto: sin cuenta no había
+  /// feriante. Ahora la ficha es un registro del municipio que la persona
+  /// reclama, así que si se da de baja la cuenta lo que corresponde es que la
+  /// ficha vuelva a quedar sin reclamar, no que el padrón pierda la fila.
+  usuarioId String?  @unique @db.Uuid
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  /// Procedencia de la ficha y su identidad en el sistema de origen.
+  ///
+  /// `idExterno` es el id del documento en Firestore, que es lo único estable
+  /// que publica Feria Digital. Con el par (origen, idExterno) la importación
+  /// es idempotente: correrla de nuevo actualiza, no duplica.
+  origen            OrigenVendedor @default(PROPIO)
+  idExterno         String?
+  /// Nombre de la persona a cargo del emprendimiento.
+  ///
+  /// Normalmente el titular es `usuario.nombre`, pero una ficha del padrón no
+  /// tiene cuenta todavía y el nombre del responsable es justamente el dato que
+  /// permite que la persona correcta la reclame. Se lee con `titularDe()`.
+  nombreResponsable String?
+  /// Feria de la que viene en el sistema de origen, ej. "artesanos".
+  ///
+  /// Es rastro de la importación, no la relación viva: acá la participación se
+  /// modela por edición a través de `Stand`, y el padrón no trae ni número de
+  /// puesto ni edición. Le sirve a la Dirección para saber a qué feria asignar
+  /// a cada uno cuando arme las ediciones.
+  feriaOrigen       String?
 
   // Datos del emprendimiento
   emprendimiento String
@@ -151,7 +223,11 @@ model Vendedor {
   productos Producto[]
   stands    Stand[]
   pagos     PagoCanon[]
+  pedidos   Pedido[]
 
+  // Idempotencia de la importación. Postgres admite varios NULL en un índice
+  // único, así que las fichas propias (idExterno null) no chocan entre sí.
+  @@unique([origen, idExterno])
   @@index([estado])
   @@index([rubro])
   @@map("vendedores")
@@ -209,8 +285,9 @@ model EdicionFeria {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  stands Stand[]
-  pagos  PagoCanon[]
+  stands  Stand[]
+  pagos   PagoCanon[]
+  pedidos Pedido[]
 
   @@index([feriaId])
   @@index([estado])
@@ -251,11 +328,32 @@ model Producto {
   descripcion String?
   /// Rutas dentro de Supabase Storage, ej. "productos/abc.webp".
   imagenes    String[] @default([])
-  disponible  Boolean  @default(true)
-  destacado   Boolean  @default(false)
+
+  /// Precio de lista, en pesos.
+  ///
+  /// Vuelve después de que `20260814000000_quitar_precio_productos` lo sacara.
+  /// Aquella migración documenta una decisión de la Dirección de Ferias y
+  /// Mercados: la plataforma es vidriera y no canal de venta. El pedido de
+  /// marketplace la revierte, así que la columna existe pero **no se publica**
+  /// hasta que esa Dirección y Legales lo confirmen: lo gobierna
+  /// `PERMITIR_PRECIOS` (ver `src/lib/marketplace.ts`).
+  ///
+  /// Nullable porque el padrón importado llega sin precios —el feriante los
+  /// carga después— y porque un producto sin precio igual se puede mostrar y
+  /// consultar por WhatsApp, que es como funciona hoy. Sin precio no se pide.
+  precio Decimal? @db.Decimal(12, 2)
+  /// Unidades en venta. `null` es «sin control de stock», que es lo normal en
+  /// artesanía y en lo que se hace a pedido; `0` es «no me queda», que es otra
+  /// cosa. `disponible` sigue siendo el interruptor manual del feriante.
+  stock  Int?
+
+  disponible Boolean @default(true)
+  destacado  Boolean @default(false)
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
+
+  items ItemPedido[]
 
   @@index([vendedorId])
   @@index([disponible])
@@ -308,4 +406,86 @@ model ConsultaAsistente {
 
   @@index([creadoEn])
   @@map("consultas_asistente")
+}
+
+// ------------------------------- Pedidos ------------------------------------
+// El vecino arma un carrito y manda un pedido al feriante. El municipio
+// publica y transporta: no cobra, no retiene, no garantiza. Por eso acá no hay
+// medio de pago, ni comisión, ni estado de acreditación — esos campos
+// aparecerían recién si alguna vez se decide integrar el cobro, y esa decisión
+// no está tomada (ver el comentario de `Producto.precio`).
+
+/// Pedido de un vecino a un feriante.
+///
+/// No hay cuenta de comprador a propósito: pedirle registro a alguien que
+/// quiere comprar dos empanadas es la forma más rápida de vaciar el canal.
+/// Lo que se guarda es el mínimo para que el feriante pueda contestar.
+model Pedido {
+  id String @id @default(cuid())
+
+  /// Número corto y legible, para que el vecino y el feriante puedan hablar
+  /// del mismo pedido por WhatsApp sin leerse un cuid en voz alta.
+  numero Int @unique @default(autoincrement())
+
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  // Quién pide. Datos de contacto, no un perfil: se piden para poder entregar
+  // y se declaran en los términos.
+  compradorNombre   String
+  /// Normalizado como el del feriante, sólo dígitos con código de país.
+  compradorWhatsapp String
+  compradorEmail    String?
+  /// Aclaraciones del vecino: talle, color, sin azúcar, a qué hora pasa.
+  notas             String?
+
+  modoEntrega ModoEntrega   @default(RETIRO_EN_FERIA)
+  /// Edición en la que lo retira, cuando el modo es RETIRO_EN_FERIA.
+  edicionId   String?
+  edicion     EdicionFeria? @relation(fields: [edicionId], references: [id], onDelete: SetNull)
+
+  estado            EstadoPedido @default(PENDIENTE)
+  /// Por qué se canceló, si se canceló. Lo ve el vecino.
+  motivoCancelacion String?
+  /// Cuándo el feriante lo sacó de PENDIENTE. Sirve para medir cuántos pedidos
+  /// quedan sin respuesta, que es el número que dice si el canal funciona.
+  respondidoEn      DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  items ItemPedido[]
+
+  @@index([vendedorId])
+  @@index([estado])
+  @@index([creadoEn])
+  @@map("pedidos")
+}
+
+/// Una línea del pedido.
+///
+/// Guarda copia del nombre y del precio al momento de pedir. El precio de un
+/// producto cambia y el producto se borra; lo que se pidió no cambia nunca.
+///
+/// No hay columna `subtotal` ni `total` en `Pedido`, y es deliberado: un total
+/// guardado al lado de las líneas que lo componen es dos números que pueden
+/// contradecirse. Ya nos pasó con el canon. El total se calcula en un solo
+/// lugar, `src/lib/pedidos.ts`, sumando en centavos.
+model ItemPedido {
+  id String @id @default(cuid())
+
+  pedidoId String
+  pedido   Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  /// Queda en null si el feriante borró el producto después de pedirlo.
+  productoId String?
+  producto   Producto? @relation(fields: [productoId], references: [id], onDelete: SetNull)
+
+  nombre         String
+  precioUnitario Decimal @db.Decimal(12, 2)
+  cantidad       Int
+
+  @@index([pedidoId])
+  @@index([productoId])
+  @@map("items_pedido")
 }

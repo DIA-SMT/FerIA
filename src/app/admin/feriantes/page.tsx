@@ -17,11 +17,8 @@ import {
 import { cn } from "@/lib/cn";
 import { prisma } from "@/lib/db";
 import { formatearFecha } from "@/lib/format";
-import {
-  ESTADOS_VENDEDOR,
-  RUBROS,
-  TONO_ESTADO_VENDEDOR,
-} from "@/lib/labels";
+import { titularDe } from "@/lib/titular";
+import { ESTADOS_VENDEDOR, RUBROS, TONO_ESTADO_VENDEDOR } from "@/lib/labels";
 import { formatearWhatsapp } from "@/lib/whatsapp";
 import type { EstadoVendedor, Prisma } from "@prisma/client";
 
@@ -65,7 +62,10 @@ export default async function PaginaFeriantes({
         descripcion="Todos los emprendimientos registrados en la plataforma, sin importar su estado."
       />
 
-      <nav aria-label="Filtrar por estado" className="mb-5 flex flex-wrap gap-2">
+      <nav
+        aria-label="Filtrar por estado"
+        className="mb-5 flex flex-wrap gap-2"
+      >
         {FILTROS.map((filtro) => {
           const activo = (params.estado ?? "") === filtro.valor;
           const href = filtro.valor
@@ -117,70 +117,81 @@ export default async function PaginaFeriantes({
               </tr>
             </TablaCabecera>
             <TablaCuerpo>
-              {feriantes.map((feriante) => (
-                <TablaFila key={feriante.id}>
-                  <Td>
-                    <div className="flex items-center gap-2.5">
-                      <Avatar
-                        nombre={feriante.emprendimiento}
-                        imagen={feriante.logo}
-                        tamanio="sm"
-                      />
-                      <span className="font-medium text-slate-900">
-                        {feriante.emprendimiento}
+              {feriantes.map((feriante) => {
+                const titular = titularDe(feriante);
+
+                return (
+                  <TablaFila key={feriante.id}>
+                    <Td>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar
+                          nombre={feriante.emprendimiento}
+                          imagen={feriante.logo}
+                          tamanio="sm"
+                        />
+                        <span className="font-medium text-slate-900">
+                          {feriante.emprendimiento}
+                        </span>
+                      </div>
+                    </Td>
+                    <Td className="text-slate-500">{RUBROS[feriante.rubro]}</Td>
+                    <Td>
+                      <span className="block text-slate-700">
+                        {titular.nombre}
                       </span>
-                    </div>
-                  </Td>
-                  <Td className="text-slate-500">{RUBROS[feriante.rubro]}</Td>
-                  <Td>
-                    <span className="block text-slate-700">
-                      {feriante.usuario.nombre}
-                    </span>
-                    <span className="block text-xs text-slate-400">
-                      {feriante.usuario.email}
-                    </span>
-                  </Td>
-                  <Td className="whitespace-nowrap text-slate-600">
-                    {formatearWhatsapp(feriante.whatsapp)}
-                  </Td>
-                  <Td>
-                    <Badge
-                      tono={TONO_ESTADO_VENDEDOR[feriante.estado]}
-                      tamanio="sm"
-                    >
-                      {ESTADOS_VENDEDOR[feriante.estado]}
-                    </Badge>
-                  </Td>
-                  <Td className="text-center tabular-nums">
-                    {feriante._count.productos}
-                  </Td>
-                  <Td className="text-center tabular-nums">
-                    {feriante._count.stands}
-                  </Td>
-                  <Td className="whitespace-nowrap text-slate-500">
-                    {formatearFecha(feriante.creadoEn)}
-                  </Td>
-                  <Td className="text-right">
-                    {feriante.estado === "APROBADO" ? (
-                      <Link
-                        href={`/stands/${feriante.slug}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                      <span className="block text-xs text-slate-400">
+                        {titular.reclamada
+                          ? titular.email
+                          : (titular.email ?? "Sin cuenta")}
+                      </span>
+                      {!titular.reclamada && (
+                        <Badge tono="neutro" tamanio="sm" className="mt-1">
+                          Padrón sin reclamar
+                        </Badge>
+                      )}
+                    </Td>
+                    <Td className="whitespace-nowrap text-slate-600">
+                      {formatearWhatsapp(feriante.whatsapp)}
+                    </Td>
+                    <Td>
+                      <Badge
+                        tono={TONO_ESTADO_VENDEDOR[feriante.estado]}
+                        tamanio="sm"
                       >
-                        Ver stand
-                        <IconoEnlaceExterno className="size-3.5" />
-                      </Link>
-                    ) : (
-                      <Link
-                        href="/admin/solicitudes"
-                        className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-                      >
-                        Revisar
-                      </Link>
-                    )}
-                  </Td>
-                </TablaFila>
-              ))}
+                        {ESTADOS_VENDEDOR[feriante.estado]}
+                      </Badge>
+                    </Td>
+                    <Td className="text-center tabular-nums">
+                      {feriante._count.productos}
+                    </Td>
+                    <Td className="text-center tabular-nums">
+                      {feriante._count.stands}
+                    </Td>
+                    <Td className="whitespace-nowrap text-slate-500">
+                      {formatearFecha(feriante.creadoEn)}
+                    </Td>
+                    <Td className="text-right">
+                      {feriante.estado === "APROBADO" ? (
+                        <Link
+                          href={`/stands/${feriante.slug}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                        >
+                          Ver stand
+                          <IconoEnlaceExterno className="size-3.5" />
+                        </Link>
+                      ) : (
+                        <Link
+                          href="/admin/solicitudes"
+                          className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                        >
+                          Revisar
+                        </Link>
+                      )}
+                    </Td>
+                  </TablaFila>
+                );
+              })}
             </TablaCuerpo>
           </Tabla>
         </Tarjeta>

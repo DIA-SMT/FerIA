@@ -15,18 +15,28 @@ import {
 import { prisma } from "@/lib/db";
 import { formatearFechaHora } from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
+import { titularDe } from "@/lib/titular";
 
 export const metadata = { title: "Solicitudes" };
 
 export default async function PaginaSolicitudes() {
+  // Sólo fichas que alguien pidió.
+  //
+  // Una ficha del padrón importado de Feria Digital también nace PENDIENTE
+  // —no está publicada hasta que la Dirección la revise— pero no es una
+  // solicitud: nadie la presentó. Sin este filtro la bandeja se llenaba con
+  // 867 trámites que nadie inició y tapaba a los feriantes que sí están
+  // esperando respuesta. El padrón se revisa desde /admin/feriantes.
+  const soloConSolicitante = { usuarioId: { not: null } };
+
   const [pendientes, rechazadas] = await Promise.all([
     prisma.vendedor.findMany({
-      where: { estado: "PENDIENTE" },
+      where: { estado: "PENDIENTE", ...soloConSolicitante },
       orderBy: { creadoEn: "asc" },
       include: { usuario: { select: { nombre: true, email: true } } },
     }),
     prisma.vendedor.findMany({
-      where: { estado: "RECHAZADO" },
+      where: { estado: "RECHAZADO", ...soloConSolicitante },
       orderBy: { revisadoEn: "desc" },
       take: 20,
       include: { usuario: { select: { nombre: true, email: true } } },
@@ -56,27 +66,31 @@ export default async function PaginaSolicitudes() {
           />
         ) : (
           <div className="space-y-4">
-            {pendientes.map((solicitud) => (
-              <TarjetaSolicitud
-                key={solicitud.id}
-                solicitud={{
-                  id: solicitud.id,
-                  emprendimiento: solicitud.emprendimiento,
-                  rubro: solicitud.rubro,
-                  descripcion: solicitud.descripcion,
-                  whatsapp: solicitud.whatsapp,
-                  telefono: solicitud.telefono,
-                  instagram: solicitud.instagram,
-                  facebook: solicitud.facebook,
-                  sitioWeb: solicitud.sitioWeb,
-                  dni: solicitud.dni,
-                  direccion: solicitud.direccion,
-                  creadoEn: solicitud.creadoEn,
-                  nombreTitular: solicitud.usuario.nombre,
-                  emailTitular: solicitud.usuario.email,
-                }}
-              />
-            ))}
+            {pendientes.map((solicitud) => {
+              const titular = titularDe(solicitud);
+
+              return (
+                <TarjetaSolicitud
+                  key={solicitud.id}
+                  solicitud={{
+                    id: solicitud.id,
+                    emprendimiento: solicitud.emprendimiento,
+                    rubro: solicitud.rubro,
+                    descripcion: solicitud.descripcion,
+                    whatsapp: solicitud.whatsapp,
+                    telefono: solicitud.telefono,
+                    instagram: solicitud.instagram,
+                    facebook: solicitud.facebook,
+                    sitioWeb: solicitud.sitioWeb,
+                    dni: solicitud.dni,
+                    direccion: solicitud.direccion,
+                    creadoEn: solicitud.creadoEn,
+                    nombreTitular: titular.nombre,
+                    emailTitular: titular.email ?? "Sin correo",
+                  }}
+                />
+              );
+            })}
           </div>
         )}
       </section>
@@ -111,7 +125,8 @@ export default async function PaginaSolicitudes() {
                         </Badge>
                       </div>
                       <p className="mt-0.5 text-sm text-slate-500">
-                        {solicitud.usuario.nombre} · {solicitud.usuario.email}
+                        {titularDe(solicitud).nombre} ·{" "}
+                        {titularDe(solicitud).email ?? "Sin correo"}
                       </p>
                       {solicitud.motivoRechazo && (
                         <p className="mt-2 rounded-lg bg-red-50 p-2.5 text-sm text-red-900">
@@ -120,7 +135,8 @@ export default async function PaginaSolicitudes() {
                       )}
                       {solicitud.revisadoEn && (
                         <p className="mt-1 text-xs text-slate-400">
-                          Rechazada el {formatearFechaHora(solicitud.revisadoEn)}
+                          Rechazada el{" "}
+                          {formatearFechaHora(solicitud.revisadoEn)}
                         </p>
                       )}
                     </div>
