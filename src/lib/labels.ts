@@ -2,8 +2,10 @@ import type {
   CategoriaFeria,
   EstadoEdicion,
   EstadoPago,
+  EstadoPedido,
   EstadoVendedor,
   MedioPago,
+  ModoEntrega,
   Rol,
   Rubro,
 } from "@prisma/client";
@@ -17,12 +19,7 @@ import type {
 
 /** Clases de Tailwind para las `Badge` de cada estado. */
 export type TonoBadge =
-  | "azul"
-  | "celeste"
-  | "amarillo"
-  | "verde"
-  | "rojo"
-  | "neutro";
+  "azul" | "celeste" | "amarillo" | "verde" | "rojo" | "neutro";
 
 export const RUBROS: Record<Rubro, string> = {
   ARTESANIAS: "Artesanías",
@@ -84,6 +81,31 @@ export const TONO_ESTADO_PAGO: Record<EstadoPago, TonoBadge> = {
   PENDIENTE: "amarillo",
   PAGADO: "verde",
   ANULADO: "neutro",
+};
+
+/**
+ * Estados del pedido, escritos desde donde los lee el vecino.
+ *
+ * Ninguno habla de pago, y es deliberado: el municipio no sabe si se pagó ni
+ * tiene por qué saberlo. «Entregado» es lo más lejos que llega la plataforma.
+ */
+export const ESTADOS_PEDIDO: Record<EstadoPedido, string> = {
+  PENDIENTE: "Esperando respuesta",
+  CONFIRMADO: "Confirmado por el feriante",
+  ENTREGADO: "Entregado",
+  CANCELADO: "Cancelado",
+};
+
+export const TONO_ESTADO_PEDIDO: Record<EstadoPedido, TonoBadge> = {
+  PENDIENTE: "amarillo",
+  CONFIRMADO: "azul",
+  ENTREGADO: "verde",
+  CANCELADO: "neutro",
+};
+
+export const MODOS_ENTREGA: Record<ModoEntrega, string> = {
+  RETIRO_EN_FERIA: "Retira en la feria",
+  ACUERDA_CON_FERIANTE: "A convenir con el feriante",
 };
 
 export const MEDIOS_PAGO: Record<MedioPago, string> = {

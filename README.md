@@ -279,6 +279,44 @@ Dos detalles de esa separación, que no son casuales:
 > escribí el archivo SQL a mano en `prisma/migrations/` y aplicalo con
 > `db:deploy`, que es lo que hacen las dos migraciones actuales.
 
+### El marketplace
+
+Carrito, precios y pedidos están detrás de dos flags y vienen **apagados**:
+
+| Variable | Qué habilita |
+| -------- | ------------ |
+| `PERMITIR_PRECIOS` | Que el feriante cargue precio y stock, y que se vean en la vidriera. |
+| `PERMITIR_PEDIDOS` | El carrito, el checkout y la bandeja de pedidos del feriante. Requiere la anterior. |
+
+Son dos y no uno porque son dos decisiones distintas: publicar un precio es
+informar, tomar un pedido es intervenir en la operación.
+
+**El municipio no cobra.** La plataforma arma el pedido, lo deja asentado y
+manda al vecino a hablar por WhatsApp con quien produce; el pago y la entrega
+se arreglan entre ellos. Por eso no hay medio de pago, ni comisión, ni estado
+de acreditación en ningún lado, y el panel del feriante no tiene botón de
+«cobrado»: el municipio no sabe si le pagaron ni tiene por qué saberlo.
+
+Cómo funciona:
+
+- Hay **un carrito por feriante**, no uno solo. Cada pedido se le hace a una
+  persona que cobra y entrega por su cuenta; un carrito único con cosas de tres
+  puestos serían tres pedidos disfrazados de una compra.
+- El carrito vive en `localStorage`. No hay cuenta de comprador: pedirle
+  registro a alguien que quiere dos docenas de empanadas vacía el canal.
+- **Los precios no viajan en el formulario.** El navegador manda qué producto y
+  cuántas unidades; el servidor busca el producto y pone el precio de la base.
+  Editar el carrito desde las herramientas del navegador no cambia nada.
+- La pantalla del pedido (`/pedido/<id>`) es pública por URL y por eso **no
+  muestra datos de quien compró**: sólo qué se pidió, a quién y en qué estado
+  está. Para mostrarle sus datos al comprador haría falta un token aleatorio en
+  la URL, que es otra columna.
+
+> Antes de prender `PERMITIR_PRECIOS` hay que actualizar
+> `src/components/public/terminos-contenido.tsx`: hoy dice textualmente «La
+> plataforma no publica precios» y que el municipio no interviene en la venta.
+> Eso lo firma la Dirección de Ferias y Mercados y Legales, no un deploy.
+
 ### Importar el padrón de Mi Feria Digital
 
 [Mi Feria Digital](https://miferiadigital.smt.gob.ar/) es la otra plataforma de

@@ -206,6 +206,24 @@ export function IconoMas(props: PropsIcono) {
   );
 }
 
+export function IconoMenos(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M5 12h14" />
+    </Base>
+  );
+}
+
+export function IconoCarrito(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M3 4h2l2.4 11.2a1.5 1.5 0 001.5 1.2h8.3a1.5 1.5 0 001.5-1.2L20.5 8H6" />
+      <circle cx="9.5" cy="20" r="1.3" />
+      <circle cx="17" cy="20" r="1.3" />
+    </Base>
+  );
+}
+
 export function IconoLapiz(props: PropsIcono) {
   return (
     <Base {...props}>

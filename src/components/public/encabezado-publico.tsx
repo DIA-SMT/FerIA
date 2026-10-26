@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { cerrarSesion } from "@/actions/auth";
+import { IndicadorCarrito } from "@/components/carrito/indicador-carrito";
 import { MenuMovil } from "@/components/public/menu-movil";
 import { estilosBoton } from "@/components/ui/boton";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { hayPedidos } from "@/lib/marketplace";
 import { obtenerSesion } from "@/lib/session";
 
 const ENLACES = [
@@ -58,9 +60,14 @@ export async function EncabezadoPublico() {
           ))}
         </nav>
 
-        <div className="hidden md:block">{acciones}</div>
-
-        <MenuMovil enlaces={ENLACES} acciones={acciones} />
+        {/* El carrito queda afuera del menú móvil y visible siempre que tenga
+            algo: es el único control del encabezado que cambia solo, y
+            esconderlo detrás de un menú hace que nadie se entere. */}
+        <div className="flex items-center gap-1">
+          {hayPedidos() && <IndicadorCarrito />}
+          <div className="hidden md:block">{acciones}</div>
+          <MenuMovil enlaces={ENLACES} acciones={acciones} />
+        </div>
       </div>
     </header>
   );

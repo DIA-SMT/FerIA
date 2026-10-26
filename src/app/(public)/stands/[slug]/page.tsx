@@ -22,8 +22,15 @@ import {
 import { ImagenPortada } from "@/components/ui/imagen";
 import { EDICIONES_PUBLICAS } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearRangoFechas, hoyEnZona, truncar } from "@/lib/format";
+import {
+  aNumero,
+  formatearRangoFechas,
+  hoyEnZona,
+  truncar,
+} from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
+import { hayPedidos, hayPreciosPublicos } from "@/lib/marketplace";
+import { hayUnidades } from "@/lib/pedidos";
 import {
   linkFacebook,
   linkInstagram,
@@ -41,7 +48,11 @@ async function obtenerStand(slug: string) {
     where: { slug, estado: "APROBADO" },
     include: {
       productos: {
-        orderBy: [{ destacado: "desc" }, { disponible: "desc" }, { nombre: "asc" }],
+        orderBy: [
+          { destacado: "desc" },
+          { disponible: "desc" },
+          { nombre: "asc" },
+        ],
       },
       stands: {
         where: { edicion: EDICIONES_PUBLICAS },
@@ -128,10 +139,21 @@ export default async function PaginaStand({
     (stand) => stand.edicion.fechaFin >= hoy,
   );
 
-  const disponibles = vendedor.productos.filter(
-    (producto) => producto.disponible,
-  );
-  const agotados = vendedor.productos.filter((producto) => !producto.disponible);
+  // El `Decimal` de Prisma no se puede serializar hacia un Client Component,
+  // y el botón de agregar al carrito lo es. Se convierte acá, una sola vez.
+  const productos = vendedor.productos.map((producto) => ({
+    ...producto,
+    precio: producto.precio === null ? null : aNumero(producto.precio),
+  }));
+
+  const disponibles = productos.filter(hayUnidades);
+  const agotados = productos.filter((producto) => !hayUnidades(producto));
+
+  const marketplace = { precios: hayPreciosPublicos(), pedidos: hayPedidos() };
+  const stand = {
+    slug: vendedor.slug,
+    emprendimiento: vendedor.emprendimiento,
+  };
 
   const enlaceWhatsapp = linkWhatsapp(
     vendedor.whatsapp,
@@ -239,8 +261,9 @@ export default async function PaginaStand({
                     <TarjetaProducto
                       key={producto.id}
                       producto={producto}
-                      emprendimiento={vendedor.emprendimiento}
+                      stand={stand}
                       whatsapp={vendedor.whatsapp}
+                      marketplace={marketplace}
                     />
                   ))}
                 </div>

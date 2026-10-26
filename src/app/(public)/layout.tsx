@@ -1,12 +1,17 @@
 import type { ReactNode } from "react";
 
+import { ProveedorCarrito } from "@/components/carrito/estado-carrito";
 import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import { EncabezadoPublico } from "@/components/public/encabezado-publico";
 import { PiePublico } from "@/components/public/pie-publico";
 import { hayIAConfigurada } from "@/lib/ai";
+import { hayPedidos } from "@/lib/marketplace";
 
 export default function LayoutPublico({ children }: { children: ReactNode }) {
-  return (
+  // Con los pedidos apagados el proveedor no se monta: el estado del carrito,
+  // su lectura de localStorage y el indicador del encabezado no llegan al
+  // navegador. Apagar el flag deja el sitio exactamente como estaba.
+  const contenido = (
     <div className="flex min-h-dvh flex-col">
       <a
         href="#contenido"
@@ -30,4 +35,8 @@ export default function LayoutPublico({ children }: { children: ReactNode }) {
       {hayIAConfigurada() && <AsistenteBurbuja />}
     </div>
   );
+
+  if (!hayPedidos()) return contenido;
+
+  return <ProveedorCarrito>{contenido}</ProveedorCarrito>;
 }
