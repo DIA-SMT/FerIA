@@ -5,11 +5,7 @@ import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import { Badge } from "@/components/ui/badge";
 import { BotonLink } from "@/components/ui/boton";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
-import {
-  IconoEtiqueta,
-  IconoLapiz,
-  IconoMas,
-} from "@/components/ui/iconos";
+import { IconoEtiqueta, IconoLapiz, IconoMas } from "@/components/ui/iconos";
 import { ImagenPortada } from "@/components/ui/imagen";
 import { Tarjeta } from "@/components/ui/tarjeta";
 import { prisma } from "@/lib/db";
@@ -76,7 +72,11 @@ export default async function PaginaProductos() {
                   />
                   <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
                     {producto.destacado && (
-                      <Badge tono="amarillo" tamanio="sm" className="bg-white/95">
+                      <Badge
+                        tono="amarillo"
+                        tamanio="sm"
+                        className="bg-white/95"
+                      >
                         Destacado
                       </Badge>
                     )}

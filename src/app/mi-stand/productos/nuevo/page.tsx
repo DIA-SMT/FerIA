@@ -4,6 +4,7 @@ import Link from "next/link";
 import { crearProducto } from "@/actions/productos";
 import { FormularioProducto } from "@/components/vendedor/formulario-producto";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
+import { hayPreciosPublicos } from "@/lib/marketplace";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Nuevo producto" };
@@ -26,7 +27,11 @@ export default async function PaginaNuevoProducto() {
         </h1>
       </header>
 
-      <FormularioProducto accion={crearProducto} hayIA={hayIAConfigurada()} />
+      <FormularioProducto
+        accion={crearProducto}
+        hayIA={hayIAConfigurada()}
+        conPrecios={hayPreciosPublicos()}
+      />
     </div>
   );
 }

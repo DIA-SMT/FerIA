@@ -11,11 +11,7 @@ import { normalizarWhatsapp } from "@/lib/whatsapp";
  */
 
 /** Texto obligatorio, ya recortado. */
-export function texto(
-  min: number,
-  max: number,
-  etiqueta: string,
-): z.ZodString {
+export function texto(min: number, max: number, etiqueta: string): z.ZodString {
   return z
     .string({ required_error: `${etiqueta} es obligatorio.` })
     .trim()
@@ -48,6 +44,36 @@ export function importe(etiqueta: string) {
       .number({ invalid_type_error: `${etiqueta} debe ser un número.` })
       .min(0, `${etiqueta} no puede ser negativo.`)
       .max(999_999_999, `${etiqueta} es demasiado grande.`),
+  );
+}
+
+/**
+ * Importe opcional: el campo vacío se guarda como `null`.
+ *
+ * `null` y `0` son cosas distintas acá y no hay que confundirlas: un producto
+ * sin precio cargado es uno que todavía no se puede pedir, y uno con precio 0
+ * sería uno que se regala. Por eso la cadena vacía no cae en el `coerce`, que
+ * la convertiría en 0.
+ */
+export function importeOpcional(etiqueta: string) {
+  return z.preprocess(
+    (valor) => {
+      if (typeof valor !== "string") return valor;
+      const limpio = valor.trim().replace(",", ".");
+      return limpio === "" ? null : limpio;
+    },
+    z.union([z.null(), importe(etiqueta)]),
+  );
+}
+
+/** Entero opcional dentro de un rango: el campo vacío se guarda como `null`. */
+export function enteroOpcional(min: number, max: number, etiqueta: string) {
+  return z.preprocess(
+    (valor) => {
+      if (typeof valor !== "string") return valor;
+      return valor.trim() === "" ? null : valor.trim();
+    },
+    z.union([z.null(), entero(min, max, etiqueta)]),
   );
 }
 
@@ -182,7 +208,9 @@ export const sitioWebOpcional = z
   .optional()
   .transform((valor) => {
     if (!valor) return null;
-    const conProtocolo = /^https?:\/\//i.test(valor) ? valor : `https://${valor}`;
+    const conProtocolo = /^https?:\/\//i.test(valor)
+      ? valor
+      : `https://${valor}`;
     return conProtocolo;
   })
   .refine(

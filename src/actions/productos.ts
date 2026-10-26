@@ -86,6 +86,8 @@ export async function crearProducto(
         vendedorId: vendedor.id,
         nombre: entrada.nombre,
         descripcion: entrada.descripcion,
+        precio: entrada.precio,
+        stock: entrada.stock,
         disponible: entrada.disponible,
         destacado: entrada.destacado,
         imagenes,
@@ -109,7 +111,8 @@ export async function actualizarProducto(
     const { vendedor } = await requerirVendedorAprobado();
 
     const productoId = String(datos.get("productoId") ?? "");
-    if (!productoId) return estadoDeError("Falta el identificador del producto.");
+    if (!productoId)
+      return estadoDeError("Falta el identificador del producto.");
 
     const actual = await prisma.producto.findUnique({
       where: { id: productoId },
@@ -137,6 +140,8 @@ export async function actualizarProducto(
       data: {
         nombre: entrada.nombre,
         descripcion: entrada.descripcion,
+        precio: entrada.precio,
+        stock: entrada.stock,
         disponible: entrada.disponible,
         destacado: entrada.destacado,
         imagenes: [...conservadas, ...nuevas],

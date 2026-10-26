@@ -6,6 +6,8 @@ import { actualizarProducto } from "@/actions/productos";
 import { FormularioProducto } from "@/components/vendedor/formulario-producto";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
 import { prisma } from "@/lib/db";
+import { aNumero } from "@/lib/format";
+import { hayPreciosPublicos } from "@/lib/marketplace";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Editar producto" };
@@ -42,6 +44,7 @@ export default async function PaginaEditarProducto({
 
       <FormularioProducto
         hayIA={hayIAConfigurada()}
+        conPrecios={hayPreciosPublicos()}
         accion={actualizarProducto}
         producto={{
           id: producto.id,
@@ -50,6 +53,8 @@ export default async function PaginaEditarProducto({
           imagenes: producto.imagenes,
           disponible: producto.disponible,
           destacado: producto.destacado,
+          precio: producto.precio === null ? null : aNumero(producto.precio),
+          stock: producto.stock,
         }}
       />
     </div>

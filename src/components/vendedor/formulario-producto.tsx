@@ -29,6 +29,9 @@ export interface ValoresProducto {
   imagenes: string[];
   disponible: boolean;
   destacado: boolean;
+  /** Ya convertido a `number`: un `Decimal` de Prisma no cruza al cliente. */
+  precio: number | null;
+  stock: number | null;
 }
 
 interface PropsFormularioProducto {
@@ -44,12 +47,18 @@ interface PropsFormularioProducto {
    * de cliente, así que no puede consultarlo por su cuenta.
    */
   hayIA?: boolean;
+  /**
+   * Si el marketplace está habilitado. Viaja igual que `hayIA` y por el mismo
+   * motivo: `hayPreciosPublicos()` lee el entorno del servidor.
+   */
+  conPrecios?: boolean;
 }
 
 export function FormularioProducto({
   accion,
   producto,
   hayIA = true,
+  conPrecios = false,
 }: PropsFormularioProducto) {
   const [estado, enviar] = useActionState(accion, ESTADO_INICIAL);
   const errores = estado.errores;
@@ -151,6 +160,48 @@ export function FormularioProducto({
             />
           </Campo>
 
+          {/* Precio y stock sólo existen con el marketplace habilitado. Con
+              el flag apagado ni siquiera se dibujan los campos: la vidriera
+              sigue siendo una vidriera y el valor se acuerda por WhatsApp. */}
+          {conPrecios && (
+            <div className="grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
+              <Campo
+                htmlFor="precio"
+                etiqueta="Precio"
+                ayuda="Dejalo vacío si es a pedido o si preferís acordarlo por WhatsApp."
+                errores={errores?.precio}
+              >
+                <Entrada
+                  name="precio"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  defaultValue={producto?.precio ?? ""}
+                  placeholder="0,00"
+                  errores={errores?.precio}
+                />
+              </Campo>
+
+              <Campo
+                htmlFor="stock"
+                etiqueta="Stock"
+                ayuda="Vacío = sin control de stock. Poné 0 si se te terminó."
+                errores={errores?.stock}
+              >
+                <Entrada
+                  name="stock"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step="1"
+                  defaultValue={producto?.stock ?? ""}
+                  errores={errores?.stock}
+                />
+              </Campo>
+            </div>
+          )}
+
           <div className="space-y-3 border-t border-slate-100 pt-4">
             <Casilla
               name="disponible"
@@ -248,10 +299,7 @@ export function FormularioProducto({
         </TarjetaCuerpo>
 
         <TarjetaPie>
-          <Link
-            href="/mi-stand/productos"
-            className={estilosBoton("contorno")}
-          >
+          <Link href="/mi-stand/productos" className={estilosBoton("contorno")}>
             Cancelar
           </Link>
           <BotonEnvio>
