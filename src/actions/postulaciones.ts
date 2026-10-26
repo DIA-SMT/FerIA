@@ -10,7 +10,12 @@ import {
   estadoDeExito,
   type EstadoFormulario,
 } from "@/lib/form";
-import { requerirAdmin, requerirVendedor, obtenerSesion } from "@/lib/session";
+import {
+  obtenerSesion,
+  obtenerUsuarioAuth,
+  requerirAdmin,
+  requerirVendedor,
+} from "@/lib/session";
 import { generarSlugUnico } from "@/lib/slug";
 import {
   encuestaSchema,
@@ -32,6 +37,20 @@ function revalidarPostulaciones(): void {
 }
 
 /**
+ * El documento que CiDiTuc verificó, guardado en el metadata de la cuenta.
+ *
+ * Devuelve `null` para quien entró con correo y contraseña: ahí nadie verificó
+ * nada, y un DNI escrito a mano no es lo mismo que uno validado contra el
+ * padrón municipal. Preferible una ficha sin DNI que una con un DNI que dice
+ * tener un respaldo que no tiene.
+ */
+async function documentoDeLaSesion(): Promise<string | null> {
+  const usuario = await obtenerUsuarioAuth();
+  const valor = usuario?.user_metadata?.["documento"];
+  return typeof valor === "string" && /^\d{6,11}$/.test(valor) ? valor : null;
+}
+
+/**
  * Primera encuesta: crea la ficha del emprendimiento y la postulación.
  *
  * Es el reemplazo del registro para los feriantes. No pide ni correo ni
@@ -48,6 +67,13 @@ export async function enviarEncuesta(
     if (!sesion) return estadoDeError("Tenés que ingresar para postularte.");
 
     const entrada = encuestaSchema.parse(Object.fromEntries(datos));
+
+    // El DNI no se pide en el formulario: lo trae CiDiTuc ya verificado y el
+    // callback lo dejó en el metadata de la cuenta. Guardarlo en la ficha es lo
+    // que permite reconocer a esta persona si vuelve con otro correo, y lo que
+    // va a enganchar su ficha con la del padrón de Feria Digital cuando se
+    // importe, en vez de duplicarla.
+    const documento = await documentoDeLaSesion();
 
     const feria = await prisma.feria.findFirst({
       where: { id: entrada.feriaId, activa: true },
@@ -83,6 +109,7 @@ export async function enviarEncuesta(
         telefono: entrada.telefono,
         email: sesion.email,
         nombreResponsable: sesion.nombre,
+        dni: documento,
         instagram: entrada.instagram,
         facebook: entrada.facebook,
         sitioWeb: entrada.sitioWeb,

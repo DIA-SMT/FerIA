@@ -54,6 +54,7 @@ export default async function PaginaPostulaciones() {
             descripcion: true,
             whatsapp: true,
             email: true,
+            dni: true,
             nombreResponsable: true,
             estado: true,
             usuario: { select: { nombre: true, email: true } },
@@ -107,8 +108,15 @@ export default async function PaginaPostulaciones() {
                         <p className="font-semibold text-slate-900">
                           {postulacion.vendedor.emprendimiento}
                         </p>
+                        {/* El DNI va acá porque es lo que permite verificar a
+                            la persona: cuando entró por CiDiTuc lo trae
+                            validado contra el padrón municipal, y si falta es
+                            señal de que la cuenta se hizo con contraseña. */}
                         <p className="text-sm text-slate-600">
                           {titular.nombre}
+                          {postulacion.vendedor.dni
+                            ? ` · DNI ${postulacion.vendedor.dni}`
+                            : ""}
                           {titular.email ? ` · ${titular.email}` : ""}
                         </p>
                         {/* El WhatsApp es por donde la Dirección resuelve las

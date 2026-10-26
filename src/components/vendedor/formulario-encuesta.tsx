@@ -35,7 +35,8 @@ export function FormularioEncuesta({
   persona,
 }: {
   ferias: FeriaParaElegir[];
-  persona: { nombre: string; email: string };
+  /** Lo que ya trajo CiDiTuc. `documento` es null si entró con contraseña. */
+  persona: { nombre: string; email: string; documento: string | null };
 }) {
   const [estado, enviar] = useActionState(enviarEncuesta, ESTADO_INICIAL);
   const errores = estado.errores;
@@ -48,9 +49,12 @@ export function FormularioEncuesta({
 
       <Alerta tipo="info">
         Estás completando la encuesta como{" "}
-        <strong className="font-semibold">{persona.nombre}</strong> ({persona.email}).
-        Tus datos personales los tomamos de tu cuenta de CiDiTuc, así que acá
-        sólo te preguntamos por tu emprendimiento.
+        <strong className="font-semibold">{persona.nombre}</strong> (
+        {persona.email}
+        {persona.documento ? `, DNI ${persona.documento}` : ""}). Esos datos los
+        tomamos de tu cuenta de CiDiTuc —por eso no te los pedimos acá— y los
+        guardamos junto con tu ficha. Lo único que te preguntamos es por tu
+        emprendimiento.
       </Alerta>
 
       <Tarjeta>

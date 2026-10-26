@@ -106,6 +106,32 @@ async function abrirSesion(email: string): Promise<boolean> {
 }
 
 /**
+ * Deja el documento verificado en el metadata de una cuenta que ya existía.
+ *
+ * No es crítico: si falla, lo único que pasa es que la encuesta va a crear la
+ * ficha sin DNI, igual que antes. Por eso no corta el ingreso —la persona se
+ * autenticó bien y merece entrar— y sólo queda registrado en el log.
+ */
+async function completarDocumento(
+  usuarioId: string,
+  documento: string,
+): Promise<void> {
+  const admin = clienteAdmin();
+
+  try {
+    const { data } = await admin.auth.admin.getUserById(usuarioId);
+    const previo = data.user?.user_metadata ?? {};
+    if (previo["documento"] === documento) return;
+
+    await admin.auth.admin.updateUserById(usuarioId, {
+      user_metadata: { ...previo, documento },
+    });
+  } catch (causa) {
+    console.error("[cidituc] no se pudo guardar el documento:", causa);
+  }
+}
+
+/**
  * Encuentra o crea la cuenta de esta persona y le deja la sesión abierta.
  *
  * Devuelve si la persona tiene ficha de feriante. No tenerla no es un error:
@@ -153,7 +179,13 @@ export async function vincularFeriante(
       email,
       email_confirm: true,
       app_metadata: { rol: "VENDEDOR" },
-      user_metadata: { nombre, cidituc: persona.id },
+      // El documento viaja acá porque la ficha todavía no existe: se crea
+      // recién cuando la persona completa la encuesta, y para entonces el token
+      // de CiDiTuc ya se consumió. Sin esto el DNI que CiDiTuc verificó se
+      // pierde, y es justo la clave con la que `fichaPorDocumento` reconoce a
+      // alguien que vuelve —aunque haya cambiado el correo en CiDiTuc— y con la
+      // que el padrón de Feria Digital engancha su ficha cuando se importe.
+      user_metadata: { nombre, cidituc: persona.id, documento: persona.documento },
     });
 
     if (error || !creado.user) {
@@ -173,6 +205,12 @@ export async function vincularFeriante(
       await admin.auth.admin.deleteUser(usuarioId);
       throw causa;
     }
+  } else {
+    // La cuenta ya existía: puede venir de antes de que guardáramos el
+    // documento, o del registro a mano. Se completa ahora, en el único momento
+    // en que lo tenemos verificado, y se escribe el resto del metadata tal cual
+    // estaba para no pisar lo que haya.
+    await completarDocumento(usuarioId, persona.documento);
   }
 
   // El enganche con el padrón: la ficha existía sin dueño y esta persona

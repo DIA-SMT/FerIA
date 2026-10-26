@@ -7,7 +7,7 @@ import {
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { IconoTienda } from "@/components/ui/iconos";
 import { prisma } from "@/lib/db";
-import { obtenerSesion } from "@/lib/session";
+import { obtenerSesion, obtenerUsuarioAuth } from "@/lib/session";
 
 export const metadata = { title: "Sumarme a una feria" };
 
@@ -38,6 +38,15 @@ export default async function PaginaEncuesta() {
     select: { id: true, nombre: true },
   });
 
+  /*
+    El documento se muestra, no se pide. Se muestra porque la ley 25.326 (art.
+    6) obliga a decir qué datos se guardan y para qué, y porque alguien que ve
+    su propio DNI en pantalla entiende de un vistazo por qué no se le pidió:
+    ya vino verificado de CiDiTuc.
+  */
+  const usuario = await obtenerUsuarioAuth();
+  const documento = usuario?.user_metadata?.["documento"];
+
   return (
     <div className="max-w-3xl">
       <header className="mb-6">
@@ -59,7 +68,11 @@ export default async function PaginaEncuesta() {
       ) : (
         <FormularioEncuesta
           ferias={ferias satisfies FeriaParaElegir[]}
-          persona={{ nombre: sesion.nombre, email: sesion.email }}
+          persona={{
+            nombre: sesion.nombre,
+            email: sesion.email,
+            documento: typeof documento === "string" ? documento : null,
+          }}
         />
       )}
     </div>
