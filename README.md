@@ -273,11 +273,41 @@ Dos detalles de esa separación, que no son casuales:
 | `npm run db:seed`    | Buckets + usuarios + datos de ejemplo (borra todo antes).     |
 | `npm run db:importar` | Importa el padrón de Mi Feria Digital. Ver abajo.           |
 | `npm run db:studio`  | Prisma Studio, para inspeccionar la base.                    |
+| `npm test`           | Pruebas de la lógica pura. Ver abajo.                        |
+| `npm run test:ver`   | Igual, mirando archivos.                                     |
 
 > `db:migrate` (`prisma migrate dev`) necesita crear una *shadow database* para
 > calcular el diff. Contra Supabase eso a veces falla por permisos: si te pasa,
 > escribí el archivo SQL a mano en `prisma/migrations/` y aplicalo con
 > `db:deploy`, que es lo que hacen las dos migraciones actuales.
+
+### Pruebas
+
+`npm test` corre las pruebas una vez; `npm run test:ver` se queda mirando
+archivos. Corren además en cada push y en cada pull request, junto con los
+tipos y el linter (`.github/workflows/verificar.yml`).
+
+Se prueba **lógica pura**: funciones que reciben datos y devuelven datos, sin
+base, sin red y sin React. Es donde un error no se ve hasta que ya pasó y donde
+una prueba cuesta tres líneas.
+
+| Qué | Por qué |
+| --- | ------- |
+| `whatsapp` | El número normalizado es el botón de contacto de cada stand. Uno inexistente que pasa la validación no se nota hasta que un vecino le escribe a un desconocido. |
+| `dinero`, `canon`, `pedidos` | Plata. Incluye el caso que nos rompió: $12.500,10 en tres cuotas de $4.166,70 daba un saldo de 1,8e-12 y el permiso figuraba VENCIDO con «$ 0» de saldo. |
+| `feria-digital` | La traducción del padrón. Si se equivoca, la importación termina bien y el error aparece después, en la vidriera. |
+| `cidituc` | El `state` dentro del fragmento y la lectura del perfil: deciden si alguien entra y con qué documento. |
+| `titular` | El orden de los respaldos, para que dos tablas del panel no muestren nombres distintos. |
+
+Lo que **no** se prueba acá: pantallas, Server Actions y consultas. Eso necesita
+una base y un navegador, y es otro trabajo con otro costo de mantenimiento;
+mientras no exista, se verifica a mano antes de cada deploy. El `build` tampoco
+está en CI: lo corre Vercel en cada deploy, que es cuando importa.
+
+> La primera corrida encontró un error real: `PASTELERÍA ARTESANAL` caía en
+> ARTESANIAS, porque la regla trataba el adjetivo «artesanal» como si fuera la
+> categoría. Media feria gastronómica del padrón habría entrado en el rubro
+> equivocado.
 
 ### El marketplace
 
@@ -721,6 +751,27 @@ Checklist mínimo:
    `productos` como públicos, y `comprobantes` como privado.
 7. **Revisá el linter de Supabase** (*Advisors → Security*) después del primer
    deploy.
+
+### Región de las funciones
+
+`vercel.json` fija las funciones en `gru1` (São Paulo), que es donde está la
+base. Sin eso corrían en `iad1` (Virginia) y **cada consulta cruzaba el
+hemisferio dos veces**: `/api/salud` hace tres y tardaba ~0,92 s con sólo
+0,03 s de conexión, o sea que casi todo el tiempo era geografía. Una ficha de
+stand hace más consultas que eso.
+
+Se verifica en la cabecera `x-vercel-id`, que trae `<entrada>::<función>`:
+
+```bash
+curl -s -D - -o /dev/null https://fer-ia.vercel.app/api/salud | grep -i x-vercel-id
+```
+
+`gru1::iad1` es el problema; `gru1::gru1` es lo que tiene que decir. Si después
+de desplegar sigue diciendo `iad1`, la región está fijada en el panel de Vercel
+(*Settings → Functions*) y ahí manda el panel, no el archivo.
+
+> Si alguna vez se mueve la base a otra región, esto hay que moverlo con ella:
+> un `vercel.json` desactualizado es peor que ninguno, porque parece resuelto.
 
 ---
 
