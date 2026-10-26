@@ -162,15 +162,22 @@ export function HeroInicio() {
         />
       </div>
 
-      {/* Hasta `lg` el texto ocupa casi todo el ancho y el velo tiene que ser
-          parejo: un degradado horizontal dejaría las últimas palabras de cada
-          línea sobre los toldos. Desde `lg` entra el degradado. */}
+      {/*
+        Un velo suave y nada más, para asentar la foto sin lavarla.
+
+        Antes había un velo blanco de todo el ancho que llegaba al 92 % sobre la
+        columna de texto, y tapaba la feria. Medí por qué hacía falta: el 50 %
+        izquierdo de la foto es genuinamente oscuro entre el 20 % y el 80 % del
+        alto —los toldos, la gente, la mercadería en sombra, el pelo de una de
+        las vendedoras llega a negro puro—, y texto oscuro sobre eso pide ~80 %
+        de blanco. No es algo que se arregle afinando paradas: con la foto
+        detrás del texto, o se lee el texto o se ve la foto.
+
+        La salida es no poner el texto sobre la foto: va sobre su propio panel
+        —abajo— y la foto queda visible en todo el resto del hero.
+      */}
       <div
-        className="absolute inset-0 bg-white/92 lg:hidden"
-        aria-hidden="true"
-      />
-      <div
-        className="velo-hero-claro absolute inset-0 hidden lg:block"
+        className="absolute inset-0 bg-white/20 lg:bg-white/10"
         aria-hidden="true"
       />
 
@@ -183,7 +190,18 @@ export function HeroInicio() {
 
       <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:items-center lg:gap-8">
-          <div className="lg:col-span-6">
+          {/*
+            El panel es lo que sostiene el contraste, en lugar del velo que
+            antes tapaba medio hero. Al 85 % de blanco, sobre el bloque más
+            oscuro de la foto, el título da 10,4:1 y el texto más flojo 5,0:1;
+            AA pide 4,5:1 y AAA 7:1 para el título. El `backdrop-blur` además
+            difumina lo que queda detrás, así que el contraste real es mejor que
+            esa cuenta, que se hizo contra el peor bloque sin difuminar.
+
+            El `ring` blanco no es adorno: sin él, el borde del panel sobre una
+            zona clara de la foto desaparece y el bloque parece flotar.
+          */}
+          <div className="rounded-3xl bg-white/85 p-6 shadow-xl ring-1 ring-white/70 backdrop-blur-md sm:p-8 lg:col-span-6">
             <p
               className="animar-aparecer text-xs font-semibold tracking-[0.2em] text-municipal-700 uppercase"
               style={{ animationDelay: "60ms" }}

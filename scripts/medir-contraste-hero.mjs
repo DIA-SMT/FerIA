@@ -7,24 +7,12 @@ import sharp from "sharp";
  */
 
 // Paradas de `.velo-hero-claro`, en pares [posición, opacidad del blanco].
-const VELO = [
-  [0.0, 1.0],
-  [0.3, 1.0],
-  [0.42, 0.96],
-  [0.5, 0.92],
-  [0.6, 0.55],
-  [0.72, 0.18],
-  [0.84, 0.0],
-  [1.0, 0.0],
-];
+// El panel del texto: blanco parejo al 85 %. Ya no hay degradado — ver el
+// comentario del velo en src/components/public/hero-inicio.tsx.
+const OPACIDAD_PANEL = 0.85;
 
-function alfaDelVelo(t) {
-  for (let i = 1; i < VELO.length; i++) {
-    const [x0, a0] = VELO[i - 1];
-    const [x1, a1] = VELO[i];
-    if (t <= x1) return a0 + ((t - x0) / (x1 - x0)) * (a1 - a0);
-  }
-  return 0;
+function alfaDelVelo() {
+  return OPACIDAD_PANEL;
 }
 
 const canal = (c) => {
@@ -68,8 +56,7 @@ const TEXTOS = {
   for (let y = 0; y < info.height; y++) {
     for (let x = 0; x < Math.floor(info.width * fraccionTexto); x++) {
       const i = (y * info.width + x) * info.channels;
-      const t = x / info.width;
-      const a = alfaDelVelo(t);
+      const a = alfaDelVelo();
       // Blanco encima con alfa `a`, que es lo que hace el degradado.
       const r = data[i] * (1 - a) + 255 * a;
       const g = data[i + 1] * (1 - a) + 255 * a;
