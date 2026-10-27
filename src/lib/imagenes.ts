@@ -486,3 +486,58 @@ export function describirAjustes(ajustes: FotoProcesada["ajustes"]): string[] {
   if (ajustes.fondoBlanco) partes.push("fondo blanqueado");
   return partes;
 }
+
+// ---------------------------------------------------------------------------
+// Imágenes de vidriera: portadas, logos y fotos de feria
+// ---------------------------------------------------------------------------
+
+/**
+ * Lado máximo de una portada o la foto de una feria.
+ *
+ * 1600 porque son las únicas que se muestran a ancho completo, en el encabezado
+ * del stand y de la feria. Más que eso no se ve en ninguna pantalla y sólo sirve
+ * para que el vecino descargue píxeles que nadie mira.
+ */
+export const LADO_PORTADA = 1600;
+
+/**
+ * Lado máximo de un logo.
+ *
+ * Se muestra a 128 px en el panel y más chico todavía en las tarjetas del
+ * directorio, así que 512 ya da de sobra para una pantalla retina.
+ */
+export const LADO_LOGO = 512;
+
+/**
+ * Deja una imagen de vidriera en WebP y con un tamaño razonable.
+ *
+ * Estas imágenes —portada, logo, foto de feria— se subían **tal cual venían**,
+ * sin pasar por `sharp`: sólo las fotos de producto se procesaban. Medido en el
+ * bucket: el promedio de `vendedores` era 169 KB contra 37 KB de `productos`, y
+ * había un PNG de 2,9 MB que bajaba entero a cada visita del stand.
+ *
+ * A diferencia de `procesarFotoProducto`, acá no se retoca nada: no se levanta
+ * la exposición ni se blanquea el fondo. Una portada es una escena y un logo es
+ * una marca; meterles mano sería estropearlos. Lo único que se hace es:
+ *
+ * - `rotate()`, que aplica la orientación del EXIF. Sin esto una foto vertical
+ *   de celular se publica acostada.
+ * - `inside` con `withoutEnlargement`, que **no recorta**: topea el lado mayor y
+ *   respeta la proporción. Una imagen que ya es chica sale igual que entró.
+ * - WebP, que es donde está la mayor parte de la diferencia frente a un PNG.
+ *
+ * No se aplana el fondo: un logo con transparencia tiene que seguir teniéndola.
+ */
+export async function comprimirImagen(
+  entrada: Buffer,
+  ladoMaximo: number,
+): Promise<Buffer> {
+  return sharp(entrada, { failOn: "none" })
+    .rotate()
+    .resize(ladoMaximo, ladoMaximo, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: CALIDAD })
+    .toBuffer();
+}

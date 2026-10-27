@@ -10,6 +10,7 @@ import {
   estadoDesdeZod,
   type EstadoFormulario,
 } from "@/lib/form";
+import { LADO_LOGO } from "@/lib/imagenes";
 import { obtenerVendedorActual, requerirAdmin } from "@/lib/session";
 import { generarSlugUnico } from "@/lib/slug";
 import { almacenamiento, guardarImagenOpcional } from "@/lib/storage";
@@ -158,6 +159,7 @@ export async function actualizarPerfilVendedor(
     const logoNuevo = await guardarImagenOpcional(
       datos.get("logo"),
       "vendedores",
+      LADO_LOGO,
     );
 
     await prisma.vendedor.update({

@@ -20,7 +20,8 @@
     "db:admin": "tsx --env-file-if-exists=.env prisma/crear-admin.ts",
     "test": "vitest run",
     "test:ver": "vitest",
-    "db:clave-demo": "tsx --env-file-if-exists=.env prisma/clave-demo.ts"
+    "db:clave-demo": "tsx --env-file-if-exists=.env prisma/clave-demo.ts",
+    "db:comprimir": "tsx --env-file-if-exists=.env prisma/comprimir-imagenes.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

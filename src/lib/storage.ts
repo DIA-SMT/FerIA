@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { comprimirImagen, LADO_PORTADA } from "@/lib/imagenes";
 import {
   BUCKET_COMPROBANTES,
   partirRuta,
@@ -93,6 +94,28 @@ export function validarComprobante(archivo: File): void {
   }
 }
 
+/**
+ * Cuánto puede cachear el navegador cada archivo, en segundos.
+ *
+ * Un año para lo público, y es seguro por cómo se nombran los objetos: cada uno
+ * lleva un UUID y se sube con `upsert: false`, así que **el contenido de una
+ * ruta nunca cambia**. Cambiar la foto de un stand no reescribe el archivo,
+ * sube otro con otro nombre y actualiza la columna. Estaba en una hora, que
+ * obligaba a volver a bajar la misma portada cada vez que alguien abría el
+ * stand después de un rato.
+ *
+ * Los comprobantes de canon van aparte, y no por el contenido —también son
+ * inmutables— sino por dónde quedan: son documentos de un vecino y la máquina
+ * desde la que se mira el panel puede ser compartida. Una hora alcanza para que
+ * no se baje dos veces en la misma sesión.
+ */
+const CACHE_PUBLICO = "31536000";
+const CACHE_PRIVADO = "3600";
+
+function cachePara(bucket: Bucket): string {
+  return bucket === BUCKET_COMPROBANTES ? CACHE_PRIVADO : CACHE_PUBLICO;
+}
+
 class AlmacenamientoSupabase implements AlmacenamientoArchivos {
   /**
    * Sube el contenido y devuelve la ruta con el bucket adelante.
@@ -112,7 +135,7 @@ class AlmacenamientoSupabase implements AlmacenamientoArchivos {
       .storage.from(bucket)
       .upload(objeto, contenido, {
         contentType: tipoMime,
-        cacheControl: "3600",
+        cacheControl: cachePara(bucket),
         upsert: false,
       });
 
@@ -175,16 +198,27 @@ export const almacenamiento: AlmacenamientoArchivos =
   new AlmacenamientoSupabase();
 
 /**
- * Guarda una imagen opcional venida de un `FormData`.
+ * Guarda una imagen opcional venida de un `FormData`, comprimida.
+ *
  * Devuelve `null` si el campo vino vacío (el usuario no subió nada).
+ *
+ * La compresión no es un agregado: antes esto subía el `File` tal cual llegaba
+ * del navegador, así que un PNG de 2,9 MB quedaba de 2,9 MB en el bucket y
+ * bajaba entero cada vez que alguien abría el stand. Ver `comprimirImagen` para
+ * qué se le hace y qué no.
  */
 export async function guardarImagenOpcional(
   valor: FormDataEntryValue | null,
   bucket: Bucket,
+  ladoMaximo: number = LADO_PORTADA,
 ): Promise<string | null> {
   if (!(valor instanceof File) || valor.size === 0) return null;
   validarImagen(valor);
-  return almacenamiento.guardar(valor, bucket);
+
+  const entrada = Buffer.from(await valor.arrayBuffer());
+  const comprimida = await comprimirImagen(entrada, ladoMaximo);
+
+  return almacenamiento.guardarBuffer(comprimida, bucket);
 }
 
 /** Igual que `guardarImagenOpcional` pero admitiendo PDF, al bucket privado. */
