@@ -172,8 +172,34 @@ export default async function PaginaPostulaciones({
           id: true,
           estado: true,
           motivoRechazo: true,
-          feria: { select: { nombre: true } },
-          vendedor: { select: { emprendimiento: true, slug: true } },
+          feria: {
+            select: {
+              id: true,
+              nombre: true,
+              // La próxima edición publicada de esa feria: es a dónde hay que
+              // ir a darle el puesto. Habilitar a alguien en una feria y
+              // asignarle un stand son dos cosas, y la segunda se hace en el
+              // mapa de una edición concreta.
+              ediciones: {
+                where: edicionesVigentes(hoy),
+                orderBy: { fechaInicio: "asc" },
+                take: 1,
+                select: { id: true, nombre: true },
+              },
+            },
+          },
+          vendedor: {
+            select: {
+              emprendimiento: true,
+              slug: true,
+              // Si ya tiene puesto en esa edición, no hay nada que asignar y el
+              // boton sobra: lo que corresponde es decir qué número le tocó.
+              stands: {
+                where: { edicion: edicionesVigentes(hoy) },
+                select: { numero: true, edicionId: true },
+              },
+            },
+          },
         },
       }),
 
@@ -247,8 +273,11 @@ export default async function PaginaPostulaciones({
         después puede pedir estar en una <strong>feria presencial</strong>, que
         es opcional y se resuelve feria por feria. Habilitarlo en una feria
         todavía no le reserva un puesto: el número de stand se asigna en{" "}
-        <Link href="/admin/ediciones" className="font-medium underline">
-          las ediciones
+        {/* A /admin/ferias y no a /admin/ediciones: esa ruta no existe —sólo
+            existe /admin/ediciones/[id]— así que el enlace daba 404. Venía así
+            de la bandeja vieja. */}
+        <Link href="/admin/ferias" className="font-medium underline">
+          las ediciones de cada feria
         </Link>
         , al armar el mapa de cada una.
       </Alerta>
@@ -485,37 +514,76 @@ export default async function PaginaPostulaciones({
           <Tarjeta>
             <TarjetaCuerpo>
               <ul className="divide-y divide-slate-100">
-                {resueltas.map((postulacion) => (
-                  <li
-                    key={postulacion.id}
-                    className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900">
-                        <Link
-                          href={`/stands/${postulacion.vendedor.slug}`}
-                          className="transition-colors hover:text-municipal-700"
-                        >
-                          {postulacion.vendedor.emprendimiento}
-                        </Link>{" "}
-                        <span className="font-normal text-slate-500">
-                          en {postulacion.feria.nombre}
-                        </span>
-                      </p>
-                      {postulacion.motivoRechazo && (
-                        <p className="mt-1 text-sm text-red-900">
-                          {postulacion.motivoRechazo}
-                        </p>
-                      )}
-                    </div>
-                    <Badge
-                      tono={TONO_ESTADO_POSTULACION[postulacion.estado]}
-                      tamanio="sm"
+                {resueltas.map((postulacion) => {
+                  const proxima = postulacion.feria.ediciones[0] ?? null;
+                  const puesto = proxima
+                    ? (postulacion.vendedor.stands.find(
+                        (stand) => stand.edicionId === proxima.id,
+                      ) ?? null)
+                    : null;
+
+                  return (
+                    <li
+                      key={postulacion.id}
+                      className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
                     >
-                      {ESTADOS_POSTULACION[postulacion.estado]}
-                    </Badge>
-                  </li>
-                ))}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-slate-900">
+                          <Link
+                            href={`/stands/${postulacion.vendedor.slug}`}
+                            className="transition-colors hover:text-municipal-700"
+                          >
+                            {postulacion.vendedor.emprendimiento}
+                          </Link>{" "}
+                          <span className="font-normal text-slate-500">
+                            en {postulacion.feria.nombre}
+                          </span>
+                        </p>
+                        {postulacion.motivoRechazo && (
+                          <p className="mt-1 text-sm text-red-900">
+                            {postulacion.motivoRechazo}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-3">
+                        {/* Habilitado todavía no es «tiene lugar». El paso que
+                            falta es el mapa de una edición, y hasta ahora había
+                            que acordarse de ir a buscarlo por el menú: Ferias,
+                            la feria, la edición, el stand. */}
+                        {postulacion.estado === "ACEPTADA" &&
+                          (puesto ? (
+                            <span className="text-sm text-slate-500">
+                              Puesto {puesto.numero} en {proxima?.nombre}
+                            </span>
+                          ) : proxima ? (
+                            <Link
+                              href={`/admin/ediciones/${proxima.id}`}
+                              className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                            >
+                              Asignar stand en {proxima.nombre}
+                            </Link>
+                          ) : (
+                            // Sin edición publicada no hay mapa adónde ir, así
+                            // que el paso siguiente es crearla y no asignar.
+                            <Link
+                              href={`/admin/ferias/${postulacion.feria.id}/ediciones/nueva`}
+                              className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                            >
+                              Crear una edición
+                            </Link>
+                          ))}
+
+                        <Badge
+                          tono={TONO_ESTADO_POSTULACION[postulacion.estado]}
+                          tamanio="sm"
+                        >
+                          {ESTADOS_POSTULACION[postulacion.estado]}
+                        </Badge>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </TarjetaCuerpo>
           </Tarjeta>
