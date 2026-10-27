@@ -4,6 +4,16 @@ import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Mi vidriera" };
 
+/**
+ * Margen para el asistente de descripción, que llama al modelo de texto.
+ *
+ * Es bastante más rápido que la mejora de fotos —acá no hay imagen que generar
+ * ni subir— pero los 10 segundos por defecto del plan Hobby igual quedan justos
+ * para una respuesta de un modelo remoto. Mismo valor que las páginas del
+ * catálogo para no tener dos números que explicar.
+ */
+export const maxDuration = 60;
+
 export default async function PaginaPerfil() {
   const { vendedor } = await requerirVendedorAprobado();
 

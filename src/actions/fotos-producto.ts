@@ -34,16 +34,16 @@ import { almacenamiento, validarImagen } from "@/lib/storage";
  * Los tipos y las rutas están en `@/lib/fotos-producto`: acá sólo puede haber
  * funciones async.
  *
- * ⚠️ `maxDuration` NO puede declararse en este archivo, aunque sea el que tarda:
+ * `maxDuration` NO puede declararse en este archivo, aunque sea el que tarda:
  * es `"use server"` y el compilador rechaza cualquier export que no sea una
  * función async («Only async functions are allowed to be exported in a
- * "use server" file»). `maxDuration` es configuración de segmento de ruta, así
- * que va en las páginas desde las que se dispara esta acción —
+ * "use server" file»). Es configuración de segmento de ruta, así que vive en las
+ * páginas desde las que se dispara esta acción —
  * `src/app/mi-stand/productos/nuevo/page.tsx` y
  * `src/app/mi-stand/productos/[id]/page.tsx`—, que es donde Vercel la lee para
- * dimensionar la función. Hace falta: con IA la llamada mide ~11 s más el
- * `sharp` y las subidas a Storage, y el límite por defecto de la función corta
- * antes. Hoy ninguna de las dos páginas la declara.
+ * dimensionar la función. Las dos la declaran en 60 segundos: con IA la llamada
+ * mide ~11 s más el `sharp` y las subidas a Storage, y el límite por defecto de
+ * la función corta antes.
  */
 
 export async function generarVariantesDeFoto(
