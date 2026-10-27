@@ -12,6 +12,14 @@ import { ESTADO_INICIAL } from "@/lib/form";
 export interface FeriaDisponible {
   id: string;
   nombre: string;
+  /**
+   * Cuándo es la próxima edición publicada, ya formateada, o `null` si no hay.
+   *
+   * Llega formateada y no como `Date` porque la fecha se arma con el
+   * formateador de la zona de Tucumán, que vive del lado del servidor; mandar
+   * el `Date` crudo haría que la fecha dependa del reloj del visitante.
+   */
+  proxima: string | null;
 }
 
 /**
@@ -67,13 +75,18 @@ export function FormularioPostulacion({
         errores={estado.errores?.feriaId}
         requerido
       >
+        {/* La fecha va en la etiqueta y no en una columna aparte porque un
+            `<select>` no tiene columnas: es lo único que entra. Y va, porque a
+            qué feria pedir se decide por cuándo es la próxima. */}
         <Seleccion
           name="feriaId"
           errores={estado.errores?.feriaId}
           placeholder="Elegí una feria"
           opciones={ferias.map((feria) => ({
             valor: feria.id,
-            etiqueta: feria.nombre,
+            etiqueta: feria.proxima
+              ? `${feria.nombre} · próxima el ${feria.proxima}`
+              : `${feria.nombre} · sin fecha publicada`,
           }))}
         />
       </Campo>
