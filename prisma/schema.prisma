@@ -105,6 +105,15 @@ enum EstadoPostulacion {
   PENDIENTE
   ACEPTADA
   RECHAZADA
+
+  /// El feriante se bajó de la feria por su cuenta.
+  ///
+  /// Es distinto de RECHAZADA y no se puede mezclar: rechazada es una decisión
+  /// de la Dirección y lleva motivo; retirada es del feriante y no le debe
+  /// explicación a nadie. Tenerlas separadas es lo que permite que la bandeja
+  /// avise «se bajó y todavía tiene el puesto 14 asignado» en vez de hacerlo
+  /// pasar por un rechazo que nadie firmó.
+  RETIRADA
 }
 
 /// Día de la semana en que abre una edición.

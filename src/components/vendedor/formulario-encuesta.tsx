@@ -20,7 +20,7 @@ export interface FeriaParaElegir {
 }
 
 /**
- * La encuesta con la que un feriante se suma a una feria.
+ * La encuesta con la que alguien pide el alta como feriante.
  *
  * Reemplaza al registro para los feriantes. El registro pedía catorce campos;
  * acá hay nueve, porque el nombre, el correo y el documento los trae CiDiTuc
@@ -29,6 +29,10 @@ export interface FeriaParaElegir {
  *
  * Por eso arriba se muestra quién está completando: es el dato que explica por
  * qué no se piden esas cosas, y evita que alguien crea que se las saltearon.
+ *
+ * El orden de las tarjetas es el del circuito, y cambió: primero el
+ * emprendimiento —que es lo que se está dando de alta— y al final, opcional, la
+ * feria presencial. Antes la feria era el primer campo y era obligatoria.
  */
 export function FormularioEncuesta({
   ferias,
@@ -59,47 +63,8 @@ export function FormularioEncuesta({
 
       <Tarjeta>
         <TarjetaEncabezado
-          titulo="A qué feria querés sumarte"
-          descripcion="Podés postularte a otras más adelante, de a una por vez."
-        />
-        <TarjetaCuerpo className="space-y-4">
-          <Campo
-            htmlFor="feriaId"
-            etiqueta="Feria"
-            errores={errores?.feriaId}
-            requerido
-          >
-            <Seleccion
-              name="feriaId"
-              errores={errores?.feriaId}
-              placeholder="Elegí una feria"
-              opciones={ferias.map((feria) => ({
-                valor: feria.id,
-                etiqueta: feria.nombre,
-              }))}
-            />
-          </Campo>
-
-          <Campo
-            htmlFor="mensaje"
-            etiqueta="Contanos de tu emprendimiento"
-            ayuda="Qué llevás, desde cuándo producís, si ya participaste de alguna feria. Es lo que lee quien decide."
-            errores={errores?.mensaje}
-          >
-            <AreaTexto
-              name="mensaje"
-              rows={4}
-              maxLength={1000}
-              errores={errores?.mensaje}
-            />
-          </Campo>
-        </TarjetaCuerpo>
-      </Tarjeta>
-
-      <Tarjeta>
-        <TarjetaEncabezado
           titulo="Tu emprendimiento"
-          descripcion="Esto es lo que va a ver el vecino en tu stand."
+          descripcion="Esto es lo que va a ver el vecino en tu stand, y lo que lee la Dirección para darte el alta."
         />
         <TarjetaCuerpo className="space-y-4">
           <Campo
@@ -136,7 +101,7 @@ export function FormularioEncuesta({
           <Campo
             htmlFor="descripcion"
             etiqueta="Descripción"
-            ayuda="Materiales, técnicas, qué te distingue."
+            ayuda="Materiales, técnicas, qué te distingue. Es lo que mira la Dirección al revisar tu alta."
             errores={errores?.descripcion}
           >
             <AreaTexto
@@ -216,6 +181,49 @@ export function FormularioEncuesta({
               <Entrada name="sitioWeb" errores={errores?.sitioWeb} />
             </Campo>
           </div>
+        </TarjetaCuerpo>
+      </Tarjeta>
+
+      {/* La feria va al final y es opcional. Antes era el primer campo y era
+          obligatoria: había que pedir un lugar en una plaza para poder existir
+          en la plataforma, aunque lo único que quisieras fuera tu vidriera. */}
+      <Tarjeta>
+        <TarjetaEncabezado
+          titulo="¿Querés estar en una feria presencial?"
+          descripcion="Es opcional. Podés tener tu stand online y pedir una feria después, o no pedir ninguna."
+        />
+        <TarjetaCuerpo className="space-y-4">
+          <Campo htmlFor="feriaId" etiqueta="Feria" errores={errores?.feriaId}>
+            <Seleccion
+              name="feriaId"
+              errores={errores?.feriaId}
+              placeholder="Por ahora no, sólo quiero mi stand online"
+              opciones={ferias.map((feria) => ({
+                valor: feria.id,
+                etiqueta: feria.nombre,
+              }))}
+            />
+          </Campo>
+
+          <Campo
+            htmlFor="mensaje"
+            etiqueta="Por qué querés estar en esa feria"
+            ayuda="Qué llevarías, desde cuándo producís, si ya participaste de alguna. Lo lee quien decide el cupo. Dejalo vacío si no pedís ninguna."
+            errores={errores?.mensaje}
+          >
+            <AreaTexto
+              name="mensaje"
+              rows={4}
+              maxLength={1000}
+              errores={errores?.mensaje}
+            />
+          </Campo>
+
+          <Alerta tipo="info">
+            Si elegís una, el pedido queda esperando y la Dirección lo mira
+            recién cuando te dé el alta. Primero se habilita tu stand online;
+            después, la feria.
+          </Alerta>
         </TarjetaCuerpo>
       </Tarjeta>
 

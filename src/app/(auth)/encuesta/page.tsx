@@ -4,12 +4,10 @@ import {
   FormularioEncuesta,
   type FeriaParaElegir,
 } from "@/components/vendedor/formulario-encuesta";
-import { EstadoVacio } from "@/components/ui/estado-vacio";
-import { IconoTienda } from "@/components/ui/iconos";
 import { prisma } from "@/lib/db";
 import { obtenerSesion, obtenerUsuarioAuth } from "@/lib/session";
 
-export const metadata = { title: "Sumarme a una feria" };
+export const metadata = { title: "Pedir el alta" };
 
 /**
  * La encuesta, para alguien que ya entró y todavía no tiene ficha.
@@ -51,30 +49,32 @@ export default async function PaginaEncuesta() {
     <div className="max-w-3xl">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Sumate a una feria
+          Pedí el alta como feriante
         </h1>
         <p className="mt-1 text-slate-600">
-          Contanos de tu emprendimiento y elegí a qué feria querés ir. La
-          Dirección de Ferias y Mercados revisa cada postulación.
+          Contanos de tu emprendimiento. Cuando la Dirección de Ferias y
+          Mercados te dé el alta vas a tener tu stand online, y desde ahí podés
+          pedir estar en las ferias presenciales que quieras.
         </p>
       </header>
 
-      {ferias.length === 0 ? (
-        <EstadoVacio
-          icono={IconoTienda}
-          titulo="Todavía no hay ferias abiertas"
-          descripcion="Cuando la municipalidad publique las ferias de la temporada vas a poder postularte."
-        />
-      ) : (
-        <FormularioEncuesta
-          ferias={ferias satisfies FeriaParaElegir[]}
-          persona={{
-            nombre: sesion.nombre,
-            email: sesion.email,
-            documento: typeof documento === "string" ? documento : null,
-          }}
-        />
-      )}
+      {/*
+        El formulario se dibuja aunque no haya ninguna feria activa, y eso es un
+        arreglo. Antes esta pantalla mostraba un cartel de «todavía no hay ferias
+        abiertas» en lugar del formulario: como la feria era obligatoria, un
+        período sin ferias publicadas dejaba a cualquier emprendedor sin poder
+        darse de alta, ni siquiera para tener su vidriera. Ahora la feria es
+        opcional, así que lo único que pasa sin ferias activas es que la última
+        tarjeta no tiene nada para ofrecer.
+      */}
+      <FormularioEncuesta
+        ferias={ferias satisfies FeriaParaElegir[]}
+        persona={{
+          nombre: sesion.nombre,
+          email: sesion.email,
+          documento: typeof documento === "string" ? documento : null,
+        }}
+      />
     </div>
   );
 }

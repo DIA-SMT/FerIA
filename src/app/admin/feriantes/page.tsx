@@ -52,6 +52,14 @@ export default async function PaginaFeriantes({
     include: {
       usuario: { select: { email: true, nombre: true } },
       _count: { select: { productos: true, stands: true } },
+      // En qué ferias presenciales está habilitado. Es el dato que antes no
+      // estaba en ninguna pantalla: se podía ver cuántos stands tenía asignados
+      // —que es logística de una edición— pero no de qué ferias es parte.
+      postulaciones: {
+        where: { estado: 'ACEPTADA' },
+        orderBy: { feria: { nombre: 'asc' } },
+        select: { id: true, feria: { select: { nombre: true, slug: true } } },
+      },
     },
   });
 
@@ -110,6 +118,7 @@ export default async function PaginaFeriantes({
                 <Th>Titular</Th>
                 <Th>WhatsApp</Th>
                 <Th>Estado</Th>
+                <Th>Ferias presenciales</Th>
                 <Th className="text-center">Productos</Th>
                 <Th className="text-center">Stands</Th>
                 <Th>Registro</Th>
@@ -161,6 +170,27 @@ export default async function PaginaFeriantes({
                         {ESTADOS_VENDEDOR[feriante.estado]}
                       </Badge>
                     </Td>
+                    <Td>
+                      {feriante.postulaciones.length === 0 ? (
+                        <span className="text-sm text-slate-400">
+                          {feriante.estado === 'APROBADO'
+                            ? 'Sólo online'
+                            : '—'}
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {feriante.postulaciones.map((postulacion) => (
+                            <Badge
+                              key={postulacion.id}
+                              tono="azul"
+                              tamanio="sm"
+                            >
+                              {postulacion.feria.nombre}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </Td>
                     <Td className="text-center tabular-nums">
                       {feriante._count.productos}
                     </Td>
@@ -182,7 +212,7 @@ export default async function PaginaFeriantes({
                         </Link>
                       ) : (
                         <Link
-                          href="/admin/solicitudes"
+                          href="/admin/postulaciones"
                           className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
                         >
                           Revisar

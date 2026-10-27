@@ -50,7 +50,7 @@ export default async function PaginaAdmin() {
           className="mb-6"
         >
           <Link
-            href="/admin/solicitudes"
+            href="/admin/postulaciones"
             className="font-medium underline underline-offset-2"
           >
             Ir a la bandeja de solicitudes

@@ -24,7 +24,7 @@ function revalidarVendedores(slug?: string): void {
   revalidatePath("/");
   revalidatePath("/stands");
   revalidatePath("/admin");
-  revalidatePath("/admin/solicitudes");
+  revalidatePath("/admin/postulaciones");
   revalidatePath("/admin/canon");
   if (slug) revalidatePath(`/stands/${slug}`);
 }

@@ -68,7 +68,7 @@ export default async function PaginaMiStand() {
     return (
       <>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Tu postulación está en revisión
+          Tu alta está en revisión
         </h1>
 
         <Alerta
@@ -76,16 +76,18 @@ export default async function PaginaMiStand() {
           titulo="Pendiente de aprobación"
           className="mt-4"
         >
-          La Dirección de Ferias y Mercados está revisando la postulación de{" "}
-          <strong>{vendedor.emprendimiento}</strong>. Cuando la acepten vas a
-          poder editar tu vidriera, cargar tu catálogo y ser asignado a un stand
-          en las próximas ediciones.
+          La Dirección de Ferias y Mercados está revisando el alta de{" "}
+          <strong>{vendedor.emprendimiento}</strong>. Cuando te den el alta vas
+          a tener tu stand online —vas a poder editar tu vidriera y cargar tu
+          catálogo— y desde ahí vas a poder pedir estar en las ferias
+          presenciales que quieras.
         </Alerta>
 
         <div className="mt-6">
           <MisFerias
             postulaciones={postulaciones}
             feriasDisponibles={disponibles}
+            puedePedir={false}
           />
         </div>
 
@@ -181,14 +183,18 @@ export default async function PaginaMiStand() {
         </Tarjeta>
 
         {/*
-          Postularse de nuevo sigue siendo posible desde acá: aceptar una
-          postulación vuelve a publicar la ficha, así que un rechazo no es una
-          puerta cerrada.
+          Los pedidos de feria quedan a la vista pero no se puede hacer uno
+          nuevo: pedir una feria necesita el alta, y el alta está rechazada. La
+          salida es que la Dirección la reabra desde el panel, no que el
+          feriante pida una plaza. Antes sí alcanzaba —aceptar una postulación
+          volvía a publicar la ficha de rebote— y era justamente el atajo que
+          mezclaba los dos permisos.
         */}
         <div className="mt-6">
           <MisFerias
             postulaciones={postulaciones}
             feriasDisponibles={disponibles}
+            puedePedir={false}
           />
         </div>
       </>
@@ -300,6 +306,7 @@ export default async function PaginaMiStand() {
         <MisFerias
           postulaciones={postulaciones}
           feriasDisponibles={disponibles}
+          puedePedir
         />
       </div>
 

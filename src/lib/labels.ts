@@ -107,14 +107,16 @@ export const TONO_ESTADO_PEDIDO: Record<EstadoPedido, TonoBadge> = {
 
 export const ESTADOS_POSTULACION: Record<EstadoPostulacion, string> = {
   PENDIENTE: "Esperando respuesta",
-  ACEPTADA: "Aceptada",
+  ACEPTADA: "Habilitado",
   RECHAZADA: "Rechazada",
+  RETIRADA: "Se bajó",
 };
 
 export const TONO_ESTADO_POSTULACION: Record<EstadoPostulacion, TonoBadge> = {
   PENDIENTE: "amarillo",
   ACEPTADA: "verde",
   RECHAZADA: "rojo",
+  RETIRADA: "neutro",
 };
 
 export const DIAS_SEMANA: Record<DiaSemana, string> = {

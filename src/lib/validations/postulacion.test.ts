@@ -28,14 +28,32 @@ describe("encuestaSchema", () => {
     expect(resultado.success).toBe(true);
   });
 
-  it("exige la feria: una encuesta sin feria no es una postulacion", () => {
+  it("acepta un alta sin feria: la vidriera no depende de una plaza", () => {
+    // Era al revés y esto lo fija. La feria era obligatoria, así que para
+    // existir en la plataforma había que pedir un lugar en una plaza aunque lo
+    // único que quisieras fuera tu stand online. Son dos permisos distintos:
+    // el alta habilita la vidriera, la feria se pide después y es opcional.
     const { feriaId: _feriaId, ...sinFeria } = ENCUESTA_MINIMA;
     const resultado = encuestaSchema.safeParse(sinFeria);
 
-    expect(resultado.success).toBe(false);
-    if (!resultado.success) {
-      expect(resultado.error.flatten().fieldErrors).toHaveProperty("feriaId");
+    expect(resultado.success).toBe(true);
+    if (resultado.success) {
+      expect(resultado.data.feriaId).toBeNull();
     }
+  });
+
+  it("deja la feria en null cuando el select vino vacio", () => {
+    // Es lo que manda el navegador con el placeholder «Por ahora no, sólo
+    // quiero mi stand online» elegido: la clave llega, con la cadena vacía.
+    const resultado = encuestaSchema.parse({ ...ENCUESTA_MINIMA, feriaId: "" });
+
+    expect(resultado.feriaId).toBeNull();
+  });
+
+  it("conserva la feria cuando si eligio una", () => {
+    const resultado = encuestaSchema.parse(ENCUESTA_MINIMA);
+
+    expect(resultado.feriaId).toBe(ENCUESTA_MINIMA.feriaId);
   });
 
   it("exige whatsapp, que es el boton principal del stand", () => {

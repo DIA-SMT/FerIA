@@ -15,7 +15,7 @@ export interface FeriaDisponible {
 }
 
 /**
- * Postularse a otra feria, con la ficha ya cargada.
+ * Pedir estar en otra feria presencial, con el stand online ya habilitado.
  *
  * Arranca plegado: para la mayoría de los feriantes la pantalla de resumen es
  * para mirar sus próximas ferias, no para sumar otra, y un formulario abierto
@@ -33,7 +33,7 @@ export function FormularioPostulacion({
   if (ferias.length === 0) {
     return (
       <p className="text-sm text-slate-500">
-        Ya te postulaste a todas las ferias publicadas.
+        Ya pediste todas las ferias publicadas.
       </p>
     );
   }
@@ -50,7 +50,7 @@ export function FormularioPostulacion({
         onClick={() => setAbierto(true)}
         type="button"
       >
-        Postularme a otra feria
+        Pedir estar en otra feria
       </Boton>
     );
   }
@@ -80,8 +80,8 @@ export function FormularioPostulacion({
 
       <Campo
         htmlFor="mensaje"
-        etiqueta="Por qué querés sumarte"
-        ayuda="Es lo que lee quien decide."
+        etiqueta="Por qué querés estar en esa feria"
+        ayuda="Es lo que lee quien decide el cupo."
         errores={estado.errores?.mensaje}
       >
         <AreaTexto

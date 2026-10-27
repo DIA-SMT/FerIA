@@ -35,6 +35,16 @@ export interface Solicitud {
   creadoEn: Date;
   nombreTitular: string;
   emailTitular: string;
+  /**
+   * La feria presencial que pidió al completar la encuesta, si pidió alguna.
+   *
+   * Es un dato de contexto y no una decisión que se tome acá: el pedido queda
+   * encolado y aparece en su propia sección recién cuando esta alta se aprueba.
+   * Se muestra igual porque cambia lo que la Dirección está mirando —no es lo
+   * mismo dar de alta a quien quiere su vidriera que a quien además quiere un
+   * puesto en la Plaza Urquiza— y no tenerlo obligaba a adivinarlo.
+   */
+  feriaPedida?: string | null;
 }
 
 export function TarjetaSolicitud({ solicitud }: { solicitud: Solicitud }) {
@@ -68,10 +78,21 @@ export function TarjetaSolicitud({ solicitud }: { solicitud: Solicitud }) {
           <div className="flex flex-col items-end gap-1.5">
             <Badge tono="celeste">{RUBROS[solicitud.rubro]}</Badge>
             <span className="text-xs text-slate-400">
-              Solicitud del {formatearFechaHora(solicitud.creadoEn)}
+              Pidió el alta el {formatearFechaHora(solicitud.creadoEn)}
             </span>
           </div>
         </div>
+
+        {solicitud.feriaPedida && (
+          <p className="text-sm text-slate-600">
+            También pidió estar en{" "}
+            <strong className="font-semibold text-slate-900">
+              {solicitud.feriaPedida}
+            </strong>
+            . Ese pedido queda esperando y aparece abajo en cuanto apruebes el
+            alta.
+          </p>
+        )}
 
         {solicitud.descripcion && (
           <p className="rounded-lg bg-slate-50 p-3 text-sm whitespace-pre-line text-slate-700">

@@ -21,14 +21,29 @@ import {
   encuestaSchema,
   postulacionSchema,
   resolverPostulacionSchema,
+  retirarmeSchema,
 } from "@/lib/validations/postulacion";
 
 /**
- * El circuito de postulaciones.
+ * El circuito de alta y de ferias presenciales.
  *
- * El feriante entra por CiDiTuc, completa la encuesta eligiendo una feria, y la
- * Dirección la acepta o la rechaza desde el panel. Aceptar significa «es
- * feriante de esta feria»; el número de puesto se asigna después, por `Stand`.
+ * Son **dos permisos distintos** y antes estaban pegados en uno:
+ *
+ * 1. **Ser feriante** (`Vendedor.estado`). Lo pide la encuesta y lo resuelve la
+ *    Dirección. Aprobarlo habilita el stand virtual: la vidriera y el catálogo.
+ * 2. **Estar en una feria presencial** (`Postulacion.estado`). Lo pide el
+ *    feriante desde su panel, una vez que ya tiene stand virtual, y lo resuelve
+ *    la Dirección feria por feria. Es opcional: se puede ser feriante del
+ *    municipio y no ir a ninguna plaza.
+ *
+ * Antes la encuesta obligaba a elegir una feria para poder existir, así que
+ * quien sólo quería su vidriera tenía que pedir un lugar físico que no pensaba
+ * usar; y aceptar una postulación aprobaba la ficha de rebote, con lo cual las
+ * dos decisiones se tomaban con un solo click y la Dirección no podía decir
+ * «sí, es feriante» sin decir también «sí, va a esta plaza».
+ *
+ * Aceptar una postulación tampoco reserva un puesto: el número de stand se
+ * asigna después, por `Stand`, al armar el mapa de cada edición.
  */
 
 function revalidarPostulaciones(): void {
@@ -51,12 +66,18 @@ async function documentoDeLaSesion(): Promise<string | null> {
 }
 
 /**
- * Primera encuesta: crea la ficha del emprendimiento y la postulación.
+ * La encuesta de alta: crea la ficha del emprendimiento.
  *
  * Es el reemplazo del registro para los feriantes. No pide ni correo ni
  * contraseña porque quien llega acá ya está autenticado —por CiDiTuc, que
  * además ya verificó su documento—, así que la cuenta existe y lo único que
- * falta es de qué es su emprendimiento y a qué feria quiere ir.
+ * falta es de qué es su emprendimiento.
+ *
+ * La feria es opcional y, si viene, queda **encolada**: la postulación se crea
+ * `PENDIENTE` junto con la ficha, pero la bandeja del panel no la muestra como
+ * pedido de feria hasta que el alta esté aprobada. Así el feriante dice todo de
+ * una vez y no tiene que volver a entrar, y la Dirección igual resuelve las dos
+ * cosas por separado y en orden.
  */
 export async function enviarEncuesta(
   _estadoPrevio: EstadoFormulario,
@@ -75,11 +96,16 @@ export async function enviarEncuesta(
     // importe, en vez de duplicarla.
     const documento = await documentoDeLaSesion();
 
-    const feria = await prisma.feria.findFirst({
-      where: { id: entrada.feriaId, activa: true },
-      select: { id: true, nombre: true },
-    });
-    if (!feria) return estadoDeError("Esa feria ya no está disponible.");
+    const feria = entrada.feriaId
+      ? await prisma.feria.findFirst({
+          where: { id: entrada.feriaId, activa: true },
+          select: { id: true, nombre: true },
+        })
+      : null;
+
+    if (entrada.feriaId && !feria) {
+      return estadoDeError("Esa feria ya no está disponible.");
+    }
 
     const existente = await prisma.vendedor.findUnique({
       where: { usuarioId: sesion.id },
@@ -87,8 +113,11 @@ export async function enviarEncuesta(
     });
 
     if (existente) {
-      // Ya tiene ficha: esto es una postulación más, no un alta. Se delega
-      // para no duplicar la regla de «una por feriante y por feria».
+      // Ya tiene ficha. `/encuesta` manda a /mi-stand en ese caso, así que acá
+      // sólo se llega por una carrera —dos pestañas abiertas, el botón tocado
+      // dos veces—. Si eligió feria se trata como una postulación más; si no,
+      // no hay nada que crear.
+      if (!feria) redirect("/mi-stand");
       return postularAFeria(existente.id, feria.id, entrada.mensaje);
     }
 
@@ -115,12 +144,16 @@ export async function enviarEncuesta(
         sitioWeb: entrada.sitioWeb,
         direccion: entrada.direccion,
         // La ficha nace PENDIENTE y se publica recién cuando la Dirección
-        // acepta la postulación: nadie aparece en la vidriera por haber
-        // completado un formulario.
+        // aprueba el alta: nadie aparece en la vidriera por haber completado un
+        // formulario.
         estado: "PENDIENTE",
-        postulaciones: {
-          create: { feriaId: feria.id, mensaje: entrada.mensaje },
-        },
+        ...(feria
+          ? {
+              postulaciones: {
+                create: { feriaId: feria.id, mensaje: entrada.mensaje },
+              },
+            }
+          : {}),
       },
     });
 
@@ -129,7 +162,14 @@ export async function enviarEncuesta(
   });
 }
 
-/** Postularse a otra feria, con la ficha ya creada. */
+/**
+ * Pedir estar en una feria presencial, con el stand virtual ya habilitado.
+ *
+ * Exige la ficha aprobada y no sólo existente: pedir un lugar físico es el
+ * segundo permiso, y el primero es ser feriante. Mientras el alta esté en
+ * revisión no hay nada que pedir, y dejar entrar un pedido antes pondría a la
+ * Dirección a decidir sobre una plaza para alguien que todavía no aprobó.
+ */
 export async function postularme(
   _estadoPrevio: EstadoFormulario,
   datos: FormData,
@@ -140,9 +180,14 @@ export async function postularme(
 
     const vendedor = await prisma.vendedor.findUnique({
       where: { usuarioId: sesion.id },
-      select: { id: true },
+      select: { id: true, estado: true },
     });
     if (!vendedor) return estadoDeError("Todavía no completaste tu ficha.");
+    if (vendedor.estado !== "APROBADO") {
+      return estadoDeError(
+        "Tu alta todavía está en revisión. Cuando la aprueben vas a poder pedir ferias.",
+      );
+    }
 
     const feria = await prisma.feria.findFirst({
       where: { id: entrada.feriaId, activa: true },
@@ -155,11 +200,12 @@ export async function postularme(
 }
 
 /**
- * Crea o reabre la postulación de un feriante a una feria.
+ * Crea o reabre el pedido de un feriante para una feria.
  *
- * Reabre en vez de acumular: el índice único es (vendedor, feria), así que un
- * rechazado que vuelve a intentar actualiza la misma fila. Dos filas contando
- * la misma historia obligarían al panel a decidir cuál mirar.
+ * Reabre en vez de acumular: el índice único es (vendedor, feria), así que
+ * quien fue rechazado —o quien se bajó y se quiere volver a anotar— actualiza
+ * la misma fila. Dos filas contando la misma historia obligarían al panel a
+ * decidir cuál mirar.
  */
 async function postularAFeria(
   vendedorId: string,
@@ -172,10 +218,10 @@ async function postularAFeria(
   });
 
   if (previa?.estado === "PENDIENTE") {
-    return estadoDeError("Ya tenés una postulación a esa feria esperando respuesta.");
+    return estadoDeError("Ya tenés un pedido para esa feria esperando respuesta.");
   }
   if (previa?.estado === "ACEPTADA") {
-    return estadoDeError("Ya sos feriante de esa feria.");
+    return estadoDeError("Ya estás habilitado en esa feria.");
   }
 
   await prisma.postulacion.upsert({
@@ -190,20 +236,68 @@ async function postularAFeria(
   });
 
   revalidarPostulaciones();
-  return estadoDeExito("Enviamos tu postulación. Te avisamos cuando la revisen.");
+  return estadoDeExito("Enviamos tu pedido. Te avisamos cuando lo revisen.");
 }
 
 /**
- * La Dirección resuelve una postulación.
+ * El feriante se baja de una feria presencial.
  *
- * Aceptar hace dos cosas, y la segunda importa: además de marcar la
- * postulación, aprueba la ficha del feriante si todavía estaba pendiente. Son
- * la misma decisión —«esta persona participa»— y tenerlas separadas dejaría a
- * alguien aceptado en una feria pero invisible en la vidriera.
+ * **No libera el puesto.** Si la Dirección ya le asignó un stand en una edición
+ * que todavía no pasó, ese stand sigue ahí y la bandeja del panel lo muestra
+ * marcado para que lo liberen al revisar el mapa. Es deliberado: un click del
+ * feriante no tiene que modificar un mapa que la Dirección ya armó y publicó, y
+ * sobre todo no tiene que hacerlo sin que nadie se entere.
  *
- * Lo que NO hace es asignarle un stand: eso es logística de cada edición y se
- * resuelve en /admin/ediciones, para no obligar a tener el mapa resuelto antes
- * de poder contestar.
+ * No toca `revisadoEn`, que es cuándo lo revisó la Dirección. Cuándo se bajó
+ * queda en `actualizadoEn`: meter las dos cosas en la misma columna borraría
+ * quién tomó la última decisión.
+ */
+export async function retirarmeDeFeria(datos: FormData): Promise<void> {
+  const sesion = await requerirVendedor();
+
+  const entrada = retirarmeSchema.safeParse(Object.fromEntries(datos));
+  if (!entrada.success) return;
+
+  const vendedor = await prisma.vendedor.findUnique({
+    where: { usuarioId: sesion.id },
+    select: { id: true },
+  });
+  if (!vendedor) return;
+
+  const postulacion = await prisma.postulacion.findUnique({
+    where: { id: entrada.data.postulacionId },
+    select: { id: true, estado: true, vendedorId: true, feria: { select: { slug: true } } },
+  });
+
+  // El filtro por `vendedorId` evita que alguien baje a otro de una feria.
+  // Las salidas silenciosas son todas carreras —doble click, pestaña vieja— y
+  // el resultado se ve en la pantalla: la feria pasa a «Se bajó».
+  if (!postulacion || postulacion.vendedorId !== vendedor.id) return;
+  if (postulacion.estado !== "PENDIENTE" && postulacion.estado !== "ACEPTADA") {
+    return;
+  }
+
+  await prisma.postulacion.update({
+    where: { id: postulacion.id },
+    data: { estado: "RETIRADA" },
+  });
+
+  revalidarPostulaciones();
+  revalidatePath(`/ferias/${postulacion.feria.slug}`);
+}
+
+/**
+ * La Dirección habilita o rechaza a un feriante en una feria presencial.
+ *
+ * **Ya no aprueba la ficha de rebote.** Antes lo hacía: aceptar una postulación
+ * ponía el `Vendedor` en APROBADO si estaba pendiente, con lo cual las dos
+ * decisiones —«es feriante» y «va a esta plaza»— se tomaban con un solo click y
+ * no había forma de dar una sin la otra. Ahora el alta se resuelve antes, en su
+ * propia sección de la bandeja, y acá se da por hecha: de ahí el guard.
+ *
+ * Lo que sigue sin hacer es asignarle un stand. Eso es logística de cada
+ * edición y se resuelve en /admin/ediciones, para no obligar a tener el mapa
+ * resuelto antes de poder contestar.
  */
 export async function resolverPostulacion(
   _estadoPrevio: EstadoFormulario,
@@ -225,29 +319,34 @@ export async function resolverPostulacion(
       },
     });
 
-    if (!postulacion) return estadoDeError("Esa postulación no existe.");
+    if (!postulacion) return estadoDeError("Ese pedido no existe.");
+    if (postulacion.estado === "RETIRADA") {
+      return estadoDeError(
+        `${postulacion.vendedor.emprendimiento} se bajó de esa feria por su cuenta.`,
+      );
+    }
     if (postulacion.estado !== "PENDIENTE") {
-      return estadoDeError("Esa postulación ya fue resuelta.");
+      return estadoDeError("Ese pedido ya fue resuelto.");
+    }
+
+    // El alta es el primer permiso y se resuelve aparte. La bandeja no muestra
+    // pedidos de feria de una ficha sin aprobar, así que acá sólo se llega con
+    // una pantalla vieja abierta.
+    if (postulacion.vendedor.estado !== "APROBADO") {
+      return estadoDeError(
+        `Primero hay que aprobar el alta de ${postulacion.vendedor.emprendimiento}, en «Altas esperando respuesta».`,
+      );
     }
 
     const acepta = entrada.decision === "ACEPTADA";
 
-    await prisma.$transaction(async (tx) => {
-      await tx.postulacion.update({
-        where: { id: postulacion.id },
-        data: {
-          estado: entrada.decision,
-          motivoRechazo: acepta ? null : entrada.motivoRechazo,
-          revisadoEn: new Date(),
-        },
-      });
-
-      if (acepta && postulacion.vendedor.estado !== "APROBADO") {
-        await tx.vendedor.update({
-          where: { id: postulacion.vendedorId },
-          data: { estado: "APROBADO", motivoRechazo: null, revisadoEn: new Date() },
-        });
-      }
+    await prisma.postulacion.update({
+      where: { id: postulacion.id },
+      data: {
+        estado: entrada.decision,
+        motivoRechazo: acepta ? null : entrada.motivoRechazo,
+        revisadoEn: new Date(),
+      },
     });
 
     revalidarPostulaciones();
@@ -257,8 +356,8 @@ export async function resolverPostulacion(
 
     return estadoDeExito(
       acepta
-        ? `${postulacion.vendedor.emprendimiento} ya es feriante de ${postulacion.feria.nombre}. Falta asignarle un stand en la edición que corresponda.`
-        : `Se rechazó la postulación de ${postulacion.vendedor.emprendimiento}.`,
+        ? `${postulacion.vendedor.emprendimiento} quedó habilitado en ${postulacion.feria.nombre}. Falta asignarle un stand en la edición que corresponda.`
+        : `Se rechazó el pedido de ${postulacion.vendedor.emprendimiento} para ${postulacion.feria.nombre}.`,
     );
   });
 }

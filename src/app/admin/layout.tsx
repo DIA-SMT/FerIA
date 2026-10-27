@@ -28,28 +28,30 @@ export default async function LayoutAdmin({
   // Doble barrera: el middleware ya filtró, pero las páginas no confían en él.
   const sesion = await requerirAdmin();
 
-  // Dos bandejas distintas: las solicitudes resuelven el alta de una ficha y
-  // las postulaciones, quién entra a qué feria. Los contadores van juntos en
-  // una sola ida a la base porque el layout corre en cada pantalla del panel.
-  const [pendientes, postulacionesPendientes] = await Promise.all([
-    prisma.vendedor.count({ where: { estado: "PENDIENTE" } }),
-    prisma.postulacion.count({ where: { estado: "PENDIENTE" } }),
+  // Una sola bandeja, con los dos permisos adentro: el alta de la ficha y el
+  // pedido de feria. El contador los suma porque es lo que hay para contestar.
+  //
+  // Las fichas del padrón importado quedan afuera —sin `usuarioId`—: también
+  // nacen pendientes pero nadie las presentó, así que un contador que las
+  // incluyera diría 867 para siempre. Y los pedidos de feria se cuentan sólo si
+  // la ficha ya está aprobada, que es cuando se pueden contestar.
+  const [altas, pedidos] = await Promise.all([
+    prisma.vendedor.count({
+      where: { estado: "PENDIENTE", usuarioId: { not: null } },
+    }),
+    prisma.postulacion.count({
+      where: { estado: "PENDIENTE", vendedor: { estado: "APROBADO" } },
+    }),
   ]);
 
   const entradas: EntradaMenu[] = [
     { href: "/admin", texto: "Estadísticas", icono: "panel" },
     { href: "/admin/ferias", texto: "Ferias y ediciones", icono: "ferias" },
     {
-      href: "/admin/solicitudes",
-      texto: "Solicitudes",
-      icono: "solicitudes",
-      contador: pendientes,
-    },
-    {
       href: "/admin/postulaciones",
       texto: "Postulaciones",
       icono: "postulaciones",
-      contador: postulacionesPendientes,
+      contador: altas + pedidos,
     },
     { href: "/admin/feriantes", texto: "Feriantes", icono: "feriantes" },
     { href: "/admin/canon", texto: "Canon y permisos", icono: "canon" },

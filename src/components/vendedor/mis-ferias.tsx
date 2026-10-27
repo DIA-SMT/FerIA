@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { EstadoPostulacion } from "@prisma/client";
 
+import { retirarmeDeFeria } from "@/actions/postulaciones";
+
 import {
   FormularioPostulacion,
   type FeriaDisponible,
 } from "@/components/vendedor/formulario-postulacion";
 import { Alerta } from "@/components/ui/alerta";
 import { Badge } from "@/components/ui/badge";
+import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import {
   Tarjeta,
   TarjetaCuerpo,
@@ -39,9 +42,12 @@ export interface PostulacionDelFeriante {
 export function MisFerias({
   postulaciones,
   feriasDisponibles,
+  puedePedir,
 }: {
   postulaciones: PostulacionDelFeriante[];
   feriasDisponibles: FeriaDisponible[];
+  /** Si la ficha ya está aprobada: sin alta no se puede pedir una feria. */
+  puedePedir: boolean;
 }) {
   const aceptadas = postulaciones.filter((p) => p.estado === "ACEPTADA");
   const otras = postulaciones.filter((p) => p.estado !== "ACEPTADA");
@@ -49,13 +55,13 @@ export function MisFerias({
   return (
     <Tarjeta>
       <TarjetaEncabezado
-        titulo="Mis ferias"
-        descripcion="De qué ferias sos parte y qué postulaciones tenés en curso."
+        titulo="Mis ferias presenciales"
+        descripcion="En qué ferias estás habilitado y qué pedidos tenés en curso. Es opcional: podés tener sólo tu stand online."
       />
       <TarjetaCuerpo className="space-y-5">
         {postulaciones.length === 0 ? (
           <p className="text-sm text-slate-600">
-            Todavía no te postulaste a ninguna feria.
+            Todavía no pediste ninguna feria presencial.
           </p>
         ) : (
           <ul className="divide-y divide-slate-100">
@@ -84,12 +90,38 @@ export function MisFerias({
                     </p>
                   )}
                 </div>
-                <Badge
-                  tono={TONO_ESTADO_POSTULACION[postulacion.estado]}
-                  conPunto
-                >
-                  {ESTADOS_POSTULACION[postulacion.estado]}
-                </Badge>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge
+                    tono={TONO_ESTADO_POSTULACION[postulacion.estado]}
+                    conPunto
+                  >
+                    {ESTADOS_POSTULACION[postulacion.estado]}
+                  </Badge>
+
+                  {/* Bajarse es decisión del feriante y no se le pide motivo,
+                      a diferencia de un rechazo. Lo que no hace es liberar el
+                      puesto: si la Dirección ya le asignó uno en una edición
+                      que no pasó, sigue asignado y a ellos les aparece marcado
+                      para liberarlo. Un click no cambia un mapa publicado. */}
+                  {(postulacion.estado === "ACEPTADA" ||
+                    postulacion.estado === "PENDIENTE") && (
+                    <BotonConfirmar
+                      accion={retirarmeDeFeria}
+                      campos={{ postulacionId: postulacion.id }}
+                      variante="fantasma"
+                      className="text-slate-500 hover:text-red-700"
+                      confirmacion={
+                        postulacion.estado === "ACEPTADA"
+                          ? `¿Bajarte de ${postulacion.feria.nombre}? Tu stand online sigue publicado y podés volver a pedirla cuando quieras.`
+                          : `¿Cancelar tu pedido para ${postulacion.feria.nombre}?`
+                      }
+                    >
+                      {postulacion.estado === "ACEPTADA"
+                        ? "Bajarme"
+                        : "Cancelar"}
+                    </BotonConfirmar>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -97,14 +129,22 @@ export function MisFerias({
 
         {aceptadas.length > 0 && (
           <Alerta tipo="info">
-            Ser feriante de una feria no reserva un puesto: la Dirección te
-            asigna un número de stand cuando arma cada edición, y ahí lo vas a
-            ver en «Mis próximas ferias».
+Estar habilitado en una feria no reserva un puesto: la Dirección te asigna un número de stand cuando arma cada edición, y ahí lo vas a ver en «Mis próximas ferias».
           </Alerta>
         )}
 
         <div className="border-t border-slate-100 pt-4">
-          <FormularioPostulacion ferias={feriasDisponibles} />
+          {/* Pedir una feria es el segundo permiso y necesita el primero. Con
+              el alta en revisión el formulario se oculta en vez de mostrarse y
+              rebotar: la acción también lo rechaza, pero enterarse después de
+              escribir el mensaje es peor que no poder empezar. */}
+          {puedePedir ? (
+            <FormularioPostulacion ferias={feriasDisponibles} />
+          ) : (
+            <p className="text-sm text-slate-500">
+              Vas a poder pedir ferias presenciales cuando te den el alta.
+            </p>
+          )}
         </div>
       </TarjetaCuerpo>
     </Tarjeta>
