@@ -14,6 +14,7 @@ import {
   TarjetaCuerpo,
   TarjetaEncabezado,
 } from "@/components/ui/tarjeta";
+import { cn } from "@/lib/cn";
 import { edicionesVigentes } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearFecha, formatearFechaHora } from "@/lib/format";
@@ -56,7 +57,32 @@ export const metadata = { title: "Postulaciones" };
  * Las fichas del padrón importado no entran acá: también nacen pendientes, pero
  * nadie las presentó. Se revisan desde /admin/feriantes.
  */
-export default async function PaginaPostulaciones() {
+/**
+ * Los dos permisos, como filtro.
+ *
+ * Las etiquetas dicen «stand virtual» y «feria presencial» y no «altas» y
+ * «postulaciones» porque eso es lo que se está habilitando en cada caso, y es
+ * como lo nombra la Dirección. Nombrarlas por el modelo de datos sería volver al
+ * problema de las dos bandejas: dos palabras que no se distinguen mirándolas.
+ */
+const FILTROS = [
+  { valor: "", etiqueta: "Todo" },
+  { valor: "altas", etiqueta: "Stand virtual" },
+  { valor: "ferias", etiqueta: "Ferias presenciales" },
+] as const;
+
+export default async function PaginaPostulaciones({
+  searchParams,
+}: {
+  searchParams: Promise<{ tipo?: string }>;
+}) {
+  const params = await searchParams;
+  const tipo =
+    params.tipo === "altas" || params.tipo === "ferias" ? params.tipo : "";
+
+  const verAltas = tipo !== "ferias";
+  const verFerias = tipo !== "altas";
+
   const hoy = new Date();
 
   const [altas, pedidos, bajasConPuesto, resueltas, altasRechazadas] =
@@ -175,6 +201,46 @@ export default async function PaginaPostulaciones() {
         descripcion="Todo lo que espera respuesta: las altas de feriantes y los pedidos para estar en una feria presencial."
       />
 
+      {/* Las consultas se hacen siempre, filtre o no: son cinco tablas chicas y
+          acotadas, y los números de las pastillas salen de ahí. Filtrar la
+          consulta además de la pantalla dejaría las pastillas sin contador, que
+          es la mitad de para qué sirve el filtro. */}
+      <nav
+        aria-label="Filtrar por tipo de permiso"
+        className="mb-5 flex flex-wrap gap-2"
+      >
+        {FILTROS.map((filtro) => {
+          const activo = tipo === filtro.valor;
+          const href = filtro.valor
+            ? `/admin/postulaciones?tipo=${filtro.valor}`
+            : "/admin/postulaciones";
+
+          const cuantas =
+            filtro.valor === "altas"
+              ? altas.length
+              : filtro.valor === "ferias"
+                ? pedidos.length
+                : altas.length + pedidos.length;
+
+          return (
+            <Link
+              key={filtro.etiqueta}
+              href={href}
+              aria-current={activo ? "page" : undefined}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors",
+                activo
+                  ? "bg-municipal-500 text-white ring-municipal-500"
+                  : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
+              )}
+            >
+              {filtro.etiqueta}
+              {cuantas > 0 && ` · ${cuantas}`}
+            </Link>
+          );
+        })}
+      </nav>
+
       <Alerta tipo="info" className="mb-6">
         Son dos permisos y van en orden. Aprobar el <strong>alta</strong> le
         habilita al feriante su stand virtual —vidriera y catálogo—. Recién
@@ -188,156 +254,162 @@ export default async function PaginaPostulaciones() {
       </Alerta>
 
       {/* ------------------------------ Altas ------------------------------ */}
-      <section>
-        <div className="mb-4 flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Altas esperando respuesta
-          </h2>
-          {altas.length > 0 && <Badge tono="amarillo">{altas.length}</Badge>}
-        </div>
-
-        {altas.length === 0 ? (
-          <EstadoVacio
-            icono={IconoTildeCirculo}
-            titulo="Ninguna alta pendiente"
-            descripcion="No hay emprendimientos esperando que los den de alta."
-          />
-        ) : (
-          <div className="space-y-4">
-            {altas.map((alta) => {
-              const titular = titularDe(alta);
-
-              return (
-                <TarjetaSolicitud
-                  key={alta.id}
-                  solicitud={{
-                    id: alta.id,
-                    emprendimiento: alta.emprendimiento,
-                    rubro: alta.rubro,
-                    descripcion: alta.descripcion,
-                    whatsapp: alta.whatsapp,
-                    telefono: alta.telefono,
-                    instagram: alta.instagram,
-                    facebook: alta.facebook,
-                    sitioWeb: alta.sitioWeb,
-                    dni: alta.dni,
-                    direccion: alta.direccion,
-                    creadoEn: alta.creadoEn,
-                    nombreTitular: titular.nombre,
-                    emailTitular: titular.email ?? "Sin correo",
-                    feriaPedida: alta.postulaciones[0]?.feria.nombre ?? null,
-                  }}
-                />
-              );
-            })}
+      {verAltas && (
+        <section>
+          <div className="mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Altas esperando respuesta
+            </h2>
+            {altas.length > 0 && <Badge tono="amarillo">{altas.length}</Badge>}
           </div>
-        )}
-      </section>
+
+          {altas.length === 0 ? (
+            <EstadoVacio
+              icono={IconoTildeCirculo}
+              titulo="Ninguna alta pendiente"
+              descripcion="No hay emprendimientos esperando que los den de alta."
+            />
+          ) : (
+            <div className="space-y-4">
+              {altas.map((alta) => {
+                const titular = titularDe(alta);
+
+                return (
+                  <TarjetaSolicitud
+                    key={alta.id}
+                    solicitud={{
+                      id: alta.id,
+                      emprendimiento: alta.emprendimiento,
+                      rubro: alta.rubro,
+                      descripcion: alta.descripcion,
+                      whatsapp: alta.whatsapp,
+                      telefono: alta.telefono,
+                      instagram: alta.instagram,
+                      facebook: alta.facebook,
+                      sitioWeb: alta.sitioWeb,
+                      dni: alta.dni,
+                      direccion: alta.direccion,
+                      creadoEn: alta.creadoEn,
+                      nombreTitular: titular.nombre,
+                      emailTitular: titular.email ?? "Sin correo",
+                      feriaPedida: alta.postulaciones[0]?.feria.nombre ?? null,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ---------------------- Pedidos de feria --------------------------- */}
-      <section className="mt-10">
-        <div className="mb-4 flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Pedidos para estar en una feria
-          </h2>
-          {pedidos.length > 0 && <Badge tono="amarillo">{pedidos.length}</Badge>}
-        </div>
+      {verFerias && (
+        <section className="mt-10">
+          <div className="mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Pedidos para estar en una feria
+            </h2>
+            {pedidos.length > 0 && (
+              <Badge tono="amarillo">{pedidos.length}</Badge>
+            )}
+          </div>
 
-        {pedidos.length === 0 ? (
-          <EstadoVacio
-            icono={IconoTildeCirculo}
-            titulo="Ningún pedido pendiente"
-            descripcion="Ningún feriante está esperando respuesta para una feria presencial."
-          />
-        ) : (
-          <div className="space-y-4">
-            {pedidos.map((pedido) => {
-              const titular = titularDe(pedido.vendedor);
+          {pedidos.length === 0 ? (
+            <EstadoVacio
+              icono={IconoTildeCirculo}
+              titulo="Ningún pedido pendiente"
+              descripcion="Ningún feriante está esperando respuesta para una feria presencial."
+            />
+          ) : (
+            <div className="space-y-4">
+              {pedidos.map((pedido) => {
+                const titular = titularDe(pedido.vendedor);
 
-              return (
-                <Tarjeta key={pedido.id}>
-                  <TarjetaCuerpo>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900">
-                          <Link
-                            href={`/stands/${pedido.vendedor.slug}`}
-                            target="_blank"
-                            className="transition-colors hover:text-municipal-700"
-                          >
-                            {pedido.vendedor.emprendimiento}
-                          </Link>
-                        </p>
-                        {/* El DNI va acá porque es lo que permite verificar a
+                return (
+                  <Tarjeta key={pedido.id}>
+                    <TarjetaCuerpo>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900">
+                            <Link
+                              href={`/stands/${pedido.vendedor.slug}`}
+                              target="_blank"
+                              className="transition-colors hover:text-municipal-700"
+                            >
+                              {pedido.vendedor.emprendimiento}
+                            </Link>
+                          </p>
+                          {/* El DNI va acá porque es lo que permite verificar a
                             la persona: cuando entró por CiDiTuc lo trae
                             validado contra el padrón municipal, y si falta es
                             señal de que la cuenta se hizo con contraseña. */}
-                        <p className="text-sm text-slate-600">
-                          {titular.nombre}
-                          {pedido.vendedor.dni
-                            ? ` · DNI ${pedido.vendedor.dni}`
-                            : ""}
-                          {titular.email ? ` · ${titular.email}` : ""}
-                        </p>
-                        {/* El WhatsApp es por donde la Dirección resuelve las
+                          <p className="text-sm text-slate-600">
+                            {titular.nombre}
+                            {pedido.vendedor.dni
+                              ? ` · DNI ${pedido.vendedor.dni}`
+                              : ""}
+                            {titular.email ? ` · ${titular.email}` : ""}
+                          </p>
+                          {/* El WhatsApp es por donde la Dirección resuelve las
                             dudas antes de contestar, así que va a la vista y
                             no a dos clics de distancia. */}
-                        <a
-                          href={linkWhatsapp(
-                            pedido.vendedor.whatsapp,
-                            mensajeConsultaStand(
-                              pedido.vendedor.emprendimiento,
-                            ),
-                          )}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sm text-municipal-600 transition-colors hover:text-municipal-700"
-                        >
-                          {formatearWhatsapp(pedido.vendedor.whatsapp)}
-                        </a>
+                          <a
+                            href={linkWhatsapp(
+                              pedido.vendedor.whatsapp,
+                              mensajeConsultaStand(
+                                pedido.vendedor.emprendimiento,
+                              ),
+                            )}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm text-municipal-600 transition-colors hover:text-municipal-700"
+                          >
+                            {formatearWhatsapp(pedido.vendedor.whatsapp)}
+                          </a>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge tono="neutro" tamanio="sm">
+                            {RUBROS[pedido.vendedor.rubro]}
+                          </Badge>
+                          <Badge tono="azul" tamanio="sm">
+                            {pedido.feria.nombre}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge tono="neutro" tamanio="sm">
-                          {RUBROS[pedido.vendedor.rubro]}
-                        </Badge>
-                        <Badge tono="azul" tamanio="sm">
-                          {pedido.feria.nombre}
-                        </Badge>
+
+                      {pedido.mensaje && (
+                        <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm whitespace-pre-line text-slate-700">
+                          {pedido.mensaje}
+                        </p>
+                      )}
+
+                      {pedido.vendedor.descripcion && (
+                        <p className="mt-3 text-sm whitespace-pre-line text-slate-600">
+                          {pedido.vendedor.descripcion}
+                        </p>
+                      )}
+
+                      <p className="mt-3 text-xs text-slate-500">
+                        Lo pidió el {formatearFechaHora(pedido.creadoEn)}
+                      </p>
+
+                      <div className="mt-4 border-t border-slate-100 pt-4">
+                        <AccionesPostulacion
+                          postulacionId={pedido.id}
+                          emprendimiento={pedido.vendedor.emprendimiento}
+                        />
                       </div>
-                    </div>
-
-                    {pedido.mensaje && (
-                      <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm whitespace-pre-line text-slate-700">
-                        {pedido.mensaje}
-                      </p>
-                    )}
-
-                    {pedido.vendedor.descripcion && (
-                      <p className="mt-3 text-sm whitespace-pre-line text-slate-600">
-                        {pedido.vendedor.descripcion}
-                      </p>
-                    )}
-
-                    <p className="mt-3 text-xs text-slate-500">
-                      Lo pidió el {formatearFechaHora(pedido.creadoEn)}
-                    </p>
-
-                    <div className="mt-4 border-t border-slate-100 pt-4">
-                      <AccionesPostulacion
-                        postulacionId={pedido.id}
-                        emprendimiento={pedido.vendedor.emprendimiento}
-                      />
-                    </div>
-                  </TarjetaCuerpo>
-                </Tarjeta>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                    </TarjetaCuerpo>
+                  </Tarjeta>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ------------- Se bajaron y el puesto quedó asignado ---------------- */}
-      {bajasConPuesto.length > 0 && (
+      {verFerias && bajasConPuesto.length > 0 && (
         <section className="mt-10">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">
             Se bajaron y todavía tienen puesto asignado
@@ -375,9 +447,8 @@ export default async function PaginaPostulaciones() {
                             key={`${stand.edicion.feria.slug}-${stand.numero}`}
                             className="text-sm text-amber-800"
                           >
-                            Puesto {stand.numero} ·{" "}
-                            {stand.edicion.feria.nombre} del{" "}
-                            {formatearFecha(stand.edicion.fechaInicio)}
+                            Puesto {stand.numero} · {stand.edicion.feria.nombre}{" "}
+                            del {formatearFecha(stand.edicion.fechaInicio)}
                           </li>
                         ))}
                       </ul>
@@ -405,7 +476,7 @@ export default async function PaginaPostulaciones() {
       )}
 
       {/* ------------------------- Ya resueltas ---------------------------- */}
-      {resueltas.length > 0 && (
+      {verFerias && resueltas.length > 0 && (
         <section className="mt-10">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">
             Ferias resueltas recientemente
@@ -452,7 +523,7 @@ export default async function PaginaPostulaciones() {
       )}
 
       {/* --------------------- Altas rechazadas ---------------------------- */}
-      {altasRechazadas.length > 0 && (
+      {verAltas && altasRechazadas.length > 0 && (
         <section className="mt-10">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">
             Altas rechazadas
