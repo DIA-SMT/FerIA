@@ -20,8 +20,19 @@ import {
 export const productoSchema = z.object({
   nombre: texto(2, 140, "El nombre del producto"),
   descripcion: textoOpcional(1500, "La descripción"),
-  precio: importeOpcional("El precio"),
-  stock: enteroOpcional(0, 1_000_000, "El stock"),
+  /*
+    `.optional()` no es decorativo: con `PERMITIR_PRECIOS` apagado el formulario
+    ni dibuja estos dos campos, así que no llegan en el `FormData`. Sin esto el
+    `coerce` recibía `undefined`, daba NaN y el guardado fallaba entero con un
+    «Revisá los datos ingresados» que no marcaba ningún campo en rojo, porque el
+    campo del error no estaba en pantalla.
+
+    Y tiene que ser `undefined`, no `null`: ausente significa «el formulario no
+    opina», y Prisma lo deja como está. `null` significaría borrar el precio, que
+    es lo que pasaría al editar una ficha importada con precio cargado.
+  */
+  precio: importeOpcional("El precio").optional(),
+  stock: enteroOpcional(0, 1_000_000, "El stock").optional(),
   disponible: casilla,
   destacado: casilla,
   /**
