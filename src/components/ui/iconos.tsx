@@ -177,6 +177,14 @@ export function IconoInfo(props: PropsIcono) {
   );
 }
 
+export function IconoChevronIzquierda(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M15 5l-7 7 7 7" />
+    </Base>
+  );
+}
+
 export function IconoChevronDerecha(props: PropsIcono) {
   return (
     <Base {...props}>

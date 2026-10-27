@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { BotonLink } from "@/components/ui/boton";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { IconoEtiqueta, IconoLapiz, IconoMas } from "@/components/ui/iconos";
-import { ImagenPortada } from "@/components/ui/imagen";
+import { CarruselDeFotos } from "@/components/ui/carrusel-de-fotos";
 import { Tarjeta } from "@/components/ui/tarjeta";
 import { prisma } from "@/lib/db";
 import { requerirVendedorAprobado } from "@/lib/session";
@@ -62,8 +62,8 @@ export default async function PaginaProductos() {
                   {/* Cuadrada como la tarjeta pública: el procesador de fotos
                       devuelve 1:1, así que acá no se recorta nada y el feriante
                       ve exactamente lo que va a ver el vecino. */}
-                  <ImagenPortada
-                    src={producto.imagenes[0] ?? null}
+                  <CarruselDeFotos
+                    imagenes={producto.imagenes}
                     alt={producto.nombre}
                     icono={IconoEtiqueta}
                     sizes="(max-width: 640px) 100vw, 33vw"

@@ -1,7 +1,7 @@
 import { BotonAgregar } from "@/components/carrito/boton-agregar";
 import { Badge } from "@/components/ui/badge";
+import { CarruselDeFotos } from "@/components/ui/carrusel-de-fotos";
 import { IconoEtiqueta, IconoWhatsapp } from "@/components/ui/iconos";
-import { ImagenPortada } from "@/components/ui/imagen";
 import { formatearMoneda } from "@/lib/format";
 import { hayUnidades, sePuedePedir } from "@/lib/pedidos";
 import { linkWhatsapp, mensajeConsultaProducto } from "@/lib/whatsapp";
@@ -51,16 +51,19 @@ export function TarjetaProducto({
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="relative">
-        <ImagenPortada
-          src={portada}
+        <CarruselDeFotos
+          imagenes={producto.imagenes}
           alt={producto.nombre}
           icono={IconoEtiqueta}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           ajuste="contain"
           className="aspect-square w-full"
         />
+        {/* `pointer-events-none`: el velo de «sin stock» es informativo y tapa
+            toda la foto, así que sin esto se comía los clicks de las flechas y
+            un producto agotado quedaba con cuatro fotos inalcanzables. */}
         {!quedan && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/70">
             <Badge tono="neutro">Sin stock</Badge>
           </div>
         )}
