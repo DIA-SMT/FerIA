@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useActionState, useState } from "react";
 import type { Rubro } from "@prisma/client";
 
@@ -10,10 +9,10 @@ import { BotonEnvio } from "@/components/ui/boton-envio";
 import {
   AreaTexto,
   Campo,
-  CampoArchivo,
   Entrada,
   Seleccion,
 } from "@/components/ui/campo";
+import { CampoImagen } from "@/components/ui/campo-imagen";
 import { AsistenteDeDescripcion } from "@/components/vendedor/asistente-de-descripcion";
 import {
   Tarjeta,
@@ -50,9 +49,9 @@ export function FormularioPerfil({
    * se consulta acá: `hayIAConfigurada()` lee `process.env` del servidor y este
    * componente es de cliente, donde esa variable no existe.
    *
-   * ⚠️ Pendiente: el default es `true` para no apagarle la función a nadie,
-   * pero `src/app/mi-stand/perfil/page.tsx` —el Server Component que monta
-   * esto— todavía no lo pasa, así que el botón se sigue ofreciendo sin IA.
+   * `src/app/mi-stand/perfil/page.tsx` ya lo pasa; el default en `true` queda
+   * para cualquier otro lugar que monte esto sin decir nada, donde es preferible
+   * ofrecer el botón de más a esconder una función que sí está configurada.
    */
   hayIA?: boolean;
 }) {
@@ -152,56 +151,25 @@ export function FormularioPerfil({
         />
         <TarjetaCuerpo className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-3">
-              {urlPublica(perfil.imagenPortada) ? (
-                <Image
-                  src={urlPublica(perfil.imagenPortada) ?? ""}
-                  alt="Portada actual"
-                  width={320}
-                  height={180}
-                  className="h-32 w-full rounded-lg border border-slate-200 object-cover"
-                />
-              ) : (
-                <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-400">
-                  Sin portada
-                </div>
-              )}
-              <Campo
-                htmlFor="imagenPortada"
-                etiqueta="Foto de portada"
-                ayuda="Apaisada. Hasta 5 MB."
-                errores={errores?.imagenPortada}
-              >
-                <CampoArchivo
-                  name="imagenPortada"
-                  errores={errores?.imagenPortada}
-                />
-              </Campo>
-            </div>
+            <CampoImagen
+              name="imagenPortada"
+              etiqueta="Foto de portada"
+              ayuda="Apaisada. Hasta 5 MB."
+              errores={errores?.imagenPortada}
+              actual={urlPublica(perfil.imagenPortada)}
+              vacio="Sin portada"
+              forma="apaisada"
+            />
 
-            <div className="space-y-3">
-              {urlPublica(perfil.logo) ? (
-                <Image
-                  src={urlPublica(perfil.logo) ?? ""}
-                  alt="Logo actual"
-                  width={128}
-                  height={128}
-                  className="size-32 rounded-lg border border-slate-200 object-cover"
-                />
-              ) : (
-                <div className="flex size-32 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-400">
-                  Sin logo
-                </div>
-              )}
-              <Campo
-                htmlFor="logo"
-                etiqueta="Logo"
-                ayuda="Cuadrado. Hasta 5 MB."
-                errores={errores?.logo}
-              >
-                <CampoArchivo name="logo" errores={errores?.logo} />
-              </Campo>
-            </div>
+            <CampoImagen
+              name="logo"
+              etiqueta="Logo"
+              ayuda="Cuadrado. Hasta 5 MB."
+              errores={errores?.logo}
+              actual={urlPublica(perfil.logo)}
+              vacio="Sin logo"
+              forma="cuadrada"
+            />
           </div>
         </TarjetaCuerpo>
       </Tarjeta>
