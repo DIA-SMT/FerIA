@@ -7,8 +7,17 @@
  * como la que guarda el producto.
  */
 
-/** Las tres opciones que se le ofrecen al feriante. */
-export type ClaveVariante = "original" | "automatica" | "ia";
+/**
+ * Las versiones que se le ofrecen al feriante.
+ *
+ * `automatica` es el «antes» de la comparación: su foto encuadrada, con la luz
+ * levantada y el fondo emparejado. No hay una variante sin retocar porque esos
+ * arreglos no inventan nada —acomodan lo que ya estaba— y no ofrecerlos como
+ * opción evitaba publicar fotos de celular torcidas o a contraluz. La foto sin
+ * retoque sigue existiendo del lado del servidor, pero sólo como entrada de la
+ * IA, que devuelve la proporción de lo que recibe.
+ */
+export type ClaveVariante = "automatica" | "ia";
 
 export interface Variante {
   clave: ClaveVariante;

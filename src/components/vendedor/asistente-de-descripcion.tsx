@@ -91,7 +91,7 @@ export function AsistenteDeDescripcion({
           {redactando
             ? "Escribiendo…"
             : vaAMejorar
-              ? "Mejorar lo que escribí"
+              ? "Mejorar con IA"
               : "Ayudame a escribirla"}
         </Boton>
 

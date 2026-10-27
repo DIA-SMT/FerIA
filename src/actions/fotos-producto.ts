@@ -22,13 +22,14 @@ import { almacenamiento, validarImagen } from "@/lib/storage";
 /**
  * Generación de las variantes de una foto de producto.
  *
- * El feriante sube una foto y elige entre tres versiones antes de guardar. Las
- * tres se suben a Storage acá: al guardar el producto se conserva la elegida y
- * se borran las otras (ver `carpetaDelVendedor` para por qué eso es seguro).
+ * El feriante sube una foto y, si pide la IA, elige entre dos versiones antes
+ * de guardar: la suya acomodada y la editada. Las dos se suben a Storage acá; al
+ * guardar el producto se conserva la elegida y se borra la otra (ver
+ * `carpetaDelVendedor` para por qué eso es seguro).
  *
- * Que las tres se suban ya —en lugar de rehacerlas al guardar— es por la de IA:
- * cuesta plata y once segundos, y regenerarla para guardarla sería pagarla dos
- * veces. Las de `sharp` se suben también para que las tres se traten igual.
+ * Que se suban ya —en lugar de rehacerlas al guardar— es por la de IA: cuesta
+ * plata y once segundos, y regenerarla para guardarla sería pagarla dos veces.
+ * La de `sharp` se sube también para que las dos se traten igual.
  *
  * Los tipos y las rutas están en `@/lib/fotos-producto`: acá sólo puede haber
  * funciones async.
@@ -65,33 +66,17 @@ export async function generarVariantesDeFoto(
     const subir = (contenido: Buffer) =>
       almacenamiento.guardarBuffer(contenido, "productos", { carpeta });
 
-    // --- Sin retocar y automática (deterministas, ~300 ms cada una) ---------
-    const [sinRetocar, procesada] = await Promise.all([
-      encuadrarSinRetocar(entrada),
-      procesarFotoProducto(entrada),
-    ]);
-
-    const [conInsigniaOriginal, conInsigniaProcesada] = await Promise.all([
-      aplicarInsigniaMunicipal(sinRetocar),
-      aplicarInsigniaMunicipal(procesada.contenido),
-    ]);
-
-    const [rutaOriginal, rutaProcesada] = await Promise.all([
-      subir(conInsigniaOriginal.contenido),
-      subir(conInsigniaProcesada.contenido),
-    ]);
+    // --- La foto del feriante, acomodada (determinista, ~300 ms) -----------
+    // Es el «antes» de la comparación y también lo que se publica cuando no se
+    // pide la IA, así que se hace siempre.
+    const procesada = await procesarFotoProducto(entrada);
+    const conInsignia = await aplicarInsigniaMunicipal(procesada.contenido);
+    const rutaProcesada = await subir(conInsignia.contenido);
 
     const variantes: Variante[] = [
       {
-        clave: "original",
-        titulo: "Tu foto",
-        detalle: "Sólo encuadrada, sin retoques",
-        ruta: rutaOriginal,
-        url: urlDe(rutaOriginal),
-      },
-      {
         clave: "automatica",
-        titulo: "Mejorada",
+        titulo: "Tu foto",
         detalle: describirAjustes(procesada.ajustes).join(" · "),
         ruta: rutaProcesada,
         url: urlDe(rutaProcesada),
@@ -101,9 +86,12 @@ export async function generarVariantesDeFoto(
     if (!usarIA) return { ok: true, variantes };
 
     // --- Con IA ------------------------------------------------------------
-    // Si falla, se devuelven las dos deterministas con el error al lado: el
-    // feriante puede seguir sin depender de que OpenRouter responda.
+    // Si falla, se devuelve la determinista con el error al lado: el feriante
+    // puede seguir sin depender de que OpenRouter responda.
     try {
+      // Sin retocar: no se publica nunca, es sólo la entrada del modelo.
+      const sinRetocar = await encuadrarSinRetocar(entrada);
+
       // Va la versión ya encuadrada y NO la foto cruda: el modelo devuelve la
       // proporción de lo que recibe, así que entrándole un cuadrado devuelve un
       // cuadrado y no hay nada que recortar después. Con la foto cruda vertical
@@ -115,19 +103,19 @@ export async function generarVariantesDeFoto(
         descripcion: String(datos.get("descripcion") ?? ""),
       });
 
-      const conInsignia = await aplicarInsigniaMunicipal(
+      const conInsigniaIA = await aplicarInsigniaMunicipal(
         await normalizarSalidaIA(editada),
       );
-      const rutaIA = await subir(conInsignia.contenido);
+      const rutaIA = await subir(conInsigniaIA.contenido);
 
       variantes.push({
         clave: "ia",
-        titulo: "Editada con IA",
+        titulo: "Mejorada con IA",
         // El aviso no es de trámite: si la foto no muestra claramente el
         // producto que dice el nombre, el modelo se guía por el texto y lo
         // inventa. Medido: una foto de la feria con nombre «poncho» devolvió una
-        // manta que no estaba en la foto. Por eso el radio marcado por defecto
-        // es «Mejorada» y no esta.
+        // manta que no estaba en la foto. Por eso el «después» nunca viene
+        // marcado: elegirlo es una decisión del feriante, no el default.
         detalle: "Generada: revisá que sea tu producto",
         ruta: rutaIA,
         url: urlDe(rutaIA),
@@ -142,7 +130,7 @@ export async function generarVariantesDeFoto(
         errorIA:
           error instanceof ErrorDeIA
             ? error.message
-            : "No se pudo generar la versión con IA. Podés seguir con las otras dos.",
+            : "No se pudo generar la versión con IA. Podés seguir con tu foto.",
       };
     }
   } catch (error) {
