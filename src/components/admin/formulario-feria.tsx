@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useActionState } from "react";
 import type { CategoriaFeria } from "@prisma/client";
@@ -11,11 +10,11 @@ import { BotonEnvio } from "@/components/ui/boton-envio";
 import {
   AreaTexto,
   Campo,
-  CampoArchivo,
   Casilla,
   Entrada,
   Seleccion,
 } from "@/components/ui/campo";
+import { CampoImagen } from "@/components/ui/campo-imagen";
 import {
   Tarjeta,
   TarjetaCuerpo,
@@ -185,29 +184,26 @@ export function FormularioFeria({ accion, feria }: PropsFormularioFeria) {
           descripcion="La imagen encabeza la página pública de la feria."
         />
         <TarjetaCuerpo className="space-y-4">
-          {urlPublica(feria?.imagen) && (
-            <div className="flex items-center gap-4">
-              <Image
-                src={urlPublica(feria?.imagen) ?? ""}
-                alt="Portada actual"
-                width={160}
-                height={100}
-                className="h-24 w-40 rounded-lg border border-slate-200 object-cover"
-              />
-              <p className="text-sm text-slate-500">
-                Portada actual. Si subís una nueva, se reemplaza.
-              </p>
-            </div>
-          )}
+          {/* El mismo componente que la vidriera del feriante: muestra la foto
+              elegida en el acto, con el recorte real y el cartel «Sin guardar».
+              Antes acá se veía la portada vieja y, abajo, el nombre del archivo
+              nuevo: no había forma de saber si habías agarrado el que querías
+              hasta después de guardar.
 
-          <Campo
-            htmlFor="imagen"
+              El ancho mínimo va en la ayuda porque no decirlo ya costó: una
+              portada entró a 633 px y se ve blanda estirada a ancho completo.
+              Subirla de tamaño en el servidor no arregla nada —estirar píxeles
+              que no existen la empeora— así que lo único que sirve es pedir una
+              foto más grande antes de que se suba. */}
+          <CampoImagen
+            name="imagen"
             etiqueta={feria?.imagen ? "Reemplazar portada" : "Portada"}
-            ayuda="JPG, PNG, WEBP o AVIF. Hasta 5 MB. Se recomienda formato apaisado."
+            ayuda="Apaisada y de al menos 1200 px de ancho. JPG, PNG, WEBP o AVIF, hasta 5 MB."
             errores={errores?.imagen}
-          >
-            <CampoArchivo name="imagen" errores={errores?.imagen} />
-          </Campo>
+            actual={urlPublica(feria?.imagen)}
+            vacio="Sin portada"
+            forma="apaisada"
+          />
 
           <Casilla
             name="activa"

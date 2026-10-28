@@ -154,7 +154,7 @@ export function FormularioPerfil({
             <CampoImagen
               name="imagenPortada"
               etiqueta="Foto de portada"
-              ayuda="Apaisada. Hasta 5 MB."
+              ayuda="Apaisada y de al menos 1200 px de ancho. Hasta 5 MB."
               errores={errores?.imagenPortada}
               actual={urlPublica(perfil.imagenPortada)}
               vacio="Sin portada"
@@ -164,7 +164,7 @@ export function FormularioPerfil({
             <CampoImagen
               name="logo"
               etiqueta="Logo"
-              ayuda="Cuadrado. Hasta 5 MB."
+              ayuda="Cuadrado y de al menos 400 px. Hasta 5 MB."
               errores={errores?.logo}
               actual={urlPublica(perfil.logo)}
               vacio="Sin logo"
