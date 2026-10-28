@@ -73,6 +73,38 @@ function cuentas(passwordAdmin: string, passwordFeriante: string): CuentaDemo[] 
 }
 
 /**
+ * ¿Esta instancia está sirviendo la base de producción?
+ *
+ * La pregunta es **qué datos sirve**, y no **dónde corre**, y ese cambio es el
+ * punto. La versión anterior preguntaba `VERCEL_ENV === "production"`, que es
+ * correcto mientras el sitio viva en Vercel y deja de serlo el día que se mude:
+ * en una VPS nadie pone esa variable, así que la línea que el comentario de
+ * abajo llama «la barrera» se convertiría en silencio en una línea que no hace
+ * nada. Una barrera que depende del proveedor de hosting no es una barrera.
+ *
+ * La marca se compara contra `DATABASE_URL` con `includes`, igual que hace
+ * `abortarSiEsProduccion()` en el seed, así que sirve lo mismo para el ref de
+ * un proyecto de Supabase que para el host o el nombre de una base propia. Por
+ * eso `BASE_DE_PRODUCCION` es el nombre nuevo y general: `PROYECTO_SUPABASE_PROD`
+ * se sigue leyendo para no obligar a tocar los entornos hoy, pero cuando la
+ * base se mude a infraestructura municipal el nombre viejo deja de describir
+ * nada y conviene pasar al otro.
+ *
+ * Si no hay marca cargada, devuelve `false`: no se puede afirmar que algo es
+ * producción sin saber cuál es la de producción. El que protege ahí es el
+ * `NODE_ENV` del llamador.
+ */
+function sirveLaBaseDeProduccion(): boolean {
+  if (process.env.VERCEL_ENV === "production") return true;
+
+  const marca =
+    process.env.BASE_DE_PRODUCCION ?? process.env.PROYECTO_SUPABASE_PROD;
+  if (!marca) return false;
+
+  return (process.env.DATABASE_URL ?? "").includes(marca);
+}
+
+/**
  * Las cuentas a mostrar, o un arreglo vacío si el panel está apagado.
  *
  * Se muestra en desarrollo siempre, y en un deploy sólo declarando
@@ -81,22 +113,30 @@ function cuentas(passwordAdmin: string, passwordFeriante: string): CuentaDemo[] 
  *
  * Hay dos barreras más, porque la variable sola no alcanzó:
  *
- * 1. En producción no se muestra **nunca**, diga lo que diga `ACCESOS_DEMO`.
- *    El 23/10/2026 la variable quedó prendida en el deploy y durante semanas
- *    cualquiera que entrara a `/ingresar` se hacía ADMIN del panel municipal
- *    con un click. Una variable de entorno no es una barrera: es una nota que
- *    alguien se tiene que acordar de borrar. Esta línea sí es una barrera.
+ * 1. Sirviendo la base de producción no se muestra **nunca**, diga lo que diga
+ *    `ACCESOS_DEMO`. El 23/10/2026 la variable quedó prendida en el deploy y
+ *    durante semanas cualquiera que entrara a `/ingresar` se hacía ADMIN del
+ *    panel municipal con un click. Una variable de entorno no es una barrera:
+ *    es una nota que alguien se tiene que acordar de borrar. Esta línea sí es
+ *    una barrera.
  * 2. Las contraseñas salen del entorno. Si no están, no hay cuentas que
  *    mostrar aunque el panel esté habilitado, así que el panel no puede
  *    funcionar sin que alguien cargue las credenciales a propósito.
+ *
+ * En desarrollo el panel se muestra igual aunque `DATABASE_URL` apunte a
+ * producción, que hoy es el caso. No es una excepción floja: quien corre el
+ * proyecto en su máquina ya tiene el `.env` con la service role key, o sea
+ * acceso total a esa base. El panel no le da nada que no tenga, y sacárselo
+ * sólo rompería el desarrollo. Lo que la barrera evita es que un **deploy**
+ * ofrezca ese atajo a cualquiera que abra la página.
  */
 export function cuentasDemo(): CuentaDemo[] {
-  // Primero y sin excepción: en producción esto no existe.
-  if (process.env.VERCEL_ENV === "production") return [];
+  const enDesarrollo = process.env.NODE_ENV === "development";
 
-  const habilitado =
-    process.env.NODE_ENV === "development" ||
-    process.env.ACCESOS_DEMO === "true";
+  // Primero y sin excepción: en un deploy contra la base real, esto no existe.
+  if (!enDesarrollo && sirveLaBaseDeProduccion()) return [];
+
+  const habilitado = enDesarrollo || process.env.ACCESOS_DEMO === "true";
 
   if (!habilitado) return [];
 

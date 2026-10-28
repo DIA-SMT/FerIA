@@ -48,7 +48,14 @@ concurrency:
 env:
   # La URL de producción, en un solo lugar: si mañana el sitio pasa a un
   # dominio municipal, se cambia acá y no en cada `curl`.
-  SITIO: https://fer-ia.vercel.app
+  #
+  # Sale de una variable del repositorio para que la mudanza no sea un cambio
+  # de código. El día que el sitio pase a infraestructura municipal, el DNS y
+  # el deploy se cortan en un momento que no decide este archivo: cargando
+  # `SITIO` en Ajustes → Secrets and variables → Actions → Variables se apunta
+  # al dominio nuevo cuando esté listo, sin esperar a un merge. Si no está
+  # cargada queda el valor de hoy, así que el cron no se rompe por omisión.
+  SITIO: ${{ vars.SITIO || 'https://fer-ia.vercel.app' }}
 
 jobs:
   despertar:
