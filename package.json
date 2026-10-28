@@ -22,7 +22,8 @@
     "test:ver": "vitest",
     "db:clave-demo": "tsx --env-file-if-exists=.env prisma/clave-demo.ts",
     "db:comprimir": "tsx --env-file-if-exists=.env prisma/comprimir-imagenes.ts",
-    "db:foto-feria": "tsx --env-file-if-exists=.env prisma/foto-feria.ts"
+    "db:foto-feria": "tsx --env-file-if-exists=.env prisma/foto-feria.ts",
+    "db:rechazar-ficcion": "tsx --env-file-if-exists=.env prisma/rechazar-ficcion.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
