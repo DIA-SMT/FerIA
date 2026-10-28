@@ -118,9 +118,24 @@ async function main(): Promise<void> {
   console.log(`\nProyecto Supabase: ${new URL(URL_SUPABASE).host}`);
   console.log(`Feria: ${feria.nombre}`);
   console.log(`Archivo: ${path.basename(archivo)}`);
+  /*
+    La diferencia puede ser negativa, y el cartel tiene que decirlo.
+
+    Pasa con una foto que ya venía muy comprimida —una imagen de portal de
+    noticias, por ejemplo—: re-codificarla a WebP de calidad 82 puede dar un
+    archivo un poco más grande que el original. No es un error ni algo que haya
+    que evitar: la imagen igual queda encuadrada, en WebP y con el cache de un
+    año, que es de lo que se trata. Pero imprimir «−-1 %» es mentirle a quien
+    mira, así que se dice lo que pasó.
+  */
+  const diferencia = (1 - comprimida.length / original.length) * 100;
   console.log(
     `Peso: ${kb(original.length)} → ${kb(comprimida.length)} ` +
-      `(−${((1 - comprimida.length / original.length) * 100).toFixed(0)} %)`,
+      (diferencia >= 0.5
+        ? `(−${diferencia.toFixed(0)} %)`
+        : diferencia <= -0.5
+          ? `(+${Math.abs(diferencia).toFixed(0)} %, ya venía comprimida)`
+          : "(igual, ya venía comprimida)"),
   );
   console.log(
     feria.imagen
