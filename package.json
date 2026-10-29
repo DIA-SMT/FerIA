@@ -18,6 +18,7 @@
     "db:studio": "prisma studio",
     "db:importar": "tsx prisma/importar-feria-digital.ts",
     "db:admin": "tsx --env-file-if-exists=.env prisma/crear-admin.ts",
+    "db:clave": "tsx --env-file-if-exists=.env prisma/cambiar-clave.ts",
     "test": "vitest run",
     "test:ver": "vitest",
     "db:clave-demo": "tsx --env-file-if-exists=.env prisma/clave-demo.ts",

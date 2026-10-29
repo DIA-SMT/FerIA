@@ -10,6 +10,9 @@
  * corre bajo `tsx` sin depender de los alias de rutas de TypeScript.
  */
 
+import { randomUUID } from "node:crypto";
+
+import bcrypt from "bcryptjs";
 import {
   EstadoPago,
   EstadoVendedor,
@@ -35,6 +38,9 @@ import {
 
 const prisma = new PrismaClient();
 
+/** El mismo costo que usa la aplicación. Ver src/lib/auth/password.ts. */
+const COSTO_BCRYPT = 10;
+
 function requerido(nombre: string): string {
   const valor = process.env[nombre];
   if (!valor) {
@@ -47,7 +53,7 @@ function requerido(nombre: string): string {
 
 /**
  * Cliente con la service role key: crea los usuarios en `auth.users`, les
- * asigna el rol en `app_metadata` y prepara los buckets de Storage.
+ * asigna el rol y prepara los buckets de Storage.
  */
 const supabase = createClient(
   requerido("NEXT_PUBLIC_SUPABASE_URL"),
@@ -142,42 +148,32 @@ async function asegurarBuckets(): Promise<void> {
 }
 
 /**
- * Crea un usuario en Supabase Auth, borrando antes el que existiera con ese
- * correo (para que el seed sea reejecutable). Devuelve el UUID.
+ * Devuelve el UUID de la cuenta, creándola si no existe.
+ *
+ * Antes esto vivía en Supabase Auth y había que borrar la cuenta previa para
+ * que el seed fuera reejecutable. Ahora las credenciales están en la misma base
+ * que todo lo demás, y el seed ya borra las tablas antes de cargar, así que
+ * alcanza con crear.
  */
-async function crearUsuarioAuth(
+async function crearUsuario(
   email: string,
   password: string,
   nombre: string,
   rol: Rol,
 ): Promise<string> {
-  const { data: existentes } = await supabase.auth.admin.listUsers({
-    page: 1,
-    perPage: 1000,
+  const id = randomUUID();
+
+  await prisma.usuario.create({
+    data: {
+      id,
+      email,
+      nombre,
+      rol,
+      passwordHash: await bcrypt.hash(password, COSTO_BCRYPT),
+    },
   });
 
-  const previo = existentes?.users.find((usuario) => usuario.email === email);
-  if (previo) await supabase.auth.admin.deleteUser(previo.id);
-
-  const { data, error } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    // Sin confirmación por correo: la verificación real la hace la Dirección
-    // de Ferias al aprobar la solicitud, y así el seed no depende de un SMTP.
-    email_confirm: true,
-    // `app_metadata` sólo se puede escribir con la service role key, así que
-    // el rol viaja seguro en el JWT y el middleware puede leerlo en el Edge.
-    app_metadata: { rol },
-    user_metadata: { nombre },
-  });
-
-  if (error || !data.user) {
-    throw new Error(
-      `No se pudo crear el usuario ${email}: ${error?.message ?? "sin detalle"}`,
-    );
-  }
-
-  return data.user.id;
+  return id;
 }
 
 // --------------------------------------------------------------------------
@@ -718,7 +714,7 @@ async function main(): Promise<void> {
   await prisma.usuario.deleteMany();
 
   console.log("→ Creando usuario administrador…");
-  const idAdmin = await crearUsuarioAuth(
+  const idAdmin = await crearUsuario(
     "admin@smt.gob.ar",
     PASSWORD_ADMIN,
     "Dirección de Ferias y Mercados",
@@ -811,7 +807,7 @@ async function main(): Promise<void> {
   const vendedoresPorSlug = new Map<string, string>();
 
   for (const datos of VENDEDORES) {
-    const idUsuario = await crearUsuarioAuth(
+    const idUsuario = await crearUsuario(
       datos.email,
       PASSWORD_FERIANTE,
       datos.nombre,

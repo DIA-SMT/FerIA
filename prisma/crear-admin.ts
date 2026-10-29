@@ -15,39 +15,27 @@
  * apagado.
  *
  * Es reejecutable y no pisa nada: si la cuenta ya existe no le toca la
- * contraseña, sólo se asegura de que tenga rol ADMIN en los dos lugares donde
- * el rol vive. Para cambiar una contraseña existente está el panel de Supabase,
- * que además deja registro de quién lo hizo.
+ * contraseña, sólo se asegura de que tenga rol ADMIN. Para **cambiar** una
+ * contraseña existente está `npm run db:clave`.
+ *
+ * Antes esto creaba la cuenta en Supabase Auth y el perfil acá, y tenía que
+ * mantener el rol sincronizado en los dos lugares porque el middleware lo leía
+ * del JWT de Supabase. Desde que las credenciales son propias hay un solo
+ * lugar, así que el script se achicó a la mitad y dejó de poder quedar a medias.
  *
  * El script es autocontenido a propósito, como el seed: no importa nada de
  * `src/`, así corre bajo `tsx` sin depender de los alias de TypeScript.
  */
 
+import { randomUUID } from "node:crypto";
+
+import bcrypt from "bcryptjs";
 import { PrismaClient, Rol } from "@prisma/client";
-import { createClient } from "@supabase/supabase-js";
 
 const prisma = new PrismaClient();
 
-function requerido(nombre: string): string {
-  const valor = process.env[nombre];
-  if (!valor) {
-    throw new Error(
-      `Falta la variable de entorno ${nombre}. Completá el archivo .env antes de correr esto.`,
-    );
-  }
-  return valor;
-}
-
-/**
- * Cliente con la service role key: es la única que puede escribir
- * `app_metadata`, que es donde viaja el rol dentro del JWT para que el
- * middleware lo lea en el Edge sin consultar la base.
- */
-const supabase = createClient(
-  requerido("NEXT_PUBLIC_SUPABASE_URL"),
-  requerido("SUPABASE_SERVICE_ROLE_KEY"),
-  { auth: { autoRefreshToken: false, persistSession: false } },
-);
+/** El mismo costo que usa la aplicación, y el que traían los hash heredados. */
+const COSTO = 10;
 
 interface Argumentos {
   email: string;
@@ -82,63 +70,33 @@ function leerArgumentos(): Argumentos {
   return { email: email.toLowerCase(), nombre };
 }
 
-/**
- * Busca la cuenta en `auth.users`.
- *
- * Pagina en vez de pedir una página grande: con el padrón de Feria Digital
- * adentro, el día que cada feriante reclame su ficha esto va a tener cientos de
- * cuentas, y un `perPage` fijo empezaría a no encontrar a los últimos sin
- * avisar.
- */
-async function buscarEnAuth(email: string): Promise<string | null> {
-  for (let pagina = 1; ; pagina++) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page: pagina,
-      perPage: 200,
-    });
-
-    if (error) throw new Error(`No se pudo listar las cuentas: ${error.message}`);
-    if (!data.users.length) return null;
-
-    const encontrada = data.users.find((usuario) => usuario.email === email);
-    if (encontrada) return encontrada.id;
-  }
-}
-
 async function main(): Promise<void> {
   const { email, nombre } = leerArgumentos();
 
-  const password = process.env["PASSWORD_ADMIN"];
-
-  const existente = await buscarEnAuth(email);
+  const existente = await prisma.usuario.findUnique({
+    where: { email },
+    select: { id: true, rol: true },
+  });
 
   if (existente) {
-    // Ya existe: no se le toca la contraseña. Lo único que se garantiza es que
-    // el rol esté en los dos lugares, porque una cuenta con ADMIN en
-    // `public.usuarios` y VENDEDOR en el JWT rebota en el middleware antes de
-    // que la página llegue a mirar la base.
+    // Ya existe: no se le toca la contraseña, sólo se le asegura el rol.
     console.log(`→ La cuenta ${email} ya existía: le aseguro el rol ADMIN.`);
 
-    const { error } = await supabase.auth.admin.updateUserById(existente, {
-      app_metadata: { rol: Rol.ADMIN },
-      user_metadata: { nombre },
-    });
-    if (error) {
-      throw new Error(`No se pudo actualizar la cuenta: ${error.message}`);
-    }
-
-    await prisma.usuario.upsert({
-      where: { id: existente },
-      create: { id: existente, email, nombre, rol: Rol.ADMIN },
-      update: { email, nombre, rol: Rol.ADMIN },
+    await prisma.usuario.update({
+      where: { id: existente.id },
+      data: { nombre, rol: Rol.ADMIN },
     });
 
     console.log(
-      "\n✓ Listo. La contraseña quedó como estaba: si hace falta cambiarla,\n" +
-        "  se hace desde el panel de Supabase, que deja registro de quién fue.\n",
+      "\n✓ Listo. La contraseña quedó como estaba.\n" +
+        "  Para cambiarla: npm run db:clave -- " +
+        email +
+        "\n",
     );
     return;
   }
+
+  const password = process.env["PASSWORD_ADMIN"];
 
   if (!password) {
     console.error(
@@ -157,28 +115,14 @@ async function main(): Promise<void> {
 
   console.log(`→ Creando la cuenta ${email}…`);
 
-  const { data, error } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    // Sin verificación por correo: la cuenta la da de alta la Dirección desde
-    // acá, no se registra sola, y así el alta no depende de que Supabase tenga
-    // un SMTP configurado.
-    email_confirm: true,
-    app_metadata: { rol: Rol.ADMIN },
-    user_metadata: { nombre },
-  });
-
-  if (error || !data.user) {
-    throw new Error(
-      `No se pudo crear la cuenta: ${error?.message ?? "sin detalle"}`,
-    );
-  }
-
-  // `public.usuarios` es la fuente de verdad del rol: el JWT es sólo la copia
-  // que lee el middleware. Si esto fallara quedaría una cuenta que entra y no
-  // tiene perfil, así que va inmediatamente después.
   await prisma.usuario.create({
-    data: { id: data.user.id, email, nombre, rol: Rol.ADMIN },
+    data: {
+      id: randomUUID(),
+      email,
+      nombre,
+      rol: Rol.ADMIN,
+      passwordHash: await bcrypt.hash(password, COSTO),
+    },
   });
 
   console.log(

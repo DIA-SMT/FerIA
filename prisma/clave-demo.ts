@@ -27,25 +27,13 @@
  * `src/`, así corre bajo `tsx` sin depender de los alias de TypeScript.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
 
-function requerido(nombre: string): string {
-  const valor = process.env[nombre];
-  if (!valor) {
-    throw new Error(
-      `Falta la variable de entorno ${nombre}. Completá el archivo .env antes de correr esto.`,
-    );
-  }
-  return valor;
-}
+const prisma = new PrismaClient();
 
-const URL_SUPABASE = requerido("NEXT_PUBLIC_SUPABASE_URL");
-
-const supabase = createClient(
-  URL_SUPABASE,
-  requerido("SUPABASE_SERVICE_ROLE_KEY"),
-  { auth: { autoRefreshToken: false, persistSession: false } },
-);
+/** El mismo costo que usa la aplicación. Ver src/lib/auth/password.ts. */
+const COSTO_BCRYPT = 10;
 
 /**
  * La lista está escrita acá y no se arma desde la base a propósito.
@@ -60,22 +48,6 @@ const CUENTAS = [
   { email: "telarandino@example.com", variable: "SEED_PASSWORD_FERIANTE" },
   { email: "importadoslh@example.com", variable: "SEED_PASSWORD_FERIANTE" },
 ] as const;
-
-/** Igual que en `crear-admin.ts`: pagina, porque `auth.users` va a crecer. */
-async function buscarEnAuth(email: string): Promise<string | null> {
-  for (let pagina = 1; ; pagina++) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page: pagina,
-      perPage: 200,
-    });
-
-    if (error) throw new Error(`No se pudo listar las cuentas: ${error.message}`);
-    if (!data.users.length) return null;
-
-    const encontrada = data.users.find((usuario) => usuario.email === email);
-    if (encontrada) return encontrada.id;
-  }
-}
 
 function leerPassword(nombre: string): string {
   const valor = process.env[nombre];
@@ -109,7 +81,7 @@ async function main(): Promise<void> {
     SEED_PASSWORD_FERIANTE: leerPassword("SEED_PASSWORD_FERIANTE"),
   };
 
-  console.log(`\nProyecto Supabase: ${new URL(URL_SUPABASE).host}`);
+  console.log();
   console.log(
     aplicar
       ? "Modo: APLICAR — se van a cambiar las contraseñas.\n"
@@ -117,9 +89,12 @@ async function main(): Promise<void> {
   );
 
   for (const cuenta of CUENTAS) {
-    const id = await buscarEnAuth(cuenta.email);
+    const existente = await prisma.usuario.findUnique({
+      where: { email: cuenta.email },
+      select: { id: true },
+    });
 
-    if (!id) {
+    if (!existente) {
       console.log(`· ${cuenta.email} — no existe, la salteo.`);
       continue;
     }
@@ -129,13 +104,14 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const { error } = await supabase.auth.admin.updateUserById(id, {
-      password: passwords[cuenta.variable],
+    await prisma.usuario.update({
+      where: { id: existente.id },
+      data: {
+        passwordHash: await bcrypt.hash(passwords[cuenta.variable]!, COSTO_BCRYPT),
+        // Cambiar una contraseña cierra las sesiones abiertas de esa cuenta.
+        sesionesValidasDesde: new Date(Math.floor(Date.now() / 1000) * 1000),
+      },
     });
-
-    if (error) {
-      throw new Error(`No se pudo cambiar ${cuenta.email}: ${error.message}`);
-    }
 
     console.log(`✓ ${cuenta.email} — contraseña actualizada.`);
   }
