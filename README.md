@@ -377,12 +377,18 @@ exactamente para lo que `Vendedor.usuarioId` es opcional.
 Quien entra sin ficha no es un error: es alguien que todavía no se postuló, y
 va a `/registro` a completar su alta.
 
-**El alta la hace DITEC, no nosotros.** Hay que pedirles que agreguen nuestra
-clave y la URL del callback a los **dos** mapas de
-`src/components/Login/Login.jsx` del repo `derivador` (`APPS_EXTERNAS` y el
-mapa de respaldo; el respaldo no es opcional, porque Vite hornea las `VITE_*`
-al compilar y sin él el bundle sale con `callbackUrl: undefined`). Mergear no
-alcanza: hay que verificar el bundle **desplegado**.
+**El PR lo abrimos nosotros; el deploy lo hace DITEC.** El cambio va en los
+**dos** mapas de `src/components/Login/Login.jsx` del repo
+[`ditec-desarrollo/derivador`](https://github.com/ditec-desarrollo/derivador):
+`APPS_EXTERNAS` y `RESPALDO_CALLBACK`. El respaldo no es opcional, porque Vite
+hornea las `VITE_*` al compilar y sin él el bundle sale con
+`callbackUrl: undefined`.
+
+El precedente está en ese repo: `491548f`, «SMT EstudIA entra por la misma
+puerta que las demas», es exactamente la misma forma de cambio.
+
+Y **mergear no alcanza**: la entrada recién existe cuando ellos redespliegan,
+así que hay que verificar el bundle **desplegado**.
 
 La URL que hay que registrar es la del **dominio definitivo**:
 
