@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import { comprimirImagen, LADO_PORTADA } from "@/lib/imagenes";
 import {
@@ -32,8 +34,19 @@ export interface AlmacenamientoArchivos {
   ): Promise<string>;
   /** Elimina un archivo previamente guardado. Nunca lanza si no existe. */
   eliminar(ruta: string): Promise<void>;
-  /** URL temporal para un archivo de un bucket privado. */
-  urlFirmada(ruta: string, segundos: number): Promise<string | null>;
+  /**
+   * Lee un archivo de un bucket privado, para entregarlo desde un endpoint que
+   * ya verificó los permisos.
+   *
+   * Antes esto era `urlFirmada`, que devolvía una URL temporal de Supabase a la
+   * que el endpoint redirigía. Se cambió por dos motivos. Uno práctico: en un
+   * disco propio no existe tal cosa como una URL firmada, así que la operación
+   * no se podía implementar. Y uno de fondo: la URL firmada terminaba en la
+   * barra de direcciones y en el historial del navegador, apuntando a un
+   * documento de un vecino. Leer y entregar deja el archivo donde tiene que
+   * estar —en la respuesta— y no en ningún lado más.
+   */
+  abrir(ruta: string): Promise<{ contenido: Buffer; tipoMime: string } | null>;
 }
 
 export const TAMANIO_MAXIMO_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -181,21 +194,161 @@ class AlmacenamientoSupabase implements AlmacenamientoArchivos {
       .catch(() => undefined);
   }
 
-  async urlFirmada(ruta: string, segundos: number): Promise<string | null> {
+  async abrir(
+    ruta: string,
+  ): Promise<{ contenido: Buffer; tipoMime: string } | null> {
     const partes = partirRuta(ruta);
     if (!partes) return null;
 
     const { data, error } = await clienteAdmin()
       .storage.from(partes.bucket)
-      .createSignedUrl(partes.objeto, segundos);
+      .download(partes.objeto);
 
     if (error || !data) return null;
-    return data.signedUrl;
+
+    return {
+      contenido: Buffer.from(await data.arrayBuffer()),
+      tipoMime: data.type || "application/octet-stream",
+    };
   }
 }
 
-export const almacenamiento: AlmacenamientoArchivos =
-  new AlmacenamientoSupabase();
+/**
+ * Almacenamiento en el disco del propio servidor.
+ *
+ * Guarda cada objeto en `<raíz>/<bucket>/<objeto>`, así que la ruta que queda
+ * en la base es exactamente la misma que con Supabase (`productos/abc.webp`) y
+ * la mudanza no toca un solo dato. Lo que cambia es dónde está el archivo y
+ * quién lo sirve: los buckets públicos los entrega nginx desde la raíz, y
+ * `comprobantes` **no se publica**: sale únicamente por `/api/comprobantes`,
+ * que verifica permisos antes de leerlo.
+ *
+ * La raíz vive fuera del directorio de la versión desplegada a propósito: si
+ * estuviera adentro, cada despliegue estrenaría un disco vacío y las fotos de
+ * los feriantes desaparecerían.
+ */
+class AlmacenamientoLocal implements AlmacenamientoArchivos {
+  constructor(private readonly raiz: string) {}
+
+  /**
+   * Convierte una ruta lógica en una del sistema de archivos, verificando que
+   * no se escape de la raíz.
+   *
+   * Hoy ninguna ruta llega de afuera sin pasar antes por la base —el endpoint
+   * de comprobantes consulta el pago antes de leer el archivo— pero esto es una
+   * función que recibe un string y abre un archivo: la comprobación va acá, al
+   * lado de la operación peligrosa, y no en cada llamador.
+   */
+  private rutaEnDisco(ruta: string): string | null {
+    const partes = partirRuta(ruta);
+    if (!partes) return null;
+
+    const destino = path.resolve(this.raiz, partes.bucket, partes.objeto);
+    const raizNormalizada = path.resolve(this.raiz) + path.sep;
+
+    return destino.startsWith(raizNormalizada) ? destino : null;
+  }
+
+  private async escribir(
+    bucket: Bucket,
+    objeto: string,
+    contenido: Buffer,
+  ): Promise<string> {
+    const ruta = `${bucket}/${objeto}`;
+    const destino = this.rutaEnDisco(ruta);
+    if (!destino) throw new ErrorDeArchivo("Ruta de archivo inválida.");
+
+    try {
+      await mkdir(path.dirname(destino), { recursive: true });
+      // `wx` falla si el archivo ya existe, igual que el `upsert: false` de
+      // Supabase. Con nombres UUID no debería pasar nunca; si pasa, es mejor
+      // enterarse que pisar en silencio el archivo de otra persona.
+      await writeFile(destino, contenido, { flag: "wx" });
+    } catch (error) {
+      throw new ErrorDeArchivo(
+        `No se pudo guardar el archivo en el disco: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    return ruta;
+  }
+
+  async guardar(archivo: File, bucket: Bucket, carpeta?: string): Promise<string> {
+    const extension = EXTENSIONES[archivo.type] ?? ".bin";
+    const nombre = `${randomUUID()}${extension}`;
+    const objeto = carpeta ? `${carpeta}/${nombre}` : nombre;
+
+    return this.escribir(
+      bucket,
+      objeto,
+      Buffer.from(await archivo.arrayBuffer()),
+    );
+  }
+
+  async guardarBuffer(
+    contenido: Buffer,
+    bucket: Bucket,
+    opciones: { tipoMime?: string; carpeta?: string } = {},
+  ): Promise<string> {
+    const tipoMime = opciones.tipoMime ?? "image/webp";
+    const extension = EXTENSIONES[tipoMime] ?? ".bin";
+    const nombre = `${randomUUID()}${extension}`;
+    const objeto = opciones.carpeta ? `${opciones.carpeta}/${nombre}` : nombre;
+
+    return this.escribir(bucket, objeto, contenido);
+  }
+
+  async eliminar(ruta: string): Promise<void> {
+    const destino = this.rutaEnDisco(ruta);
+    if (!destino) return;
+
+    // Igual que en Supabase: es limpieza, no parte del negocio. Que el archivo
+    // ya no esté no puede tumbar la operación que lo estaba borrando.
+    await rm(destino, { force: true }).catch(() => undefined);
+  }
+
+  async abrir(
+    ruta: string,
+  ): Promise<{ contenido: Buffer; tipoMime: string } | null> {
+    const destino = this.rutaEnDisco(ruta);
+    if (!destino) return null;
+
+    try {
+      return {
+        contenido: await readFile(destino),
+        tipoMime: TIPO_POR_EXTENSION[path.extname(destino).toLowerCase()] ??
+          "application/octet-stream",
+      };
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** La inversa de `EXTENSIONES`, para devolver el tipo al leer del disco. */
+const TIPO_POR_EXTENSION: Record<string, string> = Object.fromEntries(
+  Object.entries(EXTENSIONES).map(([tipo, extension]) => [extension, tipo]),
+);
+
+/**
+ * Qué implementación se usa.
+ *
+ * `ALMACENAMIENTO_LOCAL` es la ruta de la carpeta donde guardar. Si está
+ * cargada manda el disco; si no, sigue Supabase. El default es Supabase para
+ * que nada cambie en un entorno que no la declare.
+ *
+ * Va de la mano con `NEXT_PUBLIC_ARCHIVOS_URL` en `src/lib/media.ts`: una dice
+ * dónde se escribe y la otra con qué URL se lee. Tienen que estar las dos o
+ * ninguna, porque las lee gente distinta —ésta sólo el servidor, aquélla
+ * también el navegador— y por eso no pueden ser la misma variable.
+ */
+const RAIZ_LOCAL = process.env.ALMACENAMIENTO_LOCAL;
+
+export const almacenamiento: AlmacenamientoArchivos = RAIZ_LOCAL
+  ? new AlmacenamientoLocal(RAIZ_LOCAL)
+  : new AlmacenamientoSupabase();
 
 /**
  * Guarda una imagen opcional venida de un `FormData`, comprimida.
