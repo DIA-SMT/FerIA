@@ -11,8 +11,8 @@ import {
   type EstadoFormulario,
 } from "@/lib/form";
 import {
+  documentoVerificado,
   obtenerSesion,
-  obtenerUsuarioAuth,
   requerirAdmin,
   requerirVendedor,
 } from "@/lib/session";
@@ -52,20 +52,6 @@ function revalidarPostulaciones(): void {
 }
 
 /**
- * El documento que CiDiTuc verificó, guardado en el metadata de la cuenta.
- *
- * Devuelve `null` para quien entró con correo y contraseña: ahí nadie verificó
- * nada, y un DNI escrito a mano no es lo mismo que uno validado contra el
- * padrón municipal. Preferible una ficha sin DNI que una con un DNI que dice
- * tener un respaldo que no tiene.
- */
-async function documentoDeLaSesion(): Promise<string | null> {
-  const usuario = await obtenerUsuarioAuth();
-  const valor = usuario?.user_metadata?.["documento"];
-  return typeof valor === "string" && /^\d{6,11}$/.test(valor) ? valor : null;
-}
-
-/**
  * La encuesta de alta: crea la ficha del emprendimiento.
  *
  * Es el reemplazo del registro para los feriantes. No pide ni correo ni
@@ -90,11 +76,11 @@ export async function enviarEncuesta(
     const entrada = encuestaSchema.parse(Object.fromEntries(datos));
 
     // El DNI no se pide en el formulario: lo trae CiDiTuc ya verificado y el
-    // callback lo dejó en el metadata de la cuenta. Guardarlo en la ficha es lo
+    // callback lo guardó en la cuenta. Dejarlo en la ficha es lo
     // que permite reconocer a esta persona si vuelve con otro correo, y lo que
     // va a enganchar su ficha con la del padrón de Feria Digital cuando se
     // importe, en vez de duplicarla.
-    const documento = await documentoDeLaSesion();
+    const documento = await documentoVerificado();
 
     const feria = entrada.feriaId
       ? await prisma.feria.findFirst({

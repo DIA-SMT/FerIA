@@ -1,8 +1,12 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { redirect } from "next/navigation";
 import type { Rol } from "@prisma/client";
 
+import { hashearPassword, verificarPassword } from "@/lib/auth/password";
+import { abrirSesion, cerrarSesionCookie } from "@/lib/auth/sesion";
 import { prisma } from "@/lib/db";
 import {
   ejecutarAccion,
@@ -11,8 +15,6 @@ import {
   type EstadoFormulario,
 } from "@/lib/form";
 import { generarSlugUnico } from "@/lib/slug";
-import { clienteAdmin } from "@/lib/supabase/admin";
-import { crearClienteServidor } from "@/lib/supabase/servidor";
 import { credencialesSchema } from "@/lib/validations/auth";
 import { registroVendedorSchema } from "@/lib/validations/vendedor";
 
@@ -38,41 +40,36 @@ export async function iniciarSesion(
 
     if (!validacion.success) return estadoDesdeZod(validacion.error);
 
-    const supabase = await crearClienteServidor();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: validacion.data.email,
-      password: validacion.data.password,
+    const usuario = await prisma.usuario.findUnique({
+      where: { email: validacion.data.email },
+      select: { id: true, rol: true, passwordHash: true },
     });
 
-    if (error || !data.user) {
-      // Supabase no distingue "usuario inexistente" de "contraseña incorrecta",
-      // y está bien que así sea: no filtra qué correos están registrados.
+    // `verificarPassword` se llama **siempre**, exista o no la cuenta: con
+    // `null` corre igual un bcrypt contra un hash de descarte. Si se saliera
+    // antes, el tiempo de respuesta diría qué correos están registrados.
+    const correcta = await verificarPassword(
+      validacion.data.password,
+      usuario?.passwordHash,
+    );
+
+    if (!usuario || !correcta) {
+      // El mensaje no distingue "no existe" de "contraseña incorrecta", y está
+      // bien que así sea: no filtra qué correos están registrados.
       return estadoDeError(
         "El correo electrónico o la contraseña no son correctos.",
       );
     }
 
-    // El rol autoritativo es el del perfil, no el del token.
-    const perfil = await prisma.usuario.findUnique({
-      where: { id: data.user.id },
-      select: { rol: true },
-    });
-
-    if (!perfil) {
-      await supabase.auth.signOut();
-      return estadoDeError(
-        "Tu cuenta existe pero le falta el perfil de la plataforma. Comunicate con la Dirección de Ferias y Mercados.",
-      );
-    }
+    await abrirSesion(usuario.id, usuario.rol);
 
     const volverA = String(datos.get("volverA") ?? "");
-    redirect(destinoSegunRol(perfil.rol, volverA));
+    redirect(destinoSegunRol(usuario.rol, volverA));
   });
 }
 
 export async function cerrarSesion(): Promise<void> {
-  const supabase = await crearClienteServidor();
-  await supabase.auth.signOut();
+  await cerrarSesionCookie();
   redirect("/");
 }
 
@@ -107,71 +104,47 @@ export async function registrarFeriante(
         (await prisma.vendedor.count({ where: { slug: candidato } })) > 0,
     );
 
-    const admin = clienteAdmin();
+    /*
+      Acá antes había dos sistemas que podían desincronizarse: se creaba la
+      cuenta en Supabase Auth, después el perfil en nuestra base, y si lo
+      segundo fallaba había que borrar lo primero a mano para no dejar una
+      cuenta huérfana que impidiera volver a registrarse.
 
-    // El rol va en `app_metadata` porque sólo se puede escribir con la service
-    // role key: el usuario no puede ascenderse a sí mismo. El middleware lo lee
-    // del JWT para filtrar en el Edge sin consultar la base.
-    const { data: creado, error: errorAuth } = await admin.auth.admin.createUser(
-      {
+      Con las credenciales en la misma base eso es una sola escritura. No hay
+      caso intermedio que limpiar, porque no hay dos lugares.
+    */
+    const creado = await prisma.usuario.create({
+      select: { id: true, rol: true },
+      data: {
+        // El id lo generamos nosotros desde que no lo asigna Supabase. Sigue
+        // siendo un UUID: es lo que esperan las relaciones que ya existen.
+        id: randomUUID(),
         email: entrada.email,
-        password: entrada.password,
-        // La verificación real la hace la Dirección de Ferias al aprobar la
-        // solicitud, así que no exigimos confirmar el correo (evita depender
-        // de un SMTP configurado). Ver el README para activarla.
-        email_confirm: true,
-        app_metadata: { rol: "VENDEDOR" },
-        user_metadata: { nombre: entrada.nombre },
-      },
-    );
-
-    if (errorAuth || !creado.user) {
-      return estadoDeError(
-        errorAuth?.message.includes("already registered")
-          ? "Ya hay una cuenta registrada con ese correo electrónico."
-          : "No pudimos crear la cuenta. Intentá de nuevo en unos minutos.",
-      );
-    }
-
-    try {
-      await prisma.usuario.create({
-        data: {
-          id: creado.user.id,
-          email: entrada.email,
-          nombre: entrada.nombre,
-          rol: "VENDEDOR",
-          vendedor: {
-            create: {
-              emprendimiento: entrada.emprendimiento,
-              slug,
-              rubro: entrada.rubro,
-              descripcion: entrada.descripcion,
-              whatsapp: entrada.whatsapp,
-              telefono: entrada.telefono,
-              email: entrada.email,
-              instagram: entrada.instagram,
-              facebook: entrada.facebook,
-              sitioWeb: entrada.sitioWeb,
-              dni: entrada.dni,
-              direccion: entrada.direccion,
-              estado: "PENDIENTE",
-            },
+        nombre: entrada.nombre,
+        rol: "VENDEDOR",
+        passwordHash: await hashearPassword(entrada.password),
+        vendedor: {
+          create: {
+            emprendimiento: entrada.emprendimiento,
+            slug,
+            rubro: entrada.rubro,
+            descripcion: entrada.descripcion,
+            whatsapp: entrada.whatsapp,
+            telefono: entrada.telefono,
+            email: entrada.email,
+            instagram: entrada.instagram,
+            facebook: entrada.facebook,
+            sitioWeb: entrada.sitioWeb,
+            dni: entrada.dni,
+            direccion: entrada.direccion,
+            estado: "PENDIENTE",
           },
         },
-      });
-    } catch (error) {
-      // El usuario quedó creado en Auth pero sin perfil: lo damos de baja para
-      // no dejar una cuenta huérfana que impida volver a registrarse.
-      await admin.auth.admin.deleteUser(creado.user.id);
-      throw error;
-    }
-
-    // Iniciamos sesión para que vea el estado de su solicitud enseguida.
-    const supabase = await crearClienteServidor();
-    await supabase.auth.signInWithPassword({
-      email: entrada.email,
-      password: entrada.password,
+      },
     });
+
+    // Lo dejamos adentro para que vea el estado de su solicitud enseguida.
+    await abrirSesion(creado.id, creado.rol);
 
     redirect("/mi-stand");
   });

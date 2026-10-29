@@ -1,26 +1,26 @@
+import { randomUUID } from "node:crypto";
+
+import { abrirSesion } from "@/lib/auth/sesion";
 import { prisma } from "@/lib/db";
 import type { PersonaCidituc } from "@/lib/cidituc";
-import { clienteAdmin } from "@/lib/supabase/admin";
-import { crearClienteServidor } from "@/lib/supabase/servidor";
 
 /**
  * De una identidad de CiDiTuc a una sesión de FerIA.
  *
  * Es la parte que el documento de la Dirección no puede cubrir, porque depende
- * de cómo autentica cada app. Acá las sesiones las administra Supabase Auth, y
- * lo que hay que evitar es terminar con dos sistemas de sesión conviviendo: el
- * middleware, el rol en el JWT y `obtenerVendedorActual()` ya funcionan sobre
- * Supabase. Así que CiDiTuc no reemplaza a Supabase: prueba quién es la
- * persona, y con eso se abre una sesión de Supabase como siempre.
+ * de cómo autentica cada app. Lo que hay que evitar es terminar con dos
+ * sistemas de sesión conviviendo: CiDiTuc no reemplaza al nuestro, sino que
+ * prueba quién es la persona, y con eso se abre una sesión como cualquier otra.
  *
- * El puente es `generateLink` + `verifyOtp`, que es la forma estándar de
- * federar una identidad externa: el servidor se emite a sí mismo un enlace
- * mágico y lo canjea en el acto, sin que nadie reciba un correo.
+ * Hasta la mudanza el puente eran dos pasos contra Supabase: el servidor se
+ * emitía a sí mismo un enlace mágico con `generateLink` y lo canjeaba en el
+ * acto con `verifyOtp`, que era lo que escribía las cookies. Con sesiones
+ * propias eso desaparece: probada la identidad, se emite el token y listo.
  *
  * **La identidad es el documento, no el correo.** El correo es apenas la clave
- * con la que Supabase indexa la cuenta, y puede no ser el mismo que el
- * feriante usó al registrarse a mano. Por eso primero se busca la ficha por
- * documento: si ya tiene cuenta, se entra a esa cuenta y no se crea otra.
+ * con la que se indexa la cuenta, y puede no ser el mismo que el feriante usó
+ * al registrarse a mano. Por eso primero se busca la ficha por documento: si ya
+ * tiene cuenta, se entra a esa cuenta y no se crea otra.
  */
 
 /** El token de CiDiTuc ya cumplió: de acá en adelante manda el documento. */
@@ -72,41 +72,7 @@ function correoDeRespaldo(documento: string): string {
 }
 
 /**
- * Abre la sesión de Supabase sin contraseña.
- *
- * `generateLink` no manda ningún correo: devuelve el token ya hasheado y acá
- * mismo se canjea con `verifyOtp`, que es lo que escribe las cookies de sesión.
- */
-async function abrirSesion(email: string): Promise<boolean> {
-  const admin = clienteAdmin();
-
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-  });
-
-  const hash = data?.properties?.hashed_token;
-  if (error || !hash) {
-    console.error("[cidituc] no se pudo emitir el enlace:", error?.message);
-    return false;
-  }
-
-  const supabase = await crearClienteServidor();
-  const { error: errorCanje } = await supabase.auth.verifyOtp({
-    token_hash: hash,
-    type: "email",
-  });
-
-  if (errorCanje) {
-    console.error("[cidituc] no se pudo abrir la sesión:", errorCanje.message);
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Deja el documento verificado en el metadata de una cuenta que ya existía.
+ * Deja el documento verificado en una cuenta que ya existía.
  *
  * No es crítico: si falla, lo único que pasa es que la encuesta va a crear la
  * ficha sin DNI, igual que antes. Por eso no corta el ingreso —la persona se
@@ -116,15 +82,10 @@ async function completarDocumento(
   usuarioId: string,
   documento: string,
 ): Promise<void> {
-  const admin = clienteAdmin();
-
   try {
-    const { data } = await admin.auth.admin.getUserById(usuarioId);
-    const previo = data.user?.user_metadata ?? {};
-    if (previo["documento"] === documento) return;
-
-    await admin.auth.admin.updateUserById(usuarioId, {
-      user_metadata: { ...previo, documento },
+    await prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { documento },
     });
   } catch (causa) {
     console.error("[cidituc] no se pudo guardar el documento:", causa);
@@ -148,14 +109,13 @@ export async function vincularFeriante(
   if (ficha?.usuarioId) {
     const usuario = await prisma.usuario.findUnique({
       where: { id: ficha.usuarioId },
-      select: { email: true },
+      select: { id: true, rol: true },
     });
 
     if (usuario) {
-      const abierta = await abrirSesion(usuario.email);
-      return abierta
-        ? { ok: true, tieneFicha: true }
-        : { ok: false, motivo: "sesion" };
+      await completarDocumento(usuario.id, persona.documento);
+      await abrirSesion(usuario.id, usuario.rol);
+      return { ok: true, tieneFicha: true };
     }
   }
 
@@ -170,46 +130,33 @@ export async function vincularFeriante(
   let usuarioId = existente?.id ?? null;
 
   if (!usuarioId) {
-    const admin = clienteAdmin();
+    /*
+      Cuenta sin contraseña: a ésta se entra por CiDiTuc y nada más.
+      `passwordHash` queda nulo y el formulario de ingreso no la abre nunca.
 
-    // Sin contraseña: esta cuenta se abre por CiDiTuc. El rol va en
-    // `app_metadata` porque sólo se escribe con la service role key —el
-    // usuario no puede ascenderse a sí mismo— y el middleware lo lee del JWT.
-    const { data: creado, error } = await admin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      app_metadata: { rol: "VENDEDOR" },
-      // El documento viaja acá porque la ficha todavía no existe: se crea
-      // recién cuando la persona completa la encuesta, y para entonces el token
-      // de CiDiTuc ya se consumió. Sin esto el DNI que CiDiTuc verificó se
-      // pierde, y es justo la clave con la que `fichaPorDocumento` reconoce a
-      // alguien que vuelve —aunque haya cambiado el correo en CiDiTuc— y con la
-      // que el padrón de Feria Digital engancha su ficha cuando se importe.
-      user_metadata: { nombre, cidituc: persona.id, documento: persona.documento },
+      El documento se guarda acá porque la ficha todavía no existe: se crea
+      recién cuando la persona completa la encuesta, y para entonces el token de
+      CiDiTuc ya se consumió. Sin esto el DNI que CiDiTuc verificó se pierde, y
+      es justo la clave con la que `fichaPorDocumento` reconoce a alguien que
+      vuelve —aunque haya cambiado el correo en CiDiTuc— y con la que el padrón
+      de Feria Digital engancha su ficha cuando se importe.
+    */
+    const creado = await prisma.usuario.create({
+      select: { id: true },
+      data: {
+        id: randomUUID(),
+        email,
+        nombre,
+        rol: "VENDEDOR",
+        documento: persona.documento,
+      },
     });
 
-    if (error || !creado.user) {
-      console.error("[cidituc] no se pudo crear la cuenta:", error?.message);
-      return { ok: false, motivo: "sin-cuenta" };
-    }
-
-    usuarioId = creado.user.id;
-
-    try {
-      await prisma.usuario.create({
-        data: { id: usuarioId, email, nombre, rol: "VENDEDOR" },
-      });
-    } catch (causa) {
-      // Igual que en el registro a mano: una cuenta en Auth sin perfil en la
-      // base impediría volver a entrar, así que se deshace.
-      await admin.auth.admin.deleteUser(usuarioId);
-      throw causa;
-    }
+    usuarioId = creado.id;
   } else {
     // La cuenta ya existía: puede venir de antes de que guardáramos el
-    // documento, o del registro a mano. Se completa ahora, en el único momento
-    // en que lo tenemos verificado, y se escribe el resto del metadata tal cual
-    // estaba para no pisar lo que haya.
+    // documento, o del registro a mano. Se completa ahora, que es el único
+    // momento en que lo tenemos verificado.
     await completarDocumento(usuarioId, persona.documento);
   }
 
@@ -222,8 +169,7 @@ export async function vincularFeriante(
     });
   }
 
-  const abierta = await abrirSesion(email);
-  if (!abierta) return { ok: false, motivo: "sesion" };
+  await abrirSesion(usuarioId, "VENDEDOR");
 
   return { ok: true, tieneFicha: ficha !== null };
 }

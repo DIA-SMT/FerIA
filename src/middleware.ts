@@ -1,26 +1,32 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { actualizarSesion } from "@/lib/supabase/middleware";
+import { NOMBRE_COOKIE, opcionesCookie } from "@/lib/auth/cookie";
+import { convieneRenovar, emitirToken, leerToken } from "@/lib/auth/token";
 
 /**
- * Refresca la sesión de Supabase y protege las rutas por rol.
+ * Protege las rutas por rol y renueva el token.
  *
  *   /admin/*     → sólo ADMIN
  *   /mi-stand/*  → sólo VENDEDOR
  *   /encuesta    → cualquiera con sesión (todavía no tiene ficha de feriante)
  *   /ingresar, /registro → redirigen al panel si ya hay sesión
  *
- * El rol se lee de `app_metadata` del JWT, que sólo se puede escribir con la
- * service role key: un usuario no puede modificarse el suyo. Igual es sólo la
- * primera barrera — las páginas y las Server Actions vuelven a verificar
- * contra `public.usuarios` con los helpers de `src/lib/session.ts`.
+ * El rol se lee del token, que está firmado con un secreto que sólo conoce el
+ * servidor: nadie puede escribirse uno propio. Igual es sólo la primera barrera
+ * —las páginas y las Server Actions vuelven a verificar contra
+ * `public.usuarios` con los helpers de `src/lib/session.ts`—, y eso importa
+ * porque acá no se consulta la base: un rol que cambió hace un minuto todavía
+ * puede venir viejo en el token. Ver docs/autenticacion.md.
+ *
+ * Antes esto llamaba a Supabase por HTTP en cada petición protegida. Ahora es
+ * una verificación de firma local: más rápido, y el panel no deja de abrirse
+ * porque un tercero esté lento.
  */
 export async function middleware(peticion: NextRequest) {
-  const { respuesta, usuario } = await actualizarSesion(peticion);
+  const credencial = await leerToken(peticion.cookies.get(NOMBRE_COOKIE)?.value);
+  const rol = credencial?.rol;
 
   const { nextUrl } = peticion;
-  const rol = usuario?.app_metadata?.["rol"];
-
   const esRutaAdmin = nextUrl.pathname.startsWith("/admin");
   const esRutaVendedor = nextUrl.pathname.startsWith("/mi-stand");
   // La encuesta es el paso entre el ingreso por CiDiTuc y tener ficha: pide
@@ -29,23 +35,38 @@ export async function middleware(peticion: NextRequest) {
   const esRutaDeAcceso =
     nextUrl.pathname === "/ingresar" || nextUrl.pathname === "/registro";
 
-  function redirigirA(destino: string): NextResponse {
-    const redireccion = NextResponse.redirect(new URL(destino, nextUrl));
-    // Sin esto se perderían las cookies de sesión que acaba de refrescar
-    // `actualizarSesion`, y el usuario quedaría deslogueado.
-    for (const cookie of respuesta.cookies.getAll()) {
-      redireccion.cookies.set(cookie);
+  /**
+   * Renovación deslizante.
+   *
+   * Pasada la mitad de la vida del token se emite otro, así quien usa la
+   * plataforma no se desloguea nunca y quien la abandona caduca a los tres
+   * días. Si la emisión fallara —falta el secreto, por ejemplo— se sigue con la
+   * sesión actual en vez de tirar la petición: el token viejo todavía vale.
+   */
+  async function conTokenRenovado(respuesta: NextResponse): Promise<NextResponse> {
+    if (!credencial || !convieneRenovar(credencial)) return respuesta;
+
+    try {
+      const token = await emitirToken(credencial.usuarioId, credencial.rol);
+      respuesta.cookies.set(NOMBRE_COOKIE, token, opcionesCookie());
+    } catch (error) {
+      console.error("[auth] no se pudo renovar el token:", error);
     }
-    return redireccion;
+
+    return respuesta;
+  }
+
+  function redirigirA(destino: string): Promise<NextResponse> {
+    return conTokenRenovado(NextResponse.redirect(new URL(destino, nextUrl)));
   }
 
   // Ya autenticado: no tiene sentido volver a ver login o registro.
-  if (esRutaDeAcceso && usuario) {
+  if (esRutaDeAcceso && credencial) {
     return redirigirA(rol === "ADMIN" ? "/admin" : "/mi-stand");
   }
 
   if (esRutaAdmin || esRutaVendedor || esEncuesta) {
-    if (!usuario) {
+    if (!credencial) {
       const url = new URL("/ingresar", nextUrl);
       // Para volver a donde quería entrar después de iniciar sesión.
       url.searchParams.set("volverA", nextUrl.pathname + nextUrl.search);
@@ -56,7 +77,7 @@ export async function middleware(peticion: NextRequest) {
     if (esRutaVendedor && rol !== "VENDEDOR") return redirigirA("/admin");
   }
 
-  return respuesta;
+  return conTokenRenovado(NextResponse.next());
 }
 
 export const config = {

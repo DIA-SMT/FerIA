@@ -160,11 +160,40 @@ enum Rubro {
 
 /// Perfil de la aplicación. Espeja `auth.users` de Supabase por `id`.
 model Usuario {
-  /// Mismo UUID que `auth.users.id`. Lo asigna Supabase Auth, no Prisma.
+  /// UUID de la cuenta. Hasta la mudanza lo asignaba Supabase Auth; ahora lo
+  /// genera la aplicación. Los de los usuarios que ya existían no cambiaron, y
+  /// por eso ninguna relación se tocó.
   id     String @id @db.Uuid
   email  String @unique
   nombre String
   rol    Rol    @default(VENDEDOR)
+
+  /// Contraseña, en bcrypt.
+  ///
+  /// Nulo a propósito: quien entra por CiDiTuc nunca eligió una, y obligarlo a
+  /// tener una inventada sería peor que no tenerla. Sin hash, el ingreso por
+  /// contraseña simplemente no es posible para esa cuenta.
+  ///
+  /// Nunca se selecciona fuera del inicio de sesión. Ver docs/autenticacion.md.
+  passwordHash String?
+
+  /// Ningún token emitido antes de este instante vale.
+  ///
+  /// Es el botón de pánico. Un JWT ya emitido no se puede revocar —ni los de
+  /// Supabase podían—, así que la revocación se hace acá: mover esta fecha
+  /// invalida todas las sesiones de la cuenta en la siguiente petición. Se
+  /// mueve al cambiar la contraseña, al cambiar el rol, y para echar a alguien.
+  sesionesValidasDesde DateTime @default(now())
+
+  /// El documento que CiDiTuc verificó, si entró por ahí.
+  ///
+  /// Antes vivía en el `user_metadata` de Supabase. Es el transporte entre el
+  /// ingreso y la encuesta de alta, que lo copia a `Vendedor.dni`, donde queda
+  /// de forma permanente.
+  ///
+  /// Nulo para quien entra con correo y contraseña, y eso es información, no
+  /// un faltante: ahí nadie verificó nada contra el padrón municipal.
+  documento String?
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt

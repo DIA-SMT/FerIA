@@ -23,6 +23,7 @@
     "db:clave-demo": "tsx --env-file-if-exists=.env prisma/clave-demo.ts",
     "db:comprimir": "tsx --env-file-if-exists=.env prisma/comprimir-imagenes.ts",
     "db:foto-feria": "tsx --env-file-if-exists=.env prisma/foto-feria.ts",
+    "db:migrar-credenciales": "tsx --env-file-if-exists=.env prisma/migrar-credenciales.ts",
     "db:rechazar-ficcion": "tsx --env-file-if-exists=.env prisma/rechazar-ficcion.ts"
   },
   "prisma": {
@@ -30,8 +31,9 @@
   },
   "dependencies": {
     "@prisma/client": "^6.3.0",
-    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.14",
     "next": "^15.1.0",
     "openai": "^4.77.0",
     "react": "^19.0.0",

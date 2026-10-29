@@ -5,7 +5,7 @@ import {
   type FeriaParaElegir,
 } from "@/components/vendedor/formulario-encuesta";
 import { prisma } from "@/lib/db";
-import { obtenerSesion, obtenerUsuarioAuth } from "@/lib/session";
+import { documentoVerificado, obtenerSesion } from "@/lib/session";
 
 export const metadata = { title: "Pedir el alta" };
 
@@ -42,8 +42,7 @@ export default async function PaginaEncuesta() {
     su propio DNI en pantalla entiende de un vistazo por qué no se le pidió:
     ya vino verificado de CiDiTuc.
   */
-  const usuario = await obtenerUsuarioAuth();
-  const documento = usuario?.user_metadata?.["documento"];
+  const documento = await documentoVerificado();
 
   return (
     <div className="max-w-3xl">

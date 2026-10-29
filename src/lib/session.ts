@@ -1,24 +1,21 @@
 import { redirect } from "next/navigation";
 import type { Rol, Vendedor } from "@prisma/client";
 
+import { leerCredencial, tokenSigueValiendo } from "@/lib/auth/sesion";
 import { prisma } from "@/lib/db";
 import { esControlDeFlujoDeNext } from "@/lib/errores";
-import { crearClienteServidor } from "@/lib/supabase/servidor";
 
 /**
  * Sesión de la aplicación.
  *
- * Combina la identidad que administra Supabase Auth (`auth.users`) con el
- * perfil de la aplicación (`public.usuarios`), que es la **fuente de verdad
- * del rol**.
+ * Combina la identidad que viaja en el token con el perfil de `public.usuarios`,
+ * que es la **fuente de verdad del rol**.
  *
- * El rol también viaja duplicado en `app_metadata` del JWT para que el
- * middleware pueda filtrar en el Edge sin consultar la base. Si alguna vez
- * divergen, gana esta consulta: el middleware es la primera barrera, no la
- * última.
+ * El rol también viaja en el token para que el middleware pueda filtrar sin
+ * consultar la base. Si alguna vez divergen, gana esta consulta: el middleware
+ * es la primera barrera, no la última. Ver docs/autenticacion.md.
  */
 export interface SesionApp {
-  /** UUID compartido con `auth.users.id`. */
   id: string;
   email: string;
   nombre: string;
@@ -26,44 +23,69 @@ export interface SesionApp {
 }
 
 /**
- * Usuario autenticado según Supabase, sin consultar la base.
+ * Sesión completa, o `null` si no hay nadie autenticado.
  *
- * Si el servicio de Auth no responde devolvemos `null` en lugar de propagar el
- * error: el market público no debería caerse porque Supabase esté intermitente.
- * Las rutas protegidas terminan redirigiendo al login, que es el
- * comportamiento seguro.
+ * Verifica tres cosas, y las tres hacen falta:
+ *
+ *  1. Que el token esté bien firmado y no haya vencido.
+ *  2. Que la cuenta siga existiendo. Sin perfil no hay sesión válida, aunque el
+ *     token sea impecable: puede ser una cuenta borrada, o un registro que se
+ *     cortó a la mitad.
+ *  3. Que el token sea posterior a la última invalidación de esa cuenta. Es la
+ *     revocación, porque un JWT emitido no se puede retirar de circulación.
  */
-export async function obtenerUsuarioAuth() {
+export async function obtenerSesion(): Promise<SesionApp | null> {
+  let credencial;
+
   try {
-    const supabase = await crearClienteServidor();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user;
+    credencial = await leerCredencial();
   } catch (error) {
     // `cookies()` lanza durante la compilación para marcar la ruta como
     // dinámica: eso no es una falla y tiene que seguir subiendo.
     if (esControlDeFlujoDeNext(error)) throw error;
-    console.error("[auth] no se pudo verificar la sesión:", error);
+    console.error("[auth] no se pudo leer la sesión:", error);
     return null;
   }
-}
 
-/** Sesión completa, o `null` si no hay nadie autenticado. */
-export async function obtenerSesion(): Promise<SesionApp | null> {
-  const usuario = await obtenerUsuarioAuth();
-  if (!usuario) return null;
+  if (!credencial) return null;
 
   const perfil = await prisma.usuario.findUnique({
-    where: { id: usuario.id },
-    select: { id: true, email: true, nombre: true, rol: true },
+    where: { id: credencial.usuarioId },
+    select: {
+      id: true,
+      email: true,
+      nombre: true,
+      rol: true,
+      sesionesValidasDesde: true,
+    },
   });
 
-  // Sin perfil no hay sesión de aplicación válida, aunque exista en auth.users
-  // (por ejemplo, si el registro se cortó a la mitad).
   if (!perfil) return null;
+  if (!tokenSigueValiendo(credencial, perfil.sesionesValidasDesde)) return null;
 
-  return perfil;
+  const { sesionesValidasDesde: _invalidadas, ...sesion } = perfil;
+  return sesion;
+}
+
+/**
+ * El documento que CiDiTuc verificó para esta cuenta, si entró por ahí.
+ *
+ * Devuelve `null` para quien entró con correo y contraseña: ahí nadie verificó
+ * nada contra el padrón municipal, y un DNI escrito a mano no es lo mismo que
+ * uno validado. Preferible una ficha sin DNI que una con un DNI que dice tener
+ * un respaldo que no tiene.
+ */
+export async function documentoVerificado(): Promise<string | null> {
+  const sesion = await obtenerSesion();
+  if (!sesion) return null;
+
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: sesion.id },
+    select: { documento: true },
+  });
+
+  const valor = usuario?.documento;
+  return valor && /^\d{6,11}$/.test(valor) ? valor : null;
 }
 
 /** Exige sesión iniciada. Redirige a `/ingresar` si no la hay. */

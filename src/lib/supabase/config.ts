@@ -1,9 +1,10 @@
 /**
- * Configuración compartida de Supabase.
+ * Configuración de Supabase.
  *
- * La URL y la anon key son públicas por diseño (viajan al navegador): lo que
- * protege los datos es RLS, y todas nuestras tablas lo tienen habilitado sin
- * políticas, así que PostgREST no expone nada. Ver la migración `init`.
+ * Queda poco: desde que la autenticación es propia y los archivos pueden vivir
+ * en el disco, Supabase sólo se usa como almacenamiento, y sólo en el deploy
+ * que todavía no se mudó. La `anon key` se fue con los clientes de auth, que
+ * eran los únicos que la usaban.
  */
 
 function requerido(nombre: string, valor: string | undefined): string {
@@ -19,13 +20,6 @@ export function urlSupabase(): string {
   return requerido(
     "NEXT_PUBLIC_SUPABASE_URL",
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-  );
-}
-
-export function anonKeySupabase(): string {
-  return requerido(
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   );
 }
 
