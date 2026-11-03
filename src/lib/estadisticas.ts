@@ -4,6 +4,7 @@ import { sumarImportes } from "@/lib/dinero";
 import { prisma } from "@/lib/db";
 import { aNumero } from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
+import { hayCanon } from "@/lib/modulo-canon";
 
 /**
  * Métricas del panel municipal.
@@ -18,9 +19,6 @@ export async function obtenerEstadisticas() {
     feriantesAprobados,
     porRubro,
     edicionesActivas,
-    edicionesConObligacion,
-    recaudacionTotal,
-    recaudacionPorEdicion,
   ] = await Promise.all([
     prisma.feria.count({ where: { activa: true } }),
     prisma.vendedor.count({ where: { estado: "PENDIENTE" } }),
@@ -40,27 +38,6 @@ export async function obtenerEstadisticas() {
         feria: { select: { nombre: true } },
         stands: { select: { vendedorId: true } },
       },
-    }),
-    // La morosidad se mide sobre otro universo: una edición ya finalizada con
-    // canon impago sigue siendo plata adeudada, aunque no esté vigente.
-    prisma.edicionFeria.findMany({
-      where: EDICIONES_CON_OBLIGACION,
-      select: {
-        estado: true,
-        montoCanon: true,
-        vencimientoCanon: true,
-        stands: { select: { vendedorId: true } },
-        pagos: { select: { vendedorId: true, monto: true, estado: true } },
-      },
-    }),
-    prisma.pagoCanon.aggregate({
-      where: { estado: "PAGADO" },
-      _sum: { monto: true },
-    }),
-    prisma.pagoCanon.groupBy({
-      by: ["edicionId"],
-      where: { estado: "PAGADO" },
-      _sum: { monto: true },
     }),
   ]);
 
@@ -86,6 +63,74 @@ export async function obtenerEstadisticas() {
     };
   });
 
+  const nombresEdicion = new Map(
+    edicionesActivas.map((edicion) => [
+      edicion.id,
+      edicion.nombre
+        ? `${edicion.feria.nombre} — ${edicion.nombre}`
+        : edicion.feria.nombre,
+    ]),
+  );
+
+  // `null` y no ceros: el tablero tiene que poder distinguir «no se cobra» de
+  // «se cobra y nadie pagó», que dibujan pantallas distintas. De paso, con el
+  // módulo apagado se ahorran tres consultas que nadie iba a mirar.
+  const canon = hayCanon() ? await estadisticasDeCanon(nombresEdicion) : null;
+
+  return {
+    feriasActivas,
+    edicionesVigentes: edicionesActivas.length,
+    solicitudesPendientes,
+    feriantesAprobados,
+    standsOcupados,
+    standsTotales,
+    ocupacionPorEdicion,
+    feriantesPorRubro: porRubro
+      .map((fila) => ({
+        etiqueta: RUBROS[fila.rubro],
+        valor: fila._count,
+      }))
+      .sort((a, b) => b.valor - a.valor),
+    canon,
+  };
+}
+
+/**
+ * Morosidad y recaudación.
+ *
+ * Aparte del resto porque es lo único que depende del canon, que hoy está
+ * apagado: así el tablero no arrastra consultas de un módulo que no muestra.
+ *
+ * Recibe los nombres de las ediciones vigentes ya armados y los completa con
+ * las que no lo están —una edición terminada también recaudó—, para no volver
+ * a pedir a la base lo que la función de arriba ya trajo.
+ */
+async function estadisticasDeCanon(nombresEdicion: Map<string, string>) {
+  const [edicionesConObligacion, recaudacionTotal, recaudacionPorEdicion] =
+    await Promise.all([
+      // La morosidad se mide sobre otro universo: una edición ya finalizada
+      // con canon impago sigue siendo plata adeudada, aunque no esté vigente.
+      prisma.edicionFeria.findMany({
+        where: EDICIONES_CON_OBLIGACION,
+        select: {
+          estado: true,
+          montoCanon: true,
+          vencimientoCanon: true,
+          stands: { select: { vendedorId: true } },
+          pagos: { select: { vendedorId: true, monto: true, estado: true } },
+        },
+      }),
+      prisma.pagoCanon.aggregate({
+        where: { estado: "PAGADO" },
+        _sum: { monto: true },
+      }),
+      prisma.pagoCanon.groupBy({
+        by: ["edicionId"],
+        where: { estado: "PAGADO" },
+        _sum: { monto: true },
+      }),
+    ]);
+
   // ------------------------------- Morosidad -------------------------------
   // El mismo cálculo que usa /admin/canon, para que el cartel rojo del tablero
   // y la pantalla a la que linkea no puedan mostrar números distintos.
@@ -104,15 +149,6 @@ export async function obtenerEstadisticas() {
   );
 
   // ------------------------------ Recaudación ------------------------------
-  const nombresEdicion = new Map(
-    edicionesActivas.map((edicion) => [
-      edicion.id,
-      edicion.nombre
-        ? `${edicion.feria.nombre} — ${edicion.nombre}`
-        : edicion.feria.nombre,
-    ]),
-  );
-
   // Las ediciones ya finalizadas también recaudaron: buscamos sus nombres.
   const idsFaltantes = recaudacionPorEdicion
     .map((fila) => fila.edicionId)
@@ -141,19 +177,6 @@ export async function obtenerEstadisticas() {
     .sort((a, b) => b.valor - a.valor);
 
   return {
-    feriasActivas,
-    edicionesVigentes: edicionesActivas.length,
-    solicitudesPendientes,
-    feriantesAprobados,
-    standsOcupados,
-    standsTotales,
-    ocupacionPorEdicion,
-    feriantesPorRubro: porRubro
-      .map((fila) => ({
-        etiqueta: RUBROS[fila.rubro],
-        valor: fila._count,
-      }))
-      .sort((a, b) => b.valor - a.valor),
     recaudacionAcumulada: aNumero(recaudacionTotal._sum.monto),
     recaudacionPorEdicion: recaudacion,
     feriantesEnMora,

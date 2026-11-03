@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { eliminarPago, marcarComoPagado } from "@/actions/canon";
 import { BotonConfirmar } from "@/components/ui/boton-confirmar";
@@ -35,6 +36,7 @@ import { prisma } from "@/lib/db";
 import { sumarImportes } from "@/lib/dinero";
 import { formatearFecha, formatearMoneda } from "@/lib/format";
 import { urlComprobante } from "@/lib/media";
+import { hayCanon } from "@/lib/modulo-canon";
 import { ESTADOS_PAGO, MEDIOS_PAGO, TONO_ESTADO_PAGO } from "@/lib/labels";
 
 export const metadata = { title: "Canon y permisos" };
@@ -46,6 +48,10 @@ export default async function PaginaCanon({
 }: {
   searchParams: Promise<{ edicion?: string; estado?: string }>;
 }) {
+  // Ocultar el módulo es también cerrar la puerta: con la entrada del menú
+  // fuera, la URL sigue existiendo y está guardada en más de un favorito.
+  if (!hayCanon()) notFound();
+
   const params = await searchParams;
   const filtroEstado =
     params.estado && ESTADOS_PERMISO_VALIDOS.has(params.estado)

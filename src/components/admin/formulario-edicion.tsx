@@ -41,12 +41,19 @@ interface PropsFormularioEdicion {
   ) => Promise<EstadoFormulario>;
   feriaId: string;
   edicion?: ValoresEdicion;
+  /**
+   * Lo decide `hayCanon()` en el servidor y llega por prop: este componente es
+   * de cliente y ahí la variable de entorno no existe, así que preguntarlo acá
+   * daría siempre «apagado».
+   */
+  mostrarCanon: boolean;
 }
 
 export function FormularioEdicion({
   accion,
   feriaId,
   edicion,
+  mostrarCanon,
 }: PropsFormularioEdicion) {
   const [estado, enviar] = useActionState(accion, ESTADO_INICIAL);
   const errores = estado.errores;
@@ -202,7 +209,7 @@ export function FormularioEdicion({
 
       <Tarjeta>
         <TarjetaEncabezado
-          titulo="Stands y canon"
+          titulo={mostrarCanon ? "Stands y canon" : "Stands"}
           descripcion="La grilla de stands se genera automáticamente con la numeración 1 a N."
         />
         <TarjetaCuerpo className="space-y-4">
@@ -227,38 +234,44 @@ export function FormularioEdicion({
               />
             </Campo>
 
-            <Campo
-              htmlFor="montoCanon"
-              etiqueta="Canon por feriante"
-              ayuda="En pesos. Poné 0 si esta edición no cobra canon."
-              errores={errores?.montoCanon}
-              requerido
-            >
-              <Entrada
-                name="montoCanon"
-                type="number"
-                min={0}
-                step="0.01"
-                inputMode="decimal"
-                defaultValue={edicion?.montoCanon ?? 0}
-                errores={errores?.montoCanon}
-                required
-              />
-            </Campo>
+            {/* Sin campos ocultos a propósito: lo que no se manda no se
+                escribe, y la edición conserva el canon que tenga cargado. */}
+            {mostrarCanon && (
+              <>
+                <Campo
+                  htmlFor="montoCanon"
+                  etiqueta="Canon por feriante"
+                  ayuda="En pesos. Poné 0 si esta edición no cobra canon."
+                  errores={errores?.montoCanon}
+                  requerido
+                >
+                  <Entrada
+                    name="montoCanon"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    inputMode="decimal"
+                    defaultValue={edicion?.montoCanon ?? 0}
+                    errores={errores?.montoCanon}
+                    required
+                  />
+                </Campo>
 
-            <Campo
-              htmlFor="vencimientoCanon"
-              etiqueta="Vence el"
-              ayuda="Pasada esta fecha, lo impago figura como vencido."
-              errores={errores?.vencimientoCanon}
-            >
-              <Entrada
-                name="vencimientoCanon"
-                type="date"
-                defaultValue={edicion?.vencimientoCanon ?? ""}
-                errores={errores?.vencimientoCanon}
-              />
-            </Campo>
+                <Campo
+                  htmlFor="vencimientoCanon"
+                  etiqueta="Vence el"
+                  ayuda="Pasada esta fecha, lo impago figura como vencido."
+                  errores={errores?.vencimientoCanon}
+                >
+                  <Entrada
+                    name="vencimientoCanon"
+                    type="date"
+                    defaultValue={edicion?.vencimientoCanon ?? ""}
+                    errores={errores?.vencimientoCanon}
+                  />
+                </Campo>
+              </>
+            )}
           </div>
         </TarjetaCuerpo>
 

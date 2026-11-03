@@ -12,9 +12,15 @@ import {
   estadoDesdeZod,
   type EstadoFormulario,
 } from "@/lib/form";
+import { hayCanon } from "@/lib/modulo-canon";
 import { requerirAdmin } from "@/lib/session";
 import { almacenamiento, guardarComprobanteOpcional } from "@/lib/storage";
 import { pagoCanonSchema } from "@/lib/validations/canon";
+
+// Sacar la pantalla no saca la acción: una acción de servidor es un endpoint y
+// sigue contestando a quien conserve el formulario abierto o su identificador.
+// Con el canon apagado no se registra, no se edita y no se borra plata.
+const MODULO_APAGADO = "El canon no está habilitado.";
 
 function revalidarCanon(edicionId?: string): void {
   revalidatePath("/admin");
@@ -29,6 +35,7 @@ export async function registrarPago(
 ): Promise<EstadoFormulario> {
   return ejecutarAccion(async () => {
     await requerirAdmin();
+    if (!hayCanon()) return estadoDeError(MODULO_APAGADO);
 
     const validacion = pagoCanonSchema.safeParse(Object.fromEntries(datos));
     if (!validacion.success) return estadoDesdeZod(validacion.error);
@@ -82,6 +89,7 @@ export async function actualizarPago(
 ): Promise<EstadoFormulario> {
   return ejecutarAccion(async () => {
     await requerirAdmin();
+    if (!hayCanon()) return estadoDeError(MODULO_APAGADO);
 
     const pagoId = String(datos.get("pagoId") ?? "");
     if (!pagoId) return estadoDeError("Falta el identificador del pago.");
@@ -127,6 +135,7 @@ export async function actualizarPago(
 /** Marca un pago pendiente como abonado en efectivo con fecha de hoy. */
 export async function marcarComoPagado(datos: FormData): Promise<void> {
   await requerirAdmin();
+  if (!hayCanon()) return;
 
   const pagoId = String(datos.get("pagoId") ?? "");
   if (!pagoId) return;
@@ -144,6 +153,7 @@ export async function marcarComoPagado(datos: FormData): Promise<void> {
 
 export async function eliminarPago(datos: FormData): Promise<void> {
   await requerirAdmin();
+  if (!hayCanon()) return;
 
   const pagoId = String(datos.get("pagoId") ?? "");
   if (!pagoId) return;

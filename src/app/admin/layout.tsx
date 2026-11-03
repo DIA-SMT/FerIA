@@ -10,6 +10,7 @@ import {
 import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
 import { prisma } from "@/lib/db";
+import { hayCanon } from "@/lib/modulo-canon";
 import { requerirAdmin } from "@/lib/session";
 
 export const metadata = {
@@ -44,6 +45,12 @@ export default async function LayoutAdmin({
     }),
   ]);
 
+  // El canon no se cobra, así que la sección no se ofrece. Se arma aparte y no
+  // en línea para no perder el tipo de `icono`, que es una unión de literales.
+  const canon: EntradaMenu[] = hayCanon()
+    ? [{ href: "/admin/canon", texto: "Canon y permisos", icono: "canon" }]
+    : [];
+
   const entradas: EntradaMenu[] = [
     { href: "/admin", texto: "Estadísticas", icono: "panel" },
     { href: "/admin/ferias", texto: "Ferias y ediciones", icono: "ferias" },
@@ -54,7 +61,7 @@ export default async function LayoutAdmin({
       contador: altas + pedidos,
     },
     { href: "/admin/feriantes", texto: "Feriantes", icono: "feriantes" },
-    { href: "/admin/canon", texto: "Canon y permisos", icono: "canon" },
+    ...canon,
   ];
 
   return (

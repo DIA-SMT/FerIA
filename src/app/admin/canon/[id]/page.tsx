@@ -5,6 +5,7 @@ import { EncabezadoPagina } from "@/components/admin/encabezado-pagina";
 import { FormularioPago } from "@/components/admin/formulario-pago";
 import { prisma } from "@/lib/db";
 import { aNumero, aValorInputFecha } from "@/lib/format";
+import { hayCanon } from "@/lib/modulo-canon";
 
 export const metadata = { title: "Editar pago de canon" };
 
@@ -13,6 +14,8 @@ export default async function PaginaEditarPago({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!hayCanon()) notFound();
+
   const { id } = await params;
 
   const [pago, ediciones, vendedores] = await Promise.all([

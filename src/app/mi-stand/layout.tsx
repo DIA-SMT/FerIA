@@ -11,6 +11,7 @@ import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
 import { ESTADOS_VENDEDOR, TONO_ESTADO_VENDEDOR } from "@/lib/labels";
 import { hayPedidos } from "@/lib/marketplace";
+import { hayCanon } from "@/lib/modulo-canon";
 import { obtenerVendedorActual } from "@/lib/session";
 
 export const metadata = {
@@ -41,7 +42,9 @@ export default async function LayoutMiStand({
           ...(hayPedidos()
             ? [{ href: "/mi-stand/pedidos", texto: "Pedidos" }]
             : []),
-          { href: "/mi-stand/canon", texto: "Canon" },
+          // Mientras el canon no se cobre, mandarlo a una pantalla que le
+          // habla de plata que no debe sólo lo asusta.
+          ...(hayCanon() ? [{ href: "/mi-stand/canon", texto: "Canon" }] : []),
         ]
       : []),
   ];

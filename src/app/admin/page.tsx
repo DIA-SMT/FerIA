@@ -58,17 +58,17 @@ export default async function PaginaAdmin() {
         </Alerta>
       )}
 
-      {datos.feriantesEnMora > 0 && (
+      {datos.canon && datos.canon.feriantesEnMora > 0 && (
         <Alerta
           tipo="error"
           titulo={
-            datos.feriantesEnMora === 1
+            datos.canon.feriantesEnMora === 1
               ? "1 feriante con el canon vencido"
-              : `${datos.feriantesEnMora} feriantes con el canon vencido`
+              : `${datos.canon.feriantesEnMora} feriantes con el canon vencido`
           }
           className="mb-6"
         >
-          Adeudan {formatearMoneda(datos.montoAdeudado)} en total.{" "}
+          Adeudan {formatearMoneda(datos.canon.montoAdeudado)} en total.{" "}
           <Link
             href="/admin/canon?estado=VENCIDO"
             className="font-medium underline underline-offset-2"
@@ -79,8 +79,14 @@ export default async function PaginaAdmin() {
       )}
 
       {/* ----------------------------- Métricas ---------------------------- */}
+      {/* La grilla sigue a las tarjetas: sin canon son tres y una cuarta
+          columna vacía se nota. */}
       <section aria-label="Métricas principales">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+          className={`grid gap-4 sm:grid-cols-2 ${
+            datos.canon ? "xl:grid-cols-4" : "xl:grid-cols-3"
+          }`}
+        >
           <TarjetaMetrica
             etiqueta="Ferias activas"
             valor={datos.feriasActivas}
@@ -109,13 +115,15 @@ export default async function PaginaAdmin() {
             icono={IconoBandeja}
             tono={datos.solicitudesPendientes > 0 ? "amarillo" : "verde"}
           />
-          <TarjetaMetrica
-            etiqueta="Recaudación acumulada"
-            valor={formatearMoneda(datos.recaudacionAcumulada)}
-            detalle="Canon efectivamente cobrado"
-            icono={IconoDinero}
-            tono="verde"
-          />
+          {datos.canon && (
+            <TarjetaMetrica
+              etiqueta="Recaudación acumulada"
+              valor={formatearMoneda(datos.canon.recaudacionAcumulada)}
+              detalle="Canon efectivamente cobrado"
+              icono={IconoDinero}
+              tono="verde"
+            />
+          )}
         </div>
       </section>
 
@@ -182,7 +190,9 @@ export default async function PaginaAdmin() {
       </section>
 
       {/* ------------------------ Rubros y recaudación --------------------- */}
-      <section className="mt-6 grid gap-4 lg:grid-cols-2">
+      <section
+        className={`mt-6 grid gap-4 ${datos.canon ? "lg:grid-cols-2" : ""}`}
+      >
         <Tarjeta>
           <TarjetaEncabezado
             titulo="Feriantes por rubro"
@@ -197,31 +207,33 @@ export default async function PaginaAdmin() {
           </TarjetaCuerpo>
         </Tarjeta>
 
-        <Tarjeta>
-          <TarjetaEncabezado
-            titulo="Recaudación por edición"
-            descripcion="Canon cobrado, histórico"
-            accion={
-              <Link
-                href="/admin/canon"
-                className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-              >
-                Ver canon
-              </Link>
-            }
-          />
-          <TarjetaCuerpo>
-            <GraficoBarras
-              datos={datos.recaudacionPorEdicion.map((fila) => ({
-                etiqueta: fila.etiqueta,
-                valor: fila.valor,
-                valorTexto: formatearMoneda(fila.valor),
-              }))}
-              color="celeste"
-              vacio="Todavía no se registraron pagos de canon."
+        {datos.canon && (
+          <Tarjeta>
+            <TarjetaEncabezado
+              titulo="Recaudación por edición"
+              descripcion="Canon cobrado, histórico"
+              accion={
+                <Link
+                  href="/admin/canon"
+                  className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                >
+                  Ver canon
+                </Link>
+              }
             />
-          </TarjetaCuerpo>
-        </Tarjeta>
+            <TarjetaCuerpo>
+              <GraficoBarras
+                datos={datos.canon.recaudacionPorEdicion.map((fila) => ({
+                  etiqueta: fila.etiqueta,
+                  valor: fila.valor,
+                  valorTexto: formatearMoneda(fila.valor),
+                }))}
+                color="celeste"
+                vacio="Todavía no se registraron pagos de canon."
+              />
+            </TarjetaCuerpo>
+          </Tarjeta>
+        )}
       </section>
     </>
   );

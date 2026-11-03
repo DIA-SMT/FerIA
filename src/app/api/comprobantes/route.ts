@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { BUCKET_COMPROBANTES } from "@/lib/media";
+import { hayCanon } from "@/lib/modulo-canon";
 import { obtenerSesion } from "@/lib/session";
 import { almacenamiento } from "@/lib/storage";
 
@@ -26,6 +27,12 @@ export async function GET(peticion: NextRequest): Promise<NextResponse> {
   const sesion = await obtenerSesion();
   if (!sesion) {
     return new NextResponse("No autorizado", { status: 401 });
+  }
+
+  // Con el canon apagado no queda ninguna pantalla que linkee acá, pero la URL
+  // de un comprobante abierto antes sigue andando: se cierra también.
+  if (!hayCanon()) {
+    return new NextResponse("No encontrado", { status: 404 });
   }
 
   const ruta = peticion.nextUrl.searchParams.get("ruta");

@@ -5,6 +5,7 @@ import { EncabezadoPagina } from "@/components/admin/encabezado-pagina";
 import { FormularioEdicion } from "@/components/admin/formulario-edicion";
 import { prisma } from "@/lib/db";
 import { aNumero, aValorInputFecha } from "@/lib/format";
+import { hayCanon } from "@/lib/modulo-canon";
 
 export const metadata = { title: "Editar edición" };
 
@@ -43,6 +44,7 @@ export default async function PaginaEditarEdicion({
       <FormularioEdicion
         accion={actualizarEdicion}
         feriaId={edicion.feria.id}
+        mostrarCanon={hayCanon()}
         edicion={{
           id: edicion.id,
           nombre: edicion.nombre,

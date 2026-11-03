@@ -12,8 +12,28 @@ import {
   estadoDesdeZod,
   type EstadoFormulario,
 } from "@/lib/form";
+import { hayCanon } from "@/lib/modulo-canon";
 import { requerirAdmin } from "@/lib/session";
 import { edicionSchema } from "@/lib/validations/feria";
+
+/**
+ * Las columnas de canon, sólo si el módulo está prendido.
+ *
+ * Apagado se devuelve vacío y Prisma no las toca: una edición que se guarda
+ * conserva el canon que tenía cargado. Es la diferencia entre ocultar y
+ * borrar, y acá es donde se juega —el formulario ya no muestra esos campos,
+ * así que sin esto cada guardado los pisaría con el cero del placeholder.
+ */
+function columnasDeCanon(entrada: {
+  montoCanon: number;
+  vencimientoCanon: Date | null;
+}) {
+  if (!hayCanon()) return {};
+  return {
+    montoCanon: entrada.montoCanon,
+    vencimientoCanon: entrada.vencimientoCanon,
+  };
+}
 
 function revalidarEdicion(edicionId: string, feriaId: string): void {
   revalidatePath("/");
@@ -80,6 +100,12 @@ function camposDeEdicion(datos: FormData): Record<string, unknown> {
   return {
     ...Object.fromEntries(datos),
     diasSemana: datos.getAll("diasSemana").map(String),
+    // Con el canon apagado el formulario no dibuja esos campos y no llegan.
+    // Se fuerzan en cero —no se completan— para que un POST armado a mano
+    // tampoco pueda meter un monto por la ventana; el schema queda conforme
+    // (exige el vencimiento sólo si el monto es mayor que cero) y el valor
+    // se descarta en `columnasDeCanon`.
+    ...(hayCanon() ? {} : { montoCanon: 0, vencimientoCanon: "" }),
   };
 }
 
@@ -114,8 +140,7 @@ export async function crearEdicion(
           horario: entrada.horario,
           estado: entrada.estado,
           cantidadStands: entrada.cantidadStands,
-          montoCanon: entrada.montoCanon,
-          vencimientoCanon: entrada.vencimientoCanon,
+          ...columnasDeCanon(entrada),
         },
       });
 
@@ -157,8 +182,7 @@ export async function actualizarEdicion(
           horario: entrada.horario,
           estado: entrada.estado,
           cantidadStands: entrada.cantidadStands,
-          montoCanon: entrada.montoCanon,
-          vencimientoCanon: entrada.vencimientoCanon,
+          ...columnasDeCanon(entrada),
         },
       });
 

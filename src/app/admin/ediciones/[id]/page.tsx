@@ -43,6 +43,7 @@ import {
   formatearMoneda,
   formatearRangoFechas,
 } from "@/lib/format";
+import { hayCanon } from "@/lib/modulo-canon";
 import { ESTADOS_EDICION, RUBROS, TONO_ESTADO_EDICION } from "@/lib/labels";
 
 export const metadata = { title: "Stands de la edición" };
@@ -92,6 +93,7 @@ export default async function PaginaEdicion({
   if (!edicion) notFound();
 
   const ocupados = edicion.stands.filter((stand) => stand.vendedor !== null);
+  const mostrarCanon = hayCanon();
   const generaCanon = generaObligacionCanon(edicion);
 
   // Canon esperado = canon × feriantes asignados. En centavos, para que la
@@ -166,14 +168,16 @@ export default async function PaginaEdicion({
         ]}
         acciones={
           <>
-            <BotonLink
-              href={`/admin/canon/nuevo?edicion=${edicion.id}`}
-              variante="contorno"
-              tamanio="sm"
-            >
-              <IconoMas className="size-4" />
-              Registrar pago
-            </BotonLink>
+            {mostrarCanon && (
+              <BotonLink
+                href={`/admin/canon/nuevo?edicion=${edicion.id}`}
+                variante="contorno"
+                tamanio="sm"
+              >
+                <IconoMas className="size-4" />
+                Registrar pago
+              </BotonLink>
+            )}
             <BotonLink
               href={`/admin/ediciones/${edicion.id}/editar`}
               variante="secundario"
@@ -187,46 +191,54 @@ export default async function PaginaEdicion({
       />
 
       {/* ------------------------------ Métricas ---------------------------- */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        className={`grid gap-4 sm:grid-cols-2 ${
+          mostrarCanon ? "xl:grid-cols-4" : ""
+        }`}
+      >
         <TarjetaMetrica
           etiqueta="Stands ocupados"
           valor={`${ocupados.length} / ${edicion.stands.length}`}
           detalle={`${edicion.stands.length - ocupados.length} libres`}
           tono="azul"
         />
-        <TarjetaMetrica
-          etiqueta="Canon por feriante"
-          valor={formatearMoneda(edicion.montoCanon)}
-          detalle={
-            edicion.vencimientoCanon
-              ? `Vence el ${formatearFecha(edicion.vencimientoCanon)}`
-              : "Sin fecha de vencimiento"
-          }
-          icono={IconoDinero}
-        />
-        <TarjetaMetrica
-          etiqueta="Canon esperado"
-          valor={formatearMoneda(canonEsperado)}
-          detalle={
-            generaCanon
-              ? "Canon × feriantes asignados"
-              : "La edición está en borrador: todavía no se cobra"
-          }
-        />
-        <TarjetaMetrica
-          etiqueta="Recaudado"
-          valor={formatearMoneda(canonRecaudado)}
-          detalle={
-            canonEsperado > 0
-              ? `${Math.round((canonRecaudado / canonEsperado) * 100)}% del esperado`
-              : "Esta edición no cobra canon"
-          }
-          tono={
-            canonEsperado > 0 && canonRecaudado >= canonEsperado
-              ? "verde"
-              : "neutro"
-          }
-        />
+        {mostrarCanon && (
+          <>
+            <TarjetaMetrica
+              etiqueta="Canon por feriante"
+              valor={formatearMoneda(edicion.montoCanon)}
+              detalle={
+                edicion.vencimientoCanon
+                  ? `Vence el ${formatearFecha(edicion.vencimientoCanon)}`
+                  : "Sin fecha de vencimiento"
+              }
+              icono={IconoDinero}
+            />
+            <TarjetaMetrica
+              etiqueta="Canon esperado"
+              valor={formatearMoneda(canonEsperado)}
+              detalle={
+                generaCanon
+                  ? "Canon × feriantes asignados"
+                  : "La edición está en borrador: todavía no se cobra"
+              }
+            />
+            <TarjetaMetrica
+              etiqueta="Recaudado"
+              valor={formatearMoneda(canonRecaudado)}
+              detalle={
+                canonEsperado > 0
+                  ? `${Math.round((canonRecaudado / canonEsperado) * 100)}% del esperado`
+                  : "Esta edición no cobra canon"
+              }
+              tono={
+                canonEsperado > 0 && canonRecaudado >= canonEsperado
+                  ? "verde"
+                  : "neutro"
+              }
+            />
+          </>
+        )}
       </div>
 
       {/* ------------------------------- Grilla ----------------------------- */}
@@ -264,14 +276,18 @@ export default async function PaginaEdicion({
           <Tarjeta className="border-red-200">
             <TarjetaEncabezado
               titulo="Eliminar edición"
-              descripcion="Se borran sus stands y los pagos de canon asociados."
+              descripcion={
+                mostrarCanon
+                  ? "Se borran sus stands y los pagos de canon asociados."
+                  : "Se borran sus stands."
+              }
               className="border-red-100"
             />
             <TarjetaCuerpo>
               <BotonConfirmar
                 accion={eliminarEdicion}
                 campos={{ edicionId: edicion.id }}
-                confirmacion={`¿Eliminar la edición "${titulo}"? Se van a borrar sus ${edicion.stands.length} stands y los pagos de canon registrados. Esta acción no se puede deshacer.`}
+                confirmacion={`¿Eliminar la edición "${titulo}"? Se van a borrar sus ${edicion.stands.length} stands${mostrarCanon ? " y los pagos de canon registrados" : ""}. Esta acción no se puede deshacer.`}
                 tamanio="md"
               >
                 <IconoTacho className="size-4" />
@@ -283,101 +299,103 @@ export default async function PaginaEdicion({
       </div>
 
       {/* -------------------------- Canon de la edición --------------------- */}
-      <Tarjeta className="mt-6">
-        <TarjetaEncabezado
-          titulo="Canon de los feriantes asignados"
-          descripcion="El estado del permiso se calcula con lo abonado y la fecha de vencimiento."
-          accion={
-            <Link
-              href={`/admin/canon?edicion=${edicion.id}`}
-              className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-            >
-              Gestionar pagos
-            </Link>
-          }
-        />
+      {mostrarCanon && (
+        <Tarjeta className="mt-6">
+          <TarjetaEncabezado
+            titulo="Canon de los feriantes asignados"
+            descripcion="El estado del permiso se calcula con lo abonado y la fecha de vencimiento."
+            accion={
+              <Link
+                href={`/admin/canon?edicion=${edicion.id}`}
+                className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+              >
+                Gestionar pagos
+              </Link>
+            }
+          />
 
-        {filasCanon.length === 0 ? (
-          <TarjetaCuerpo>
-            <p className="py-6 text-center text-sm text-slate-500">
-              {!generaCanon && ocupados.length > 0
-                ? "La edición está en borrador, así que todavía no genera permisos. Publicala para empezar a controlar el canon."
-                : "Todavía no hay feriantes asignados a esta edición."}
-            </p>
-          </TarjetaCuerpo>
-        ) : (
-          <Tabla>
-            <TablaCabecera>
-              <tr>
-                <Th>Stand</Th>
-                <Th>Feriante</Th>
-                <Th>Rubro</Th>
-                <Th>Abonado</Th>
-                <Th>Saldo</Th>
-                <Th>Permiso</Th>
-                <Th>Último pago</Th>
-              </tr>
-            </TablaCabecera>
-            <TablaCuerpo>
-              {filasCanon.map((fila) => (
-                <TablaFila key={fila.vendedor.id}>
-                  <Td className="font-semibold text-slate-900">
-                    {fila.standNumero}
-                  </Td>
-                  <Td>
-                    <Link
-                      href={`/stands/${fila.vendedor.slug}`}
-                      target="_blank"
-                      className="font-medium text-slate-900 transition-colors hover:text-municipal-700"
-                    >
-                      {fila.vendedor.emprendimiento}
-                    </Link>
-                  </Td>
-                  <Td className="text-slate-500">
-                    {RUBROS[fila.vendedor.rubro]}
-                  </Td>
-                  <Td className="tabular-nums">
-                    {formatearMoneda(fila.resumen.totalPagado)}
-                  </Td>
-                  <Td className="tabular-nums">
-                    {fila.resumen.saldo > 0 ? (
-                      <span className="font-medium text-red-600">
-                        {formatearMoneda(fila.resumen.saldo)}
-                      </span>
-                    ) : fila.resumen.aFavor > 0 ? (
-                      <span
-                        className="font-medium text-amber-600"
-                        title="Cobrado de más. Revisá si el pago se cargó dos veces."
+          {filasCanon.length === 0 ? (
+            <TarjetaCuerpo>
+              <p className="py-6 text-center text-sm text-slate-500">
+                {!generaCanon && ocupados.length > 0
+                  ? "La edición está en borrador, así que todavía no genera permisos. Publicala para empezar a controlar el canon."
+                  : "Todavía no hay feriantes asignados a esta edición."}
+              </p>
+            </TarjetaCuerpo>
+          ) : (
+            <Tabla>
+              <TablaCabecera>
+                <tr>
+                  <Th>Stand</Th>
+                  <Th>Feriante</Th>
+                  <Th>Rubro</Th>
+                  <Th>Abonado</Th>
+                  <Th>Saldo</Th>
+                  <Th>Permiso</Th>
+                  <Th>Último pago</Th>
+                </tr>
+              </TablaCabecera>
+              <TablaCuerpo>
+                {filasCanon.map((fila) => (
+                  <TablaFila key={fila.vendedor.id}>
+                    <Td className="font-semibold text-slate-900">
+                      {fila.standNumero}
+                    </Td>
+                    <Td>
+                      <Link
+                        href={`/stands/${fila.vendedor.slug}`}
+                        target="_blank"
+                        className="font-medium text-slate-900 transition-colors hover:text-municipal-700"
                       >
-                        +{formatearMoneda(fila.resumen.aFavor)}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">—</span>
-                    )}
-                  </Td>
-                  <Td>
-                    <Badge
-                      tono={TONO_ESTADO_PERMISO[fila.resumen.estado]}
-                      tamanio="sm"
-                      conPunto={fila.resumen.estado === "VENCIDO"}
-                    >
-                      {ESTADOS_PERMISO[fila.resumen.estado]}
-                    </Badge>
-                    {detalleVencimiento(fila.resumen) && (
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {detalleVencimiento(fila.resumen)}
-                      </p>
-                    )}
-                  </Td>
-                  <Td className="whitespace-nowrap text-slate-500">
-                    {formatearFecha(fila.fechaUltimoPago)}
-                  </Td>
-                </TablaFila>
-              ))}
-            </TablaCuerpo>
-          </Tabla>
-        )}
-      </Tarjeta>
+                        {fila.vendedor.emprendimiento}
+                      </Link>
+                    </Td>
+                    <Td className="text-slate-500">
+                      {RUBROS[fila.vendedor.rubro]}
+                    </Td>
+                    <Td className="tabular-nums">
+                      {formatearMoneda(fila.resumen.totalPagado)}
+                    </Td>
+                    <Td className="tabular-nums">
+                      {fila.resumen.saldo > 0 ? (
+                        <span className="font-medium text-red-600">
+                          {formatearMoneda(fila.resumen.saldo)}
+                        </span>
+                      ) : fila.resumen.aFavor > 0 ? (
+                        <span
+                          className="font-medium text-amber-600"
+                          title="Cobrado de más. Revisá si el pago se cargó dos veces."
+                        >
+                          +{formatearMoneda(fila.resumen.aFavor)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <Badge
+                        tono={TONO_ESTADO_PERMISO[fila.resumen.estado]}
+                        tamanio="sm"
+                        conPunto={fila.resumen.estado === "VENCIDO"}
+                      >
+                        {ESTADOS_PERMISO[fila.resumen.estado]}
+                      </Badge>
+                      {detalleVencimiento(fila.resumen) && (
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {detalleVencimiento(fila.resumen)}
+                        </p>
+                      )}
+                    </Td>
+                    <Td className="whitespace-nowrap text-slate-500">
+                      {formatearFecha(fila.fechaUltimoPago)}
+                    </Td>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          )}
+        </Tarjeta>
+      )}
     </>
   );
 }

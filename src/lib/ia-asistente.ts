@@ -4,6 +4,7 @@ import { edicionesVigentes, etapaDeEdicion } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import { CATEGORIAS_FERIA, RUBROS } from "@/lib/labels";
+import { hayCanon } from "@/lib/modulo-canon";
 
 /**
  * El asistente del sitio: responde consultas de vecinos sobre las ferias y
@@ -88,21 +89,28 @@ function recortar(texto: string | null, tope: number): string {
  * inventarse una contraseña cuando lo que necesita es su Ciudadano Digital.
  */
 function altaDeFeriante(): string {
+  // Con el canon apagado esa pestaña no está en el panel. Nombrársela lo manda
+  // a buscar una pantalla que no existe, y de paso le hace creer que le van a
+  // cobrar algo.
+  const panel = hayCanon()
+    ? "su vidriera, su catálogo y su canon"
+    : "su vidriera y su catálogo";
+
   if (hayIngresoCidituc()) {
     return (
       "Quien quiera vender en las ferias entra con su Ciudadano Digital (CiDiTuc) desde " +
       "[la página de ingreso](/ingresar) y completa una encuesta con los datos de su " +
       "emprendimiento y a qué feria quiere sumarse. No hace falta registrarse aparte ni " +
       "crear una contraseña. La postulación queda pendiente hasta que la Dirección de " +
-      "Ferias y Mercados la revisa; al aceptarse, la persona gestiona su vidriera, su " +
-      "catálogo y su canon desde su panel."
+      `Ferias y Mercados la revisa; al aceptarse, la persona gestiona ${panel} ` +
+      "desde su panel."
     );
   }
 
   return (
     "Quien quiera vender en las ferias se registra en [el formulario de registro](/registro). " +
     "La solicitud queda pendiente hasta que el municipio la revisa; al aprobarse, la persona " +
-    "gestiona su vidriera, su catálogo y su canon desde su panel, entrando por " +
+    `gestiona ${panel} desde su panel, entrando por ` +
     "[la página de ingreso](/ingresar)."
   );
 }
@@ -204,6 +212,13 @@ export async function contextoDelSitio(): Promise<string> {
     );
   });
 
+  // Que no se cobre no se arregla callándose: el vecino que pregunta por el
+  // canon llega convencido de que se paga, y el silencio se lo confirma. Con
+  // el módulo apagado, Migue lo desmiente en vez de esquivarlo.
+  const lineaCanon = hayCanon()
+    ? "El canon (lo que se paga por participar de una edición) lo registra la Dirección de Ferias y Mercados; cada feriante ve el suyo en su panel. Las consultas sobre canon o trámites se hacen ante esa Dirección."
+    : "Participar de las ferias no le cuesta nada al feriante: no se cobra canon, ni arancel, ni alquiler del puesto; los gastos los cubre el municipio. Si alguien pregunta cuánto sale tener un puesto, la respuesta es que no sale nada. Los trámites se hacen ante la Dirección de Ferias y Mercados.";
+
   return `Hoy es ${formatearFechaLarga(hoy)}.
 
 FERIAS (las fechas y direcciones válidas son ÚNICAMENTE estas):
@@ -217,7 +232,7 @@ CÓMO FUNCIONA LA PLATAFORMA:
 - Comprar: la persona interesada le escribe al feriante desde el botón de contacto de su página de stand. El precio y la entrega se acuerdan entre ellos; el municipio no interviene.
 - Las fotos de los productos pueden estar mejoradas con inteligencia artificial: son ilustrativas.
 - ${altaDeFeriante()}
-- El canon (lo que se paga por participar de una edición) lo registra la Dirección de Ferias y Mercados; cada feriante ve el suyo en su panel. Las consultas sobre canon o trámites se hacen ante esa Dirección.
+- ${lineaCanon}
 - Los términos y condiciones están al pie de todas las páginas del sitio.`;
 }
 

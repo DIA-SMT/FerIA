@@ -4,6 +4,7 @@ import { crearEdicion } from "@/actions/ediciones";
 import { EncabezadoPagina } from "@/components/admin/encabezado-pagina";
 import { FormularioEdicion } from "@/components/admin/formulario-edicion";
 import { prisma } from "@/lib/db";
+import { hayCanon } from "@/lib/modulo-canon";
 
 export const metadata = { title: "Nueva edición" };
 
@@ -32,7 +33,11 @@ export default async function PaginaNuevaEdicion({
           { texto: "Nueva edición" },
         ]}
       />
-      <FormularioEdicion accion={crearEdicion} feriaId={feria.id} />
+      <FormularioEdicion
+        accion={crearEdicion}
+        feriaId={feria.id}
+        mostrarCanon={hayCanon()}
+      />
     </div>
   );
 }

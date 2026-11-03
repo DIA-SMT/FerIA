@@ -1,9 +1,12 @@
+import { notFound } from "next/navigation";
+
 import { registrarPago } from "@/actions/canon";
 import { EncabezadoPagina } from "@/components/admin/encabezado-pagina";
 import { FormularioPago } from "@/components/admin/formulario-pago";
 import { Alerta } from "@/components/ui/alerta";
 import { prisma } from "@/lib/db";
 import { aNumero } from "@/lib/format";
+import { hayCanon } from "@/lib/modulo-canon";
 
 export const metadata = { title: "Registrar pago de canon" };
 
@@ -12,6 +15,8 @@ export default async function PaginaNuevoPago({
 }: {
   searchParams: Promise<{ edicion?: string; vendedor?: string }>;
 }) {
+  if (!hayCanon()) notFound();
+
   const params = await searchParams;
 
   const [ediciones, vendedores] = await Promise.all([

@@ -24,6 +24,7 @@ import {
 import { prisma } from "@/lib/db";
 import { formatearMoneda, formatearRangoFechas } from "@/lib/format";
 import { linkGoogleMaps, linkGoogleMapsPorDireccion } from "@/lib/geo";
+import { hayCanon } from "@/lib/modulo-canon";
 import {
   CATEGORIAS_FERIA,
   ESTADOS_EDICION,
@@ -53,6 +54,8 @@ export default async function PaginaDetalleFeria({
   });
 
   if (!feria) notFound();
+
+  const mostrarCanon = hayCanon();
 
   const mapa =
     linkGoogleMaps(feria.latitud, feria.longitud) ??
@@ -149,9 +152,11 @@ export default async function PaginaDetalleFeria({
                           )}{" "}
                           · {edicion.horario}
                         </p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          Canon: {formatearMoneda(edicion.montoCanon)}
-                        </p>
+                        {mostrarCanon && (
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            Canon: {formatearMoneda(edicion.montoCanon)}
+                          </p>
+                        )}
                       </div>
 
                       <BarraOcupacion
@@ -225,14 +230,18 @@ export default async function PaginaDetalleFeria({
           <Tarjeta className="border-red-200">
             <TarjetaEncabezado
               titulo="Eliminar feria"
-              descripcion="Se borran también sus ediciones, stands y pagos de canon."
+              descripcion={
+                mostrarCanon
+                  ? "Se borran también sus ediciones, stands y pagos de canon."
+                  : "Se borran también sus ediciones y sus stands."
+              }
               className="border-red-100"
             />
             <TarjetaCuerpo>
               <BotonConfirmar
                 accion={eliminarFeria}
                 campos={{ feriaId: feria.id }}
-                confirmacion={`¿Eliminar "${feria.nombre}"? Se van a borrar sus ${feria.ediciones.length} ediciones, todos sus stands y los pagos de canon asociados. Esta acción no se puede deshacer.`}
+                confirmacion={`¿Eliminar "${feria.nombre}"? Se van a borrar sus ${feria.ediciones.length} ediciones y todos sus stands${mostrarCanon ? ", además de los pagos de canon asociados" : ""}. Esta acción no se puede deshacer.`}
                 tamanio="md"
               >
                 <IconoTacho className="size-4" />

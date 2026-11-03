@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import { Alerta } from "@/components/ui/alerta";
 import { Badge } from "@/components/ui/badge";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
@@ -25,11 +27,14 @@ import { prisma } from "@/lib/db";
 import { formatearFecha, formatearMoneda, formatearRangoFechas } from "@/lib/format";
 import { ESTADOS_PAGO, MEDIOS_PAGO, TONO_ESTADO_PAGO } from "@/lib/labels";
 import { urlComprobante } from "@/lib/media";
+import { hayCanon } from "@/lib/modulo-canon";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Canon" };
 
 export default async function PaginaCanonFeriante() {
+  if (!hayCanon()) notFound();
+
   const { vendedor } = await requerirVendedorAprobado();
 
   // Ediciones en las que tiene stand asignado, con sus pagos.
