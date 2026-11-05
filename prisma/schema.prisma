@@ -284,6 +284,7 @@ model Vendedor {
   pagos         PagoCanon[]
   pedidos       Pedido[]
   postulaciones Postulacion[]
+  interes       InteresStand[]
 
   // Idempotencia de la importación. Postgres admite varios NULL en un índice
   // único, así que las fichas propias (idExterno null) no chocan entre sí.
@@ -441,7 +442,8 @@ model Producto {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  items ItemPedido[]
+  items   ItemPedido[]
+  interes InteresProducto[]
 
   @@index([vendedorId])
   @@index([disponible])
@@ -618,4 +620,52 @@ model Postulacion {
   @@unique([vendedorId, feriaId])
   @@index([estado])
   @@map("postulaciones")
+}
+
+// ---------------------------- Interés en la vidriera ------------------------
+// Cuánto miran y cuánto preguntan los vecinos. Agregado por día y sin ningún
+// identificador de visitante: no hay cookie, ni IP, ni user agent, ni hora.
+// La fila más detallada que existe es «este producto, este día, 12 consultas».
+// El porqué y lo que se descartó están en docs/interes-en-la-vidriera.md.
+
+/// Interés en la vidriera de un feriante, por día.
+model InteresStand {
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  /// Medianoche del día **en Tucumán** (`hoyEnZona`), no en UTC. Una consulta
+  /// del sábado a las 22 tiene que caer en el sábado, que es el día de feria.
+  fecha DateTime @db.Date
+
+  /// Veces que se abrió la página del stand.
+  ///
+  /// No son personas: no hay identificador, así que un refresh cuenta dos. Es
+  /// el denominador para comparar productos entre sí dentro del mismo stand,
+  /// no una medida de audiencia.
+  aperturas Int @default(0)
+
+  /// Clics en el «Consultar» del encabezado, que no nombra ningún producto.
+  consultas Int @default(0)
+
+  @@id([vendedorId, fecha])
+  @@index([fecha])
+  @@map("interes_stand")
+}
+
+/// Interés en un producto concreto, por día.
+///
+/// La señal fuerte: alguien apretó «Consultar por este producto», que abre
+/// WhatsApp con el nombre del producto adentro. No hay página por producto, así
+/// que esto es lo único que distingue un producto de otro dentro de un stand.
+model InteresProducto {
+  productoId String
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  fecha DateTime @db.Date
+
+  consultas Int @default(0)
+
+  @@id([productoId, fecha])
+  @@index([fecha])
+  @@map("interes_producto")
 }

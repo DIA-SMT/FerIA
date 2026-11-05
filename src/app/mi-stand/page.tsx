@@ -15,6 +15,7 @@ import {
   TarjetaCuerpo,
   TarjetaEncabezado,
 } from "@/components/ui/tarjeta";
+import { InteresEnLaVidriera } from "@/components/vendedor/interes-en-la-vidriera";
 import { MisFerias } from "@/components/vendedor/mis-ferias";
 import { EDICIONES_PUBLICAS, edicionesVigentes } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
@@ -25,6 +26,7 @@ import {
   hoyEnZona,
 } from "@/lib/format";
 import { resumenHorario } from "@/lib/horarios";
+import { obtenerInteresDelStand } from "@/lib/interes";
 import { RUBROS } from "@/lib/labels";
 import { obtenerVendedorActual } from "@/lib/session";
 
@@ -254,24 +256,28 @@ export default async function PaginaMiStand() {
   // -------------------------------- Aprobada --------------------------------
   const hoy = hoyEnZona();
 
-  const [asignaciones, productos, productosDisponibles] = await Promise.all([
-    prisma.stand.findMany({
-      where: {
-        vendedorId: vendedor.id,
-        edicion: { ...EDICIONES_PUBLICAS, fechaFin: { gte: hoy } },
-      },
-      orderBy: { edicion: { fechaInicio: "asc" } },
-      include: {
-        edicion: {
-          include: { feria: { select: { nombre: true, slug: true, direccion: true } } },
+  const [asignaciones, productos, productosDisponibles, interes] =
+    await Promise.all([
+      prisma.stand.findMany({
+        where: {
+          vendedorId: vendedor.id,
+          edicion: { ...EDICIONES_PUBLICAS, fechaFin: { gte: hoy } },
         },
-      },
-    }),
-    prisma.producto.count({ where: { vendedorId: vendedor.id } }),
-    prisma.producto.count({
-      where: { vendedorId: vendedor.id, disponible: true },
-    }),
-  ]);
+        orderBy: { edicion: { fechaInicio: "asc" } },
+        include: {
+          edicion: {
+            include: {
+              feria: { select: { nombre: true, slug: true, direccion: true } },
+            },
+          },
+        },
+      }),
+      prisma.producto.count({ where: { vendedorId: vendedor.id } }),
+      prisma.producto.count({
+        where: { vendedorId: vendedor.id, disponible: true },
+      }),
+      obtenerInteresDelStand(vendedor.id),
+    ]);
 
   const vidrieraIncompleta =
     !vendedor.descripcion || !vendedor.imagenPortada || productos === 0;
@@ -349,6 +355,11 @@ export default async function PaginaMiStand() {
             </p>
           </TarjetaCuerpo>
         </Tarjeta>
+      </div>
+
+      {/* ------------------------ Interés en la vidriera --------------------- */}
+      <div className="mt-6">
+        <InteresEnLaVidriera resumen={interes} />
       </div>
 
       {/* ------------------------- Ferias de las que es parte ---------------- */}

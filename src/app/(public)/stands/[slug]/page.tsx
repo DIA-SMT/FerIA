@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 
+import { EnlaceConsulta } from "@/components/public/enlace-consulta";
 import { TarjetaProducto } from "@/components/public/tarjeta-producto";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +31,7 @@ import {
   hoyEnZona,
   truncar,
 } from "@/lib/format";
+import { registrarApertura } from "@/lib/interes";
 import { RUBROS } from "@/lib/labels";
 import { hayPedidos, hayPreciosPublicos } from "@/lib/marketplace";
 import { hayUnidades } from "@/lib/pedidos";
@@ -37,6 +41,7 @@ import {
   linkTelefono,
   sitioWebLegible,
 } from "@/lib/redes";
+import { esVisitaDeUnaPersona } from "@/lib/visitas";
 import {
   formatearWhatsapp,
   linkWhatsapp,
@@ -133,6 +138,19 @@ export default async function PaginaStand({
    * difícil de notar.
    */
   if (!vendedor) notFound();
+
+  /**
+   * El denominador: cuántas veces se abrió esta vidriera.
+   *
+   * Va dentro de `after()` para que el incremento ocurra con la respuesta ya
+   * enviada: contar no le puede agregar un milisegundo a la página de un
+   * feriante. Lo que descarta `esVisitaDeUnaPersona` son sobre todo los
+   * prefetch de Next —pasar el mouse por la lista de stands se traería veinte
+   * vidrieras— y los bots. Ver docs/interes-en-la-vidriera.md.
+   */
+  if (esVisitaDeUnaPersona(await headers())) {
+    after(() => registrarApertura(vendedor.id));
+  }
 
   const hoy = hoyEnZona();
   const participaciones = vendedor.stands.filter(
@@ -324,16 +342,16 @@ export default async function PaginaStand({
             <div className="sticky top-24 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-sm font-semibold text-slate-900">Contacto</h2>
 
-              {/* El botón principal de toda la vidriera. */}
-              <a
+              {/* El botón principal de toda la vidriera. Cuenta como consulta
+                  del stand y no de un producto: acá nadie nombró ninguno. */}
+              <EnlaceConsulta
                 href={enlaceWhatsapp}
-                target="_blank"
-                rel="noopener noreferrer"
+                evento={{ stand: vendedor.id }}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 text-base font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
               >
                 <IconoWhatsapp className="size-5" />
                 Escribir por WhatsApp
-              </a>
+              </EnlaceConsulta>
 
               <p className="text-center text-xs text-slate-500">
                 {formatearWhatsapp(vendedor.whatsapp)}

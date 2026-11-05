@@ -1,4 +1,5 @@
 import { BotonAgregar } from "@/components/carrito/boton-agregar";
+import { EnlaceConsulta } from "@/components/public/enlace-consulta";
 import { Badge } from "@/components/ui/badge";
 import { CarruselDeFotos } from "@/components/ui/carrusel-de-fotos";
 import { IconoEtiqueta, IconoWhatsapp } from "@/components/ui/iconos";
@@ -109,7 +110,7 @@ export function TarjetaProducto({
             />
           ) : (
             quedan && (
-              <a
+              <EnlaceConsulta
                 href={linkWhatsapp(
                   whatsapp,
                   mensajeConsultaProducto(
@@ -117,13 +118,12 @@ export function TarjetaProducto({
                     producto.nombre,
                   ),
                 )}
-                target="_blank"
-                rel="noopener noreferrer"
+                evento={{ producto: producto.id }}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
               >
                 <IconoWhatsapp className="size-4" />
                 Consultar por este producto
-              </a>
+              </EnlaceConsulta>
             )
           )}
         </div>
