@@ -5,6 +5,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { IconoEnlaceExterno, IconoUsuarios } from "@/components/ui/iconos";
+import { Paginacion } from "@/components/ui/paginacion";
 import { Tarjeta } from "@/components/ui/tarjeta";
 import {
   Tabla,
@@ -16,7 +17,9 @@ import {
 } from "@/components/ui/tabla";
 import { cn } from "@/lib/cn";
 import { prisma } from "@/lib/db";
-import { formatearFecha } from "@/lib/format";
+import { PADRON_SIN_RECLAMAR, SOLICITUD_PENDIENTE } from "@/lib/feriantes";
+import { formatearFecha, formatearNumero } from "@/lib/format";
+import { leerPagina, paginar } from "@/lib/paginacion";
 import { titularDe } from "@/lib/titular";
 import { ESTADOS_VENDEDOR, RUBROS, TONO_ESTADO_VENDEDOR } from "@/lib/labels";
 import { formatearWhatsapp } from "@/lib/whatsapp";
@@ -34,38 +37,51 @@ const FILTROS = [
   { valor: "PADRON", etiqueta: "Padrón sin reclamar" },
 ];
 
-/**
- * Las fichas importadas del padrón de Feria Digital que nadie reclamó todavía.
- *
- * Son casi mil y no son altas: nadie las presentó, son registros del municipio
- * esperando que su titular entre por CiDiTuc. Mezcladas en «Todos» o en
- * «Pendientes» tapaban las solicitudes reales, así que tienen su propio filtro
- * y quedan fuera de los demás. Es el mismo criterio que el contador del menú.
- */
-const PADRON_SIN_RECLAMAR: Prisma.VendedorWhereInput = {
-  origen: "FERIA_DIGITAL",
-  usuarioId: null,
-};
+/** Filas por página. Es una tabla de trabajo: más densa que el directorio. */
+const POR_PAGINA = 50;
 
 export default async function PaginaFeriantes({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string }>;
+  searchParams: Promise<{ estado?: string; pagina?: string }>;
 }) {
   const params = await searchParams;
   const estado =
     params.estado && ESTADOS_VALIDOS.has(params.estado)
       ? (params.estado as EstadoVendedor)
       : undefined;
-
   const verPadron = params.estado === "PADRON";
+
+  /*
+    Cada filtro cuenta lo mismo que el número que lo resume en el tablero.
+
+    «Aprobados» son todos los aprobados, padrón incluido: son fichas publicadas
+    y el tablero las cuenta. «Pendientes» son las solicitudes, con la misma
+    definición que el tablero y el contador del menú. El padrón sin reclamar
+    tiene su propio filtro porque «sin titular» es otra cosa que el estado.
+  */
   const where: Prisma.VendedorWhereInput = verPadron
     ? PADRON_SIN_RECLAMAR
-    : { ...(estado ? { estado } : {}), NOT: PADRON_SIN_RECLAMAR };
+    : estado === "PENDIENTE"
+      ? SOLICITUD_PENDIENTE
+      : estado
+        ? { estado }
+        : {};
+
+  const total = await prisma.vendedor.count({ where });
+  const { pagina, paginas, salto } = paginar(
+    total,
+    leerPagina(params.pagina),
+    POR_PAGINA,
+  );
 
   const feriantes = await prisma.vendedor.findMany({
     where,
-    orderBy: [{ estado: "asc" }, { emprendimiento: "asc" }],
+    // El id desempata los nombres repetidos del padrón, para que ninguna ficha
+    // aparezca en dos páginas ni falte en todas.
+    orderBy: [{ estado: "asc" }, { emprendimiento: "asc" }, { id: "asc" }],
+    skip: salto,
+    take: POR_PAGINA,
     include: {
       usuario: { select: { email: true, nombre: true } },
       _count: { select: { productos: true, stands: true } },
@@ -122,128 +138,143 @@ export default async function PaginaFeriantes({
           descripcion={
             verPadron
               ? "No hay fichas del padrón esperando que las reclamen."
-              : estado
-              ? "No hay feriantes con ese estado."
-              : "Todavía no se registró ningún emprendimiento."
+              : estado === "PENDIENTE"
+                ? "No hay solicitudes esperando revisión."
+                : estado
+                  ? "No hay feriantes con ese estado."
+                  : "Todavía no se registró ningún emprendimiento."
           }
         />
       ) : (
-        <Tarjeta className="overflow-hidden">
-          <Tabla>
-            <TablaCabecera>
-              <tr>
-                <Th>Emprendimiento</Th>
-                <Th>Rubro</Th>
-                <Th>Titular</Th>
-                <Th>WhatsApp</Th>
-                <Th>Estado</Th>
-                <Th>Ferias presenciales</Th>
-                <Th className="text-center">Productos</Th>
-                <Th className="text-center">Stands</Th>
-                <Th>Registro</Th>
-                <Th />
-              </tr>
-            </TablaCabecera>
-            <TablaCuerpo>
-              {feriantes.map((feriante) => {
-                const titular = titularDe(feriante);
+        <>
+          <p className="mb-3 text-sm text-slate-500">
+            {formatearNumero(total)} {total === 1 ? "feriante" : "feriantes"}
+            {paginas > 1 && ` · página ${pagina} de ${paginas}`}
+          </p>
+          <Tarjeta className="overflow-hidden">
+            <Tabla>
+              <TablaCabecera>
+                <tr>
+                  <Th>Emprendimiento</Th>
+                  <Th>Rubro</Th>
+                  <Th>Titular</Th>
+                  <Th>WhatsApp</Th>
+                  <Th>Estado</Th>
+                  <Th>Ferias presenciales</Th>
+                  <Th className="text-center">Productos</Th>
+                  <Th className="text-center">Stands</Th>
+                  <Th>Registro</Th>
+                  <Th />
+                </tr>
+              </TablaCabecera>
+              <TablaCuerpo>
+                {feriantes.map((feriante) => {
+                  const titular = titularDe(feriante);
 
-                return (
-                  <TablaFila key={feriante.id}>
-                    <Td>
-                      <div className="flex items-center gap-2.5">
-                        <Avatar
-                          nombre={feriante.emprendimiento}
-                          imagen={feriante.logo}
-                          tamanio="sm"
-                        />
-                        <span className="font-medium text-slate-900">
-                          {feriante.emprendimiento}
-                        </span>
-                      </div>
-                    </Td>
-                    <Td className="text-slate-500">{RUBROS[feriante.rubro]}</Td>
-                    <Td>
-                      <span className="block text-slate-700">
-                        {titular.nombre}
-                      </span>
-                      <span className="block text-xs text-slate-400">
-                        {titular.reclamada
-                          ? titular.email
-                          : (titular.email ?? "Sin cuenta")}
-                      </span>
-                      {!titular.reclamada && (
-                        <Badge tono="neutro" tamanio="sm" className="mt-1">
-                          Padrón sin reclamar
-                        </Badge>
-                      )}
-                    </Td>
-                    <Td className="whitespace-nowrap text-slate-600">
-                      {formatearWhatsapp(feriante.whatsapp)}
-                    </Td>
-                    <Td>
-                      <Badge
-                        tono={TONO_ESTADO_VENDEDOR[feriante.estado]}
-                        tamanio="sm"
-                      >
-                        {ESTADOS_VENDEDOR[feriante.estado]}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      {feriante.postulaciones.length === 0 ? (
-                        <span className="text-sm text-slate-400">
-                          {feriante.estado === 'APROBADO'
-                            ? 'Sólo online'
-                            : '—'}
-                        </span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {feriante.postulaciones.map((postulacion) => (
-                            <Badge
-                              key={postulacion.id}
-                              tono="azul"
-                              tamanio="sm"
-                            >
-                              {postulacion.feria.nombre}
-                            </Badge>
-                          ))}
+                  return (
+                    <TablaFila key={feriante.id}>
+                      <Td>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar
+                            nombre={feriante.emprendimiento}
+                            imagen={feriante.logo}
+                            tamanio="sm"
+                          />
+                          <span className="font-medium text-slate-900">
+                            {feriante.emprendimiento}
+                          </span>
                         </div>
-                      )}
-                    </Td>
-                    <Td className="text-center tabular-nums">
-                      {feriante._count.productos}
-                    </Td>
-                    <Td className="text-center tabular-nums">
-                      {feriante._count.stands}
-                    </Td>
-                    <Td className="whitespace-nowrap text-slate-500">
-                      {formatearFecha(feriante.creadoEn)}
-                    </Td>
-                    <Td className="text-right">
-                      {feriante.estado === "APROBADO" ? (
-                        <Link
-                          href={`/stands/${feriante.slug}`}
-                          target="_blank"
-                          className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                      </Td>
+                      <Td className="text-slate-500">{RUBROS[feriante.rubro]}</Td>
+                      <Td>
+                        <span className="block text-slate-700">
+                          {titular.nombre}
+                        </span>
+                        <span className="block text-xs text-slate-400">
+                          {titular.reclamada
+                            ? titular.email
+                            : (titular.email ?? "Sin cuenta")}
+                        </span>
+                        {!titular.reclamada && (
+                          <Badge tono="neutro" tamanio="sm" className="mt-1">
+                            Padrón sin reclamar
+                          </Badge>
+                        )}
+                      </Td>
+                      <Td className="whitespace-nowrap text-slate-600">
+                        {formatearWhatsapp(feriante.whatsapp)}
+                      </Td>
+                      <Td>
+                        <Badge
+                          tono={TONO_ESTADO_VENDEDOR[feriante.estado]}
+                          tamanio="sm"
                         >
-                          Ver stand
-                          <IconoEnlaceExterno className="size-3.5" />
-                        </Link>
-                      ) : (
-                        <Link
-                          href="/admin/postulaciones"
-                          className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-                        >
-                          Revisar
-                        </Link>
-                      )}
-                    </Td>
-                  </TablaFila>
-                );
-              })}
-            </TablaCuerpo>
-          </Tabla>
-        </Tarjeta>
+                          {ESTADOS_VENDEDOR[feriante.estado]}
+                        </Badge>
+                      </Td>
+                      <Td>
+                        {feriante.postulaciones.length === 0 ? (
+                          <span className="text-sm text-slate-400">
+                            {feriante.estado === 'APROBADO'
+                              ? 'Sólo online'
+                              : '—'}
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {feriante.postulaciones.map((postulacion) => (
+                              <Badge
+                                key={postulacion.id}
+                                tono="azul"
+                                tamanio="sm"
+                              >
+                                {postulacion.feria.nombre}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </Td>
+                      <Td className="text-center tabular-nums">
+                        {feriante._count.productos}
+                      </Td>
+                      <Td className="text-center tabular-nums">
+                        {feriante._count.stands}
+                      </Td>
+                      <Td className="whitespace-nowrap text-slate-500">
+                        {formatearFecha(feriante.creadoEn)}
+                      </Td>
+                      <Td className="text-right">
+                        {feriante.estado === "APROBADO" ? (
+                          <Link
+                            href={`/stands/${feriante.slug}`}
+                            target="_blank"
+                            className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                          >
+                            Ver stand
+                            <IconoEnlaceExterno className="size-3.5" />
+                          </Link>
+                        ) : (
+                          <Link
+                            href="/admin/postulaciones"
+                            className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+                          >
+                            Revisar
+                          </Link>
+                        )}
+                      </Td>
+                    </TablaFila>
+                  );
+                })}
+              </TablaCuerpo>
+            </Tabla>
+          </Tarjeta>
+          <Paginacion
+            pagina={pagina}
+            paginas={paginas}
+            ruta="/admin/feriantes"
+            parametros={{ estado: estado ?? (verPadron ? "PADRON" : undefined) }}
+            className="mt-6"
+          />
+        </>
       )}
     </>
   );

@@ -2,6 +2,7 @@ import { calcularPermisos, EDICIONES_CON_OBLIGACION } from "@/lib/canon";
 import { edicionesVigentes } from "@/lib/consultas";
 import { sumarImportes } from "@/lib/dinero";
 import { prisma } from "@/lib/db";
+import { SOLICITUD_PENDIENTE } from "@/lib/feriantes";
 import { aNumero } from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
 import { hayCanon } from "@/lib/modulo-canon";
@@ -21,12 +22,8 @@ export async function obtenerEstadisticas() {
     edicionesActivas,
   ] = await Promise.all([
     prisma.feria.count({ where: { activa: true } }),
-    // Mismo criterio que el contador del menú: las fichas del padrón importado
-    // nacen pendientes pero nadie las presentó. Contarlas haría que el tablero
-    // dijera «989 solicitudes esperando revisión» para siempre.
-    prisma.vendedor.count({
-      where: { estado: "PENDIENTE", usuarioId: { not: null } },
-    }),
+    // Sólo las que presentó alguien: el padrón importado no son solicitudes.
+    prisma.vendedor.count({ where: SOLICITUD_PENDIENTE }),
     prisma.vendedor.count({ where: { estado: "APROBADO" } }),
     prisma.vendedor.groupBy({
       by: ["rubro"],

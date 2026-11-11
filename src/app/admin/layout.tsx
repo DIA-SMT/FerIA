@@ -10,6 +10,7 @@ import {
 import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
 import { prisma } from "@/lib/db";
+import { SOLICITUD_PENDIENTE } from "@/lib/feriantes";
 import { hayCanon } from "@/lib/modulo-canon";
 import { requerirAdmin } from "@/lib/session";
 
@@ -32,14 +33,12 @@ export default async function LayoutAdmin({
   // Una sola bandeja, con los dos permisos adentro: el alta de la ficha y el
   // pedido de feria. El contador los suma porque es lo que hay para contestar.
   //
-  // Las fichas del padrón importado quedan afuera —sin `usuarioId`—: también
-  // nacen pendientes pero nadie las presentó, así que un contador que las
-  // incluyera diría 867 para siempre. Y los pedidos de feria se cuentan sólo si
-  // la ficha ya está aprobada, que es cuando se pueden contestar.
+  // Las fichas del padrón importado quedan afuera —ver `SOLICITUD_PENDIENTE`—:
+  // pueden estar pendientes pero nadie las presentó, así que un contador que
+  // las incluyera diría casi mil para siempre. Y los pedidos de feria se cuentan
+  // sólo si la ficha ya está aprobada, que es cuando se pueden contestar.
   const [altas, pedidos] = await Promise.all([
-    prisma.vendedor.count({
-      where: { estado: "PENDIENTE", usuarioId: { not: null } },
-    }),
+    prisma.vendedor.count({ where: SOLICITUD_PENDIENTE }),
     prisma.postulacion.count({
       where: { estado: "PENDIENTE", vendedor: { estado: "APROBADO" } },
     }),

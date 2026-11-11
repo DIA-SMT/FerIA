@@ -2,6 +2,7 @@ import type { EstadoEdicion, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 import { hoyEnZona } from "@/lib/format";
+import { paginar } from "@/lib/paginacion";
 
 /**
  * Consultas compartidas entre el market público y los paneles.
@@ -183,12 +184,25 @@ export function ordenarPorRelevancia<
   });
 }
 
-/** Feriantes aprobados para el directorio público. */
+/**
+ * Cuántas tarjetas entran en una página del directorio.
+ *
+ * 24 llena filas completas con 2, 3 y 4 columnas, que son las que tiene la
+ * grilla según el ancho de la pantalla.
+ */
+export const STANDS_POR_PAGINA = 24;
+
+/**
+ * Feriantes aprobados para el directorio público, de a una página.
+ *
+ * Pagina desde que entró el padrón de Feria Digital: con las 989 fichas en una
+ * sola página, `/stands` pesaba 3,9 MB.
+ */
 export async function vendedoresAprobados(filtros?: {
   busqueda?: string;
   rubro?: string;
   feriaSlug?: string;
-  limite?: number;
+  pagina?: number;
 }) {
   const where: Prisma.VendedorWhereInput = { estado: "APROBADO" };
 
@@ -237,6 +251,9 @@ export async function vendedoresAprobados(filtros?: {
     };
   }
 
+  const total = await prisma.vendedor.count({ where });
+  const paginado = paginar(total, filtros?.pagina ?? 1, STANDS_POR_PAGINA);
+
   const vendedores = await prisma.vendedor.findMany({
     where,
     select: {
@@ -249,17 +266,25 @@ export async function vendedoresAprobados(filtros?: {
       logo: true,
       _count: { select: { productos: { where: { disponible: true } } } },
     },
-    orderBy: { emprendimiento: "asc" },
-    ...(filtros?.limite ? { take: filtros.limite } : {}),
+    // El id desempata. En el padrón hay nombres de emprendimiento repetidos, y
+    // sin un orden total la base puede devolverlos distinto en cada consulta:
+    // uno aparecería en dos páginas y otro en ninguna.
+    orderBy: [{ emprendimiento: "asc" }, { id: "asc" }],
+    skip: paginado.salto,
+    take: paginado.porPagina,
   });
 
-  return vendedores.map((vendedor) => ({
-    slug: vendedor.slug,
-    emprendimiento: vendedor.emprendimiento,
-    rubro: vendedor.rubro,
-    descripcion: vendedor.descripcion,
-    imagenPortada: vendedor.imagenPortada,
-    logo: vendedor.logo,
-    cantidadProductos: vendedor._count.productos,
-  }));
+  return {
+    ...paginado,
+    total,
+    stands: vendedores.map((vendedor) => ({
+      slug: vendedor.slug,
+      emprendimiento: vendedor.emprendimiento,
+      rubro: vendedor.rubro,
+      descripcion: vendedor.descripcion,
+      imagenPortada: vendedor.imagenPortada,
+      logo: vendedor.logo,
+      cantidadProductos: vendedor._count.productos,
+    })),
+  };
 }

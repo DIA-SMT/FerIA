@@ -6,10 +6,12 @@ import { FiltrosDirectorio } from "@/components/public/filtros-directorio";
 import { TarjetaStand } from "@/components/public/tarjeta-stand";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { IconoTienda } from "@/components/ui/iconos";
+import { Paginacion } from "@/components/ui/paginacion";
 import { vendedoresAprobados } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearNumero } from "@/lib/format";
 import { RUBROS } from "@/lib/labels";
+import { leerPagina } from "@/lib/paginacion";
 
 export const metadata: Metadata = {
   title: "Directorio de stands",
@@ -19,10 +21,17 @@ export const metadata: Metadata = {
 
 const RUBROS_VALIDOS = new Set(Object.keys(RUBROS));
 
+type ParametrosDirectorio = {
+  q?: string;
+  rubro?: string;
+  feria?: string;
+  pagina?: string;
+};
+
 export default function PaginaStands({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; rubro?: string; feria?: string }>;
+  searchParams: Promise<ParametrosDirectorio>;
 }) {
   // El esqueleto de carga va acá y no en un `loading.tsx` del grupo: colgado
   // del grupo envolvía también las fichas de feria y de stand, y ahí el límite
@@ -39,7 +48,7 @@ export default function PaginaStands({
 async function ContenidoStands({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; rubro?: string; feria?: string }>;
+  searchParams: Promise<ParametrosDirectorio>;
 }) {
   const params = await searchParams;
 
@@ -48,11 +57,12 @@ async function ContenidoStands({
     params.rubro && RUBROS_VALIDOS.has(params.rubro) ? params.rubro : "";
   const feriaSlug = params.feria ?? "";
 
-  const [stands, ferias] = await Promise.all([
+  const [{ stands, total, pagina, paginas }, ferias] = await Promise.all([
     vendedoresAprobados({
       busqueda: q || undefined,
       rubro: rubro || undefined,
       feriaSlug: feriaSlug || undefined,
+      pagina: leerPagina(params.pagina),
     }),
     prisma.feria.findMany({
       where: { activa: true },
@@ -89,14 +99,14 @@ async function ContenidoStands({
       </div>
 
       <p className="mt-6 text-sm text-slate-500" aria-live="polite">
-        {stands.length === 0
+        {total === 0
           ? "Sin resultados"
-          : `${formatearNumero(stands.length)} ${
-              stands.length === 1 ? "stand" : "stands"
+          : `${formatearNumero(total)} ${total === 1 ? "stand" : "stands"}${
+              paginas > 1 ? ` · página ${pagina} de ${paginas}` : ""
             }`}
       </p>
 
-      {stands.length === 0 ? (
+      {total === 0 ? (
         <EstadoVacio
           icono={IconoTienda}
           className="mt-4"
@@ -112,15 +122,27 @@ async function ContenidoStands({
           }
         />
       ) : (
-        <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {stands.map((stand, indice) => (
-            <TarjetaStand
-              key={stand.slug}
-              stand={stand}
-              prioridad={indice < 4}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {stands.map((stand, indice) => (
+              <TarjetaStand
+                key={stand.slug}
+                stand={stand}
+                prioridad={indice < 4}
+              />
+            ))}
+          </div>
+
+          {/* Los filtros viajan con la página: pasar a la 2 de «Gastronomía» no
+              puede devolver la 2 de todo el directorio. */}
+          <Paginacion
+            pagina={pagina}
+            paginas={paginas}
+            ruta="/stands"
+            parametros={{ q, rubro, feria: feriaValida }}
+            className="mt-10"
+          />
+        </>
       )}
     </div>
   );
