@@ -65,4 +65,24 @@ describe("paginasVisibles", () => {
     expect(paginasVisibles(1, 42)).toEqual([1, 2, 3, HUECO, 42]);
     expect(paginasVisibles(42, 42)).toEqual([1, HUECO, 40, 41, 42]);
   });
+
+  describe("con un vecino, para el celular", () => {
+    it("muestra uno a cada lado", () => {
+      expect(paginasVisibles(6, 42, 1)).toEqual([1, HUECO, 5, 6, 7, HUECO, 42]);
+      expect(paginasVisibles(1, 42, 1)).toEqual([1, 2, HUECO, 42]);
+      expect(paginasVisibles(42, 42, 1)).toEqual([1, HUECO, 41, 42]);
+    });
+
+    it("sigue sin saltear una sola página con «…»", () => {
+      expect(paginasVisibles(4, 42, 1)).toEqual([1, 2, 3, 4, 5, HUECO, 42]);
+    });
+
+    it("nunca pasa de siete elementos, que con las flechas son nueve", () => {
+      // Nueve botones de 32 px con 4 px de separación: 320 px, que entran en
+      // los 343 que deja un teléfono de 375 px con sus márgenes.
+      for (let actual = 1; actual <= 42; actual++) {
+        expect(paginasVisibles(actual, 42, 1).length, `página ${actual}`).toBeLessThanOrEqual(7);
+      }
+    });
+  });
 });

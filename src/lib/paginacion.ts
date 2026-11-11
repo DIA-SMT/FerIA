@@ -54,20 +54,26 @@ export function paginar(
 export const HUECO = "…" as const;
 
 /**
- * Qué números de página mostrar: la primera, la última y dos a cada lado de la
- * actual, con «…» donde se saltean.
+ * Qué números de página mostrar: la primera, la última y `vecinos` a cada lado
+ * de la actual, con «…» donde se saltean.
  *
- *   paginasVisibles(6, 42) → [1, "…", 4, 5, 6, 7, 8, "…", 42]
+ *   paginasVisibles(6, 42)    → [1, "…", 4, 5, 6, 7, 8, "…", 42]
+ *   paginasVisibles(6, 42, 1) → [1, "…", 5, 6, 7, "…", 42]
  *
  * Un hueco de una sola página no se dibuja como «…»: se muestra el número, que
  * ocupa lo mismo y ahorra un clic.
+ *
+ * El celular usa un vecino y no dos para que la barra entre en un renglón. Se
+ * calcula aparte y no escondiendo números por CSS: con la regla de arriba,
+ * esconder el 3 de «1 2 3 4 5» dejaría un salto de 2 a 4 sin «…» que lo avise.
  */
 export function paginasVisibles(
   actual: number,
   paginas: number,
+  vecinos = 2,
 ): Array<number | typeof HUECO> {
   const elegidas = new Set<number>([1, paginas]);
-  for (let n = actual - 2; n <= actual + 2; n++) {
+  for (let n = actual - vecinos; n <= actual + vecinos; n++) {
     if (n >= 1 && n <= paginas) elegidas.add(n);
   }
 
