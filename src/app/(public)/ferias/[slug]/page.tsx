@@ -118,11 +118,14 @@ export async function generateMetadata({
 
   if (!feria) return { title: "Feria no encontrada" };
 
-  // Sin descripción cargada se omite y queda la del sitio, que es mejor que una
-  // vista previa vacía cuando alguien comparte el link.
+  // Sin descripción cargada se arma una con el nombre. No se ve en la página
+  // —ahí no hay nada que repetir—; es la que muestran los buscadores y la
+  // vista previa al compartir el link. Ojo: devolver `description: undefined`
+  // no hereda la del sitio, deja la página sin meta descripción, y el
+  // `openGraph` de acá reemplaza entero al del layout.
   const descripcion = feria.descripcion
     ? truncar(feria.descripcion, 155)
-    : undefined;
+    : `${feria.nombre}: fechas, lugar y feriantes de esta feria municipal de San Miguel de Tucumán.`;
 
   return {
     title: feria.nombre,
