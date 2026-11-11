@@ -35,10 +35,11 @@ export function PiePublico() {
         <div className="grid gap-10 py-14 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-6">
             <LogoMunicipal comoEnlace={false} />
+            {/* Sin nombrar a la Municipalidad: lo dice el logo de arriba y lo
+                dice el copyright de abajo. Acá estaba tres veces. */}
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-slate-600">
-              Plataforma oficial de ferias itinerantes de la Municipalidad de
-              San Miguel de Tucumán. Conocé a los feriantes, recorré sus stands
-              online y contactalos directamente.
+              La plataforma oficial de las ferias itinerantes. Conocé a los
+              feriantes, recorré sus stands online y contactalos directamente.
             </p>
 
             {/* Autoría: es la firma del equipo que construyó la plataforma, no
@@ -106,17 +107,15 @@ export function PiePublico() {
             artificial, así que tomalas como ilustrativas y consultale al
             feriante. Las ventas se acuerdan de forma directa entre vecinos y
             feriantes: el municipio no intermedia en el precio, el pago ni la
-            entrega.{" "}
-            <BotonTerminos className="font-medium text-municipal-700 underline underline-offset-2 transition-colors hover:text-municipal-800">
-              Leer los términos y condiciones
-            </BotonTerminos>
+            entrega.
           </p>
         </div>
 
         {/* --------------------------- Franja inferior --------------------------
             Una sola y sólo lo legal, a la izquierda: a la derecha flota la
-            burbuja del asistente. Antes eran dos franjas separadas por otra
-            línea, y el link a los términos aparecía dos veces.
+            burbuja del asistente. Es el único lugar del pie con el nombre de
+            la Municipalidad y el único link a los términos: antes había dos
+            franjas, el link aparecía dos veces y el nombre, tres.
 
             El `pr-16` le reserva lugar a esa burbuja (56 px a 16 px del borde):
             en el celular el texto ocupa tres renglones y, al llegar al final de
@@ -124,10 +123,7 @@ export function PiePublico() {
             izquierda, en pantallas anchas no se nota. */}
         <div className="mt-10 border-t border-slate-200 py-6 text-xs text-slate-500">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-16">
-            <span>
-              © {anio} Municipalidad de San Miguel de Tucumán. Todos los
-              derechos reservados.
-            </span>
+            <span>© {anio} Municipalidad de San Miguel de Tucumán</span>
             <span className="text-slate-300" aria-hidden="true">
               ·
             </span>
@@ -137,7 +133,7 @@ export function PiePublico() {
           </p>
         </div>
 
-        {/* El diálogo que abren los dos botones de arriba. El texto viaja como
+        {/* El diálogo que abre «Términos y condiciones». El texto viaja como
             children para que siga renderizándose en el servidor. */}
         <DialogoTerminos>
           <TerminosContenido />
