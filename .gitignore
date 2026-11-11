@@ -15,6 +15,12 @@ next-env.d.ts
 .env.local
 .env*.local
 
+# padrón de Feria Digital: datos personales de unas mil personas. El extractor
+# ya se niega a escribirlo adentro de un repositorio; esto es la segunda red,
+# por si alguien lo copia acá a mano o importa un export dejado en la raíz.
+padron*.json
+*.reporte.json
+
 # testing / logs
 /coverage
 npm-debug.log*

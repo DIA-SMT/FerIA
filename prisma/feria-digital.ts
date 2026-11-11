@@ -7,6 +7,10 @@
  * forma de esos datos y la traduce a la nuestra. No toca la base: eso lo hace
  * `importar-feria-digital.ts`.
  *
+ * El mismo padrón, más completo, está en la base MySQL del municipio que tiene
+ * detrás ese sitio. `refercom.ts` arma desde ahí fichas con esta misma forma,
+ * así que todo lo de este archivo vale para los dos caminos.
+ *
  * Está separado a propósito. El mapeo de rubros es la parte que va a cambiar
  * —cada vez que aparezca un rubro nuevo en el padrón hay que agregarlo acá— y
  * conviene poder leerlo y corregirlo sin leer el script de importación.

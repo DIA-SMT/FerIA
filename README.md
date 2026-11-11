@@ -272,6 +272,7 @@ Dos detalles de esa separación, que no son casuales:
 | `npm run db:migrate` | Crea una migración nueva a partir de cambios en el schema.    |
 | `npm run db:seed`    | Buckets + usuarios + datos de ejemplo (borra todo antes).     |
 | `npm run db:importar` | Importa el padrón de Mi Feria Digital. Ver abajo.           |
+| `npm run db:extraer` | Extrae ese padrón de la base del municipio. Ver abajo.       |
 | `npm run db:studio`  | Prisma Studio, para inspeccionar la base.                    |
 | `npm test`           | Pruebas de la lógica pura. Ver abajo.                        |
 | `npm run test:ver`   | Igual, mirando archivos.                                     |
@@ -296,6 +297,7 @@ una prueba cuesta tres líneas.
 | `whatsapp` | El número normalizado es el botón de contacto de cada stand. Uno inexistente que pasa la validación no se nota hasta que un vecino le escribe a un desconocido. |
 | `dinero`, `canon`, `pedidos` | Plata. Incluye el caso que nos rompió: $12.500,10 en tres cuotas de $4.166,70 daba un saldo de 1,8e-12 y el permiso figuraba VENCIDO con «$ 0» de saldo. |
 | `feria-digital` | La traducción del padrón. Si se equivoca, la importación termina bien y el error aparece después, en la vidriera. |
+| `refercom` | El armado de fichas desde la base del municipio. Los cruces son el punto: la vista que usan ellos le adjudica a cada emprendimiento todos los productos de su rubro. |
 | `cidituc` | El `state` dentro del fragmento y la lectura del perfil: deciden si alguien entra y con qué documento. |
 | `titular` | El orden de los respaldos, para que dos tablas del panel no muestren nombres distintos. |
 
@@ -424,14 +426,58 @@ login de CIDITUC» de la Dirección.
 ### Importar el padrón de Mi Feria Digital
 
 [Mi Feria Digital](https://miferiadigital.smt.gob.ar/) es la otra plataforma de
-ferias del municipio: un catálogo sobre Firestore con el padrón real de
-emprendimientos verificados por la Dirección. `db:importar` trae esas fichas
-acá.
+ferias del municipio, con el padrón real de emprendimientos verificados por la
+Dirección. El padrón está en dos lugares: un export de Firestore, que fue el
+primero que se usó (867 fichas), y la base MySQL del municipio que tiene
+detrás, `smt_refercom` (unas 1100). **La que manda es la base**, desde
+noviembre de 2026. `db:extraer` la lee y escribe un JSON; `db:importar` lo
+carga acá.
+
+#### 1. Extraer, desde una máquina de la oficina
+
+La base del municipio está en la red interna y el servidor de FerIA no llega,
+así que se extrae desde la oficina y el archivo se copia al servidor.
+`REFERCOM_HOST` y `REFERCOM_USUARIO` van en el `.env` (ver `.env.example`). La
+clave se pide al correr, para que no quede escrita en ningún lado.
+
+En PowerShell (con `npm.cmd` y no `npm`: en las máquinas donde la política
+de ejecución bloquea los scripts, `npm` es un `npm.ps1` y no corre):
+
+```powershell
+$env:REFERCOM_CLAVE = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((Read-Host "Clave" -AsSecureString)))
+npm.cmd run db:extraer -- --contar
+npm.cmd run db:extraer -- $HOME\Downloads\padron.json
+$env:REFERCOM_CLAVE = $null
+```
+
+En bash:
+
+```bash
+read -rsp "Clave: " REFERCOM_CLAVE && export REFERCOM_CLAVE
+npm run db:extraer -- --contar
+npm run db:extraer -- ~/Descargas/padron.json
+unset REFERCOM_CLAVE
+```
+
+`--contar` verifica la conexión y dice cuántos hay sin escribir nada. Con una
+ruta, escribe el padrón, pero **se niega a hacerlo dentro de un repositorio**:
+el archivo tiene DNI, teléfono y domicilio de unas mil personas, y este
+repositorio es público. El script sólo lee; no usa nunca los permisos de
+escritura que tiene la cuenta.
+
+Una ficha por emprendimiento, no por persona: quien tiene dos emprendimientos
+queda en dos fichas y, al entrar por CiDiTuc, va a poder manejar una sola.
+
+#### 2. Importar, en el servidor
+
+Con el archivo copiado al servidor, desde la versión desplegada:
 
 ```bash
 npm run db:importar -- padron.json              # simulacro, no escribe nada
 npm run db:importar -- padron.json --aplicar    # escribe
 ```
+
+Al terminar, **borrá el padrón y su reporte de las dos máquinas**.
 
 El simulacro **no necesita base**: se puede correr sobre un export para ver qué
 entraría, qué se cae y cómo quedarían traducidos los rubros, antes de aplicar
