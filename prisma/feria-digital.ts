@@ -232,6 +232,24 @@ const RUBROS_EXACTOS: Record<string, Rubro> = {
   JARDINERIA: Rubro.HUERTA_Y_VIVERO,
   JUGUETES: Rubro.JUGUETES,
   "JUGUETES DIDACTICOS": Rubro.JUGUETES,
+
+  /*
+    Rubros del catálogo de la base del municipio (`tbl_rubro` de
+    `smt_refercom`) que sin esto caían en OTROS. Con ellos, OTROS bajaba del
+    20% al 10% de los emprendimientos y dejaba de ser el rubro más grande, que
+    en un filtro de la vidriera no le sirve a nadie. Decidido con Lucas el
+    11/11/2026.
+
+    Quedan en OTROS a propósito MULTIRUBRO, ACCESORIOS PARA MASCOTAS y
+    PRODUCTOS ELECTRONICOS: no hay categoría nuestra que les quede bien.
+  */
+  BEBIDAS: Rubro.GASTRONOMIA,
+  "LIBRERIA PAPELERIA": Rubro.LIBROS_Y_ARTE,
+  "MATES Y ACCESORIOS": Rubro.PRODUCTOS_REGIONALES,
+  "PRODUCTOS APICOLAS": Rubro.PRODUCTOS_REGIONALES,
+  BAZAR: Rubro.DECORACION,
+  RECICLADOS: Rubro.ARTESANIAS,
+  MIMBRERIA: Rubro.ARTESANIAS,
 };
 
 /**

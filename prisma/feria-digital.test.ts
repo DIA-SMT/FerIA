@@ -137,6 +137,31 @@ describe("traducirRubro", () => {
   });
 
   it.each([
+    // Tal como vienen en `tbl_rubro` de la base del municipio, con tildes,
+    // barras y espacios de más.
+    ["BEBIDAS ", Rubro.GASTRONOMIA],
+    ["LIBRERÍA/ PAPELERÍA ", Rubro.LIBROS_Y_ARTE],
+    ["MATES Y ACCESORIOS", Rubro.PRODUCTOS_REGIONALES],
+    ["PRODUCTOS APICOLAS  ", Rubro.PRODUCTOS_REGIONALES],
+    ["BAZAR", Rubro.DECORACION],
+    ["RECICLADOS", Rubro.ARTESANIAS],
+    ["MIMBRERIA", Rubro.ARTESANIAS],
+  ])("traduce el rubro del catálogo municipal %s", (entrada, esperado) => {
+    const resultado = traducirRubro([entrada]);
+    expect(resultado.rubro).toBe(esperado);
+    expect(resultado.reconocido).toBe(true);
+  });
+
+  it.each(["MULTIRUBRO", "ACCESORIOS PARA MASCOTAS", "PRODUCTOS ELECTRONICOS"])(
+    "deja en OTROS, a propósito, %s",
+    (entrada) => {
+      // Que «ACCESORIOS» esté en la tabla exacta no tiene que arrastrar a los
+      // de mascotas a bijouterie: la tabla compara el nombre entero.
+      expect(traducirRubro([entrada]).rubro).toBe(Rubro.OTROS);
+    },
+  );
+
+  it.each([
     ["ARTESANÍA EN MADERA", Rubro.ARTESANIAS],
     ["ARTESANÍA EN CERÁMICA", Rubro.ARTESANIAS],
     ["RECICLADOS Y ARTESANÍAS", Rubro.ARTESANIAS],
