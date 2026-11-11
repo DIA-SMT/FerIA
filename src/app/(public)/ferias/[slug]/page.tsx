@@ -118,12 +118,18 @@ export async function generateMetadata({
 
   if (!feria) return { title: "Feria no encontrada" };
 
+  // Sin descripción cargada se omite y queda la del sitio, que es mejor que una
+  // vista previa vacía cuando alguien comparte el link.
+  const descripcion = feria.descripcion
+    ? truncar(feria.descripcion, 155)
+    : undefined;
+
   return {
     title: feria.nombre,
-    description: truncar(feria.descripcion, 155),
+    description: descripcion,
     openGraph: {
       title: feria.nombre,
-      description: truncar(feria.descripcion, 155),
+      description: descripcion,
       ...(feria.imagen ? { images: [feria.imagen] } : {}),
     },
   };
@@ -200,15 +206,19 @@ export default async function PaginaFeria({
         <div className="mt-6 grid gap-10 lg:grid-cols-3">
           {/* ---------------------------- Contenido --------------------------- */}
           <div className="lg:col-span-2">
-            <section>
-              <h2 className="sr-only">Sobre la feria</h2>
-              <p className="text-lg whitespace-pre-line text-slate-700">
-                {feria.descripcion}
-              </p>
-            </section>
+            {/* Vacía en las ferias del padrón hasta que la Dirección la cargue:
+                ver la tarjeta. Sin ella, la página arranca por las fechas. */}
+            {feria.descripcion && (
+              <section className="mb-10">
+                <h2 className="sr-only">Sobre la feria</h2>
+                <p className="text-lg whitespace-pre-line text-slate-700">
+                  {feria.descripcion}
+                </p>
+              </section>
+            )}
 
             {/* ---------------------------- Ediciones -------------------------- */}
-            <section className="mt-10">
+            <section>
               <h2 className="text-xl font-bold tracking-tight text-slate-900">
                 Fechas
               </h2>

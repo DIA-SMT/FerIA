@@ -67,9 +67,14 @@ export function TarjetaFeria({
           {feria.nombre}
         </h3>
 
-        <p className="lineas-2 mt-1.5 text-sm text-slate-600">
-          {feria.descripcion}
-        </p>
+        {/* Vacía en las ferias del padrón hasta que la Dirección la cargue. Se
+            omite en vez de rellenarla: una frase genérica igual en las nueve
+            tarjetas era información repetida, no información. */}
+        {feria.descripcion && (
+          <p className="lineas-2 mt-1.5 text-sm text-slate-600">
+            {feria.descripcion}
+          </p>
+        )}
 
         <dl className="mt-4 space-y-1.5 text-sm">
           <div className="flex items-start gap-2 text-slate-600">
