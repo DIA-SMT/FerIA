@@ -31,7 +31,21 @@ const FILTROS = [
   { valor: "APROBADO", etiqueta: "Aprobados" },
   { valor: "PENDIENTE", etiqueta: "Pendientes" },
   { valor: "RECHAZADO", etiqueta: "Rechazados" },
+  { valor: "PADRON", etiqueta: "Padrón sin reclamar" },
 ];
+
+/**
+ * Las fichas importadas del padrón de Feria Digital que nadie reclamó todavía.
+ *
+ * Son casi mil y no son altas: nadie las presentó, son registros del municipio
+ * esperando que su titular entre por CiDiTuc. Mezcladas en «Todos» o en
+ * «Pendientes» tapaban las solicitudes reales, así que tienen su propio filtro
+ * y quedan fuera de los demás. Es el mismo criterio que el contador del menú.
+ */
+const PADRON_SIN_RECLAMAR: Prisma.VendedorWhereInput = {
+  origen: "FERIA_DIGITAL",
+  usuarioId: null,
+};
 
 export default async function PaginaFeriantes({
   searchParams,
@@ -44,7 +58,10 @@ export default async function PaginaFeriantes({
       ? (params.estado as EstadoVendedor)
       : undefined;
 
-  const where: Prisma.VendedorWhereInput = estado ? { estado } : {};
+  const verPadron = params.estado === "PADRON";
+  const where: Prisma.VendedorWhereInput = verPadron
+    ? PADRON_SIN_RECLAMAR
+    : { ...(estado ? { estado } : {}), NOT: PADRON_SIN_RECLAMAR };
 
   const feriantes = await prisma.vendedor.findMany({
     where,
@@ -103,7 +120,9 @@ export default async function PaginaFeriantes({
           icono={IconoUsuarios}
           titulo="Sin feriantes"
           descripcion={
-            estado
+            verPadron
+              ? "No hay fichas del padrón esperando que las reclamen."
+              : estado
               ? "No hay feriantes con ese estado."
               : "Todavía no se registró ningún emprendimiento."
           }

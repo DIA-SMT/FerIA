@@ -21,7 +21,12 @@ export async function obtenerEstadisticas() {
     edicionesActivas,
   ] = await Promise.all([
     prisma.feria.count({ where: { activa: true } }),
-    prisma.vendedor.count({ where: { estado: "PENDIENTE" } }),
+    // Mismo criterio que el contador del menú: las fichas del padrón importado
+    // nacen pendientes pero nadie las presentó. Contarlas haría que el tablero
+    // dijera «989 solicitudes esperando revisión» para siempre.
+    prisma.vendedor.count({
+      where: { estado: "PENDIENTE", usuarioId: { not: null } },
+    }),
     prisma.vendedor.count({ where: { estado: "APROBADO" } }),
     prisma.vendedor.groupBy({
       by: ["rubro"],
