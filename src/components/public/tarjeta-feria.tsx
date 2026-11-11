@@ -75,7 +75,8 @@ export function TarjetaFeria({
           <div className="flex items-start gap-2 text-slate-600">
             <dt className="sr-only">Ubicación</dt>
             <IconoUbicacion className="mt-0.5 size-4 shrink-0 text-slate-400" />
-            <dd className="lineas-2">{feria.direccion}</dd>
+            {/* Vacía en las ferias del padrón que todavía no la cargaron. */}
+            <dd className="lineas-2">{feria.direccion || "Lugar a confirmar"}</dd>
           </div>
 
           <div className="flex items-start gap-2">

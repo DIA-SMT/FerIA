@@ -184,7 +184,9 @@ export async function contextoDelSitio(): Promise<string> {
 
     return (
       `- ${feria.nombre} (slug: ${feria.slug}) — ${CATEGORIAS_FERIA[feria.categoria]}\n` +
-      `  Dónde: ${feria.direccion}\n${ediciones}`
+      // Sin dirección, que lo diga: si no, Migue inventa una o contesta «Dónde: »
+      // y el vecino no entiende si falta el dato o si el asistente se trabó.
+      `  Dónde: ${feria.direccion || "todavía no está confirmado"}\n${ediciones}`
     );
   });
 

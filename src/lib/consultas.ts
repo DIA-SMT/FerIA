@@ -185,6 +185,29 @@ export function ordenarPorRelevancia<
 }
 
 /**
+ * Feriantes que son parte de una feria.
+ *
+ * Por cualquiera de dos vías, que son dos cosas distintas: la **postulación
+ * aceptada** dice que alguien es feriante de esa feria, y el **stand** dice
+ * dónde está en una edición concreta. Hasta el 11/11/2026 sólo se miraba el
+ * stand, y las 989 fichas del padrón de Feria Digital —aceptadas en su feria,
+ * pero sin stand todavía— no aparecían en ninguna.
+ *
+ * Lo usan el filtro y el buscador del directorio y la página de la feria, para
+ * que «Ver en el directorio» lleve exactamente a los mismos feriantes.
+ */
+export function deLaFeria(
+  feria: Prisma.FeriaWhereInput,
+): Prisma.VendedorWhereInput {
+  return {
+    OR: [
+      { postulaciones: { some: { estado: "ACEPTADA", feria } } },
+      { stands: { some: { edicion: { ...EDICIONES_PUBLICAS, feria } } } },
+    ],
+  };
+}
+
+/**
  * Cuántas tarjetas entran en una página del directorio.
  *
  * 24 llena filas completas con 2, 3 y 4 columnas, que son las que tiene la
@@ -215,23 +238,14 @@ export async function vendedoresAprobados(filtros?: {
           some: { nombre: { contains: filtros.busqueda, mode: "insensitive" } },
         },
       },
-      // También por el nombre de la feria en la que participa. El buscador de
+      // También por el nombre de la feria de la que es parte. El buscador de
       // la portada invita a escribir «Feria Parque Avellaneda», y sin esto esa
       // búsqueda no devolvía nada: el nombre de la feria no está en ninguna
       // columna del vendedor. Lo que se espera al buscar una feria es ver
       // quiénes están en ella, que es justo lo que devuelve.
-      {
-        stands: {
-          some: {
-            edicion: {
-              ...EDICIONES_PUBLICAS,
-              feria: {
-                nombre: { contains: filtros.busqueda, mode: "insensitive" },
-              },
-            },
-          },
-        },
-      },
+      deLaFeria({
+        nombre: { contains: filtros.busqueda, mode: "insensitive" },
+      }),
     ];
   }
 
@@ -239,16 +253,10 @@ export async function vendedoresAprobados(filtros?: {
     where.rubro = filtros.rubro as Prisma.VendedorWhereInput["rubro"];
   }
 
-  // Participa (con stand asignado) de alguna edición pública de esa feria.
+  // Es parte de esa feria. Va en `AND` y no suelto porque `deLaFeria` es un
+  // `OR`, y el buscador de arriba ya ocupa el `OR` de este mismo `where`.
   if (filtros?.feriaSlug) {
-    where.stands = {
-      some: {
-        edicion: {
-          ...EDICIONES_PUBLICAS,
-          feria: { slug: filtros.feriaSlug },
-        },
-      },
-    };
+    where.AND = [deLaFeria({ slug: filtros.feriaSlug })];
   }
 
   const total = await prisma.vendedor.count({ where });

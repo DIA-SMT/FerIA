@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18,12 +19,18 @@ import {
 } from "@/components/ui/iconos";
 import { ImagenPortada } from "@/components/ui/imagen";
 import {
+  deLaFeria,
   EDICIONES_PUBLICAS,
   etapaDeEdicion,
   type EtapaEdicion,
 } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearRangoFechas, hoyEnZona, truncar } from "@/lib/format";
+import {
+  formatearNumero,
+  formatearRangoFechas,
+  hoyEnZona,
+  truncar,
+} from "@/lib/format";
 import { linkGoogleMaps, linkGoogleMapsPorDireccion } from "@/lib/geo";
 import { CATEGORIAS_FERIA, type TonoBadge } from "@/lib/labels";
 
@@ -47,6 +54,14 @@ const TONO_ETAPA: Record<EtapaEdicion, TonoBadge> = {
   FINALIZADA: "neutro",
 };
 
+/**
+ * Cuántos feriantes se muestran en la página de la feria.
+ *
+ * Una feria del padrón tiene más de doscientos: acá va una muestra y el resto
+ * en el directorio, que ya está paginado y filtra por esta misma feria.
+ */
+const FERIANTES_A_LA_VISTA = 12;
+
 async function obtenerFeria(slug: string) {
   return prisma.feria.findFirst({
     where: { slug, activa: true },
@@ -54,28 +69,40 @@ async function obtenerFeria(slug: string) {
       ediciones: {
         where: EDICIONES_PUBLICAS,
         orderBy: { fechaInicio: "asc" },
-        include: {
-          stands: {
-            orderBy: { numero: "asc" },
-            include: {
-              vendedor: {
-                select: {
-                  slug: true,
-                  emprendimiento: true,
-                  rubro: true,
-                  descripcion: true,
-                  imagenPortada: true,
-                  logo: true,
-                  estado: true,
-                  _count: { select: { productos: { where: { disponible: true } } } },
-                },
-              },
-            },
-          },
-        },
+        // Sólo para contar los puestos ocupados de cada edición: quiénes son
+        // los feriantes se consulta aparte, con `deLaFeria`.
+        include: { stands: { select: { vendedorId: true } } },
       },
     },
   });
+}
+
+/** Los feriantes de la feria: el total y la muestra que entra en la página. */
+async function obtenerFeriantes(slug: string) {
+  const where: Prisma.VendedorWhereInput = {
+    estado: "APROBADO",
+    ...deLaFeria({ slug }),
+  };
+
+  const [total, muestra] = await Promise.all([
+    prisma.vendedor.count({ where }),
+    prisma.vendedor.findMany({
+      where,
+      select: {
+        slug: true,
+        emprendimiento: true,
+        rubro: true,
+        descripcion: true,
+        imagenPortada: true,
+        logo: true,
+        _count: { select: { productos: { where: { disponible: true } } } },
+      },
+      orderBy: [{ emprendimiento: "asc" }, { id: "asc" }],
+      take: FERIANTES_A_LA_VISTA,
+    }),
+  ]);
+
+  return { total, muestra };
 }
 
 export async function generateMetadata({
@@ -112,6 +139,8 @@ export default async function PaginaFeria({
 
   if (!feria) notFound();
 
+  const feriantes = await obtenerFeriantes(feria.slug);
+
   // Un solo `hoy` para toda la página: el mismo que decide qué ediciones siguen
   // en pie y el que después calcula la etiqueta de cada una.
   const hoy = hoyEnZona();
@@ -119,22 +148,14 @@ export default async function PaginaFeria({
     (edicion) => etapaDeEdicion(edicion, hoy) !== "FINALIZADA",
   );
   const proxima = vigentes[0];
+
+  // Sin dirección no hay botón de mapa: buscar «A confirmar» en Google Maps
+  // manda a cualquier lado. Las ferias del padrón se crearon con la dirección
+  // vacía donde la base del municipio no la traía, y el formulario del panel
+  // obliga a cargarla en cuanto alguien edita la feria.
   const mapa =
     linkGoogleMaps(feria.latitud, feria.longitud) ??
-    linkGoogleMapsPorDireccion(feria.direccion);
-
-  // Feriantes con stand asignado en las ediciones vigentes, sin repetir.
-  const participantes = new Map<
-    string,
-    NonNullable<(typeof feria.ediciones)[number]["stands"][number]["vendedor"]>
-  >();
-  for (const edicion of vigentes) {
-    for (const stand of edicion.stands) {
-      if (stand.vendedor && stand.vendedor.estado === "APROBADO") {
-        participantes.set(stand.vendedor.slug, stand.vendedor);
-      }
-    }
-  }
+    (feria.direccion ? linkGoogleMapsPorDireccion(feria.direccion) : null);
 
   return (
     <div>
@@ -261,18 +282,25 @@ export default async function PaginaFeria({
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <h2 className="text-xl font-bold tracking-tight text-slate-900">
                   Feriantes que participan
+                  {feriantes.total > 0 && (
+                    <span className="ml-2 text-base font-medium text-slate-500">
+                      {formatearNumero(feriantes.total)}
+                    </span>
+                  )}
                 </h2>
-                {participantes.size > 0 && (
+                {feriantes.total > 0 && (
                   <Link
                     href={`/stands?feria=${feria.slug}`}
                     className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
                   >
-                    Ver en el directorio
+                    {feriantes.total > feriantes.muestra.length
+                      ? `Ver los ${formatearNumero(feriantes.total)} en el directorio`
+                      : "Ver en el directorio"}
                   </Link>
                 )}
               </div>
 
-              {participantes.size === 0 ? (
+              {feriantes.total === 0 ? (
                 <EstadoVacio
                   icono={IconoUsuarios}
                   className="mt-4"
@@ -281,7 +309,7 @@ export default async function PaginaFeria({
                 />
               ) : (
                 <div className="mt-4 grid gap-5 sm:grid-cols-2">
-                  {[...participantes.values()].map((vendedor) => (
+                  {feriantes.muestra.map((vendedor) => (
                     <TarjetaStand
                       key={vendedor.slug}
                       stand={{
@@ -308,22 +336,26 @@ export default async function PaginaFeria({
                   <IconoUbicacion className="size-4 text-municipal-500" />
                   Dónde es
                 </h2>
-                <p className="mt-2 text-sm text-slate-600">{feria.direccion}</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {feria.direccion || "Lugar a confirmar"}
+                </p>
                 <p className="text-sm text-slate-500">
                   San Miguel de Tucumán, Tucumán
                 </p>
               </div>
 
-              <BotonLink
-                href={mapa}
-                externo
-                variante="contorno"
-                ancho
-                tamanio="md"
-              >
-                Ver en Google Maps
-                <IconoEnlaceExterno className="size-4" />
-              </BotonLink>
+              {mapa && (
+                <BotonLink
+                  href={mapa}
+                  externo
+                  variante="contorno"
+                  ancho
+                  tamanio="md"
+                >
+                  Ver en Google Maps
+                  <IconoEnlaceExterno className="size-4" />
+                </BotonLink>
+              )}
 
               {proxima && (
                 <div className="border-t border-slate-100 pt-4">
