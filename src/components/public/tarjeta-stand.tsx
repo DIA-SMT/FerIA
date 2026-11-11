@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { IconoTienda } from "@/components/ui/iconos";
+import { DEGRADES_RUBRO } from "@/components/ui/degrades-por-rubro";
+import { ICONOS_RUBRO } from "@/components/ui/iconos-por-clave";
 import { ImagenPortada } from "@/components/ui/imagen";
 import { RUBROS } from "@/lib/labels";
 import type { Rubro } from "@prisma/client";
@@ -29,10 +30,13 @@ export function TarjetaStand({
       href={`/stands/${stand.slug}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[var(--shadow-tarjeta)] transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-[var(--shadow-tarjeta-hover)]"
     >
+      {/* Sin foto, el color y el ícono de su rubro: con casi mil fichas del
+          padrón sin foto, una portada igual para todas hacía la grilla ilegible. */}
       <ImagenPortada
         src={stand.imagenPortada}
         alt={stand.emprendimiento}
-        icono={IconoTienda}
+        icono={ICONOS_RUBRO[stand.rubro]}
+        degrade={DEGRADES_RUBRO[stand.rubro]}
         prioridad={prioridad}
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
         className="aspect-[16/9] w-full"

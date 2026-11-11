@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ComponentType, SVGProps } from "react";
 
 import { cn } from "@/lib/cn";
+import type { Degrade } from "@/components/ui/degrades-por-rubro";
 import { IconoImagen } from "@/components/ui/iconos";
 import { urlPublica } from "@/lib/media";
 
@@ -11,6 +12,11 @@ interface PropsImagenPortada {
   alt: string;
   /** Ícono del placeholder cuando todavía no se cargó una imagen. */
   icono?: ComponentType<SVGProps<SVGSVGElement>>;
+  /**
+   * Colores del placeholder. Sin esto va el degradé institucional; las
+   * portadas de stand pasan el de su rubro (`DEGRADES_RUBRO`).
+   */
+  degrade?: Degrade;
   /** `sizes` de next/image; ajustalo a la grilla donde se usa. */
   sizes?: string;
   prioridad?: boolean;
@@ -42,6 +48,7 @@ export function ImagenPortada({
   src,
   alt,
   icono: Icono = IconoImagen,
+  degrade,
   sizes = "(max-width: 768px) 100vw, 33vw",
   prioridad = false,
   ajuste = "cover",
@@ -54,9 +61,19 @@ export function ImagenPortada({
     return (
       <div
         className={cn(
-          "degrade-institucional relative flex items-center justify-center overflow-hidden",
+          "relative flex items-center justify-center overflow-hidden",
+          // Por `style` y no por clase: son colores que vienen de un dato, y
+          // Tailwind no genera clases armadas en tiempo de ejecución.
+          !degrade && "degrade-institucional",
           className,
         )}
+        style={
+          degrade
+            ? {
+                backgroundImage: `linear-gradient(135deg, ${degrade[0]} 0%, ${degrade[1]} 45%, ${degrade[2]} 100%)`,
+              }
+            : undefined
+        }
         role="img"
         aria-label={alt}
       >

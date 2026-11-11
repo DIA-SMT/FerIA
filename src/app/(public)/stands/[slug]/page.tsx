@@ -8,6 +8,7 @@ import { EnlaceConsulta } from "@/components/public/enlace-consulta";
 import { TarjetaProducto } from "@/components/public/tarjeta-producto";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { DEGRADES_RUBRO } from "@/components/ui/degrades-por-rubro";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import {
   IconoCalendario,
@@ -17,11 +18,11 @@ import {
   IconoFlechaIzquierda,
   IconoInstagram,
   IconoTelefono,
-  IconoTienda,
   IconoUbicacion,
   IconoWeb,
   IconoWhatsapp,
 } from "@/components/ui/iconos";
+import { ICONOS_RUBRO } from "@/components/ui/iconos-por-clave";
 import { ImagenPortada } from "@/components/ui/imagen";
 import { EDICIONES_PUBLICAS } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
@@ -181,10 +182,13 @@ export default async function PaginaStand({
   return (
     <div>
       {/* ------------------------------ Portada ----------------------------- */}
+      {/* Sin foto, la misma portada de su rubro que en el directorio: así el
+          stand se reconoce al entrar desde la tarjeta. */}
       <ImagenPortada
         src={vendedor.imagenPortada}
         alt={`Portada de ${vendedor.emprendimiento}`}
-        icono={IconoTienda}
+        icono={ICONOS_RUBRO[vendedor.rubro]}
+        degrade={DEGRADES_RUBRO[vendedor.rubro]}
         prioridad
         sizes="100vw"
         className="h-44 w-full sm:h-64"
