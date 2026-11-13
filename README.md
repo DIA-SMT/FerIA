@@ -414,8 +414,8 @@ flag.
 #### El dominio `feria.smt.gob.ar`
 
 Apunta a la VPS desde el 13/11/2026. El dominio está cableado en tres lugares
-y ninguno es el código de CiDiTuc, que trabaja contra la URL del pedido que
-recibe:
+y ninguno es el código de CiDiTuc, que redirige con rutas relativas y anda en
+cualquier dominio:
 
 | Dónde | Qué tiene |
 | ----- | --------- |

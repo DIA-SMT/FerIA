@@ -44,8 +44,8 @@ const PERFIL = "https://estadisticas.smt.gob.ar:5000/usuarios/authStatus";
  * `https://feria.smt.gob.ar/auth/cidituc/callback`, el dominio definitivo,
  * porque **no se puede cambiar después sin un deploy de ellos**.
  *
- * Nada de este archivo depende del dominio: el callback arma sus redirecciones
- * contra la URL del pedido que recibe.
+ * Nada de este archivo depende del dominio: el callback redirige con rutas
+ * relativas (`redireccionRelativa`).
  *
  * `||` y no `??`: el `.env.example` trae `CIDITUC_APP=""`, y una variable
  * vacía no es `undefined`. Con `??` la URL salía con `next=` vacío y el login
