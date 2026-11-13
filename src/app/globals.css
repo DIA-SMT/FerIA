@@ -208,6 +208,18 @@ body:has(dialog[open]) {
   overflow: hidden;
 }
 
+/* El aviso flotante del resultado de guardar: baja un poco y aparece. */
+.animar-aviso {
+  animation: aviso-entra 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes aviso-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+}
+
 /* Respeta la preferencia de movimiento reducido del sistema. */
 @media (prefers-reduced-motion: reduce) {
   *,

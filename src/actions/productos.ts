@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/db";
 import {
@@ -99,7 +100,12 @@ export async function crearProducto(
     await descartarVariantes(datos, vendedor.id);
 
     revalidarCatalogo(vendedor.slug);
-    return estadoDeExito("Producto agregado al catálogo.");
+
+    // Al catálogo, donde se ve el producto recién agregado. Quedarse en el
+    // formulario lo dejaba con el nombre y las fotos todavía cargados, y un
+    // segundo toque creaba otro producto con los mismos archivos: al borrar
+    // uno, el otro se quedaba sin fotos.
+    redirect("/mi-stand/productos?agregado=1");
   });
 }
 

@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 
 import { enviarEncuesta } from "@/actions/postulaciones";
 import { Alerta } from "@/components/ui/alerta";
+import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { BotonEnvio } from "@/components/ui/boton-envio";
 import { AreaTexto, Campo, Entrada, Seleccion } from "@/components/ui/campo";
 import {
@@ -58,9 +59,7 @@ export function FormularioEncuesta({
 
   return (
     <form action={enviar} className="space-y-6">
-      {estado.mensaje && !estado.ok && (
-        <Alerta tipo="error">{estado.mensaje}</Alerta>
-      )}
+      <AvisoDelEnvio estado={estado} soloErrores />
 
       <Alerta tipo="info">
         Estás completando la encuesta como{" "}

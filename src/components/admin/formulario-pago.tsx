@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { EstadoPago, MedioPago } from "@prisma/client";
 
-import { Alerta } from "@/components/ui/alerta";
+import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { estilosBoton } from "@/components/ui/boton";
 import { BotonEnvio } from "@/components/ui/boton-envio";
 import {
@@ -92,9 +92,7 @@ export function FormularioPago({
     <form action={enviar} className="space-y-5" noValidate>
       {pago && <input type="hidden" name="pagoId" value={pago.id} />}
 
-      {estado.mensaje && (
-        <Alerta tipo={estado.ok ? "exito" : "error"}>{estado.mensaje}</Alerta>
-      )}
+      <AvisoDelEnvio estado={estado} />
 
       <Tarjeta>
         <TarjetaEncabezado

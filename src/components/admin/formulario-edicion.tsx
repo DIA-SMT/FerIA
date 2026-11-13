@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import type { DiaSemana, EstadoEdicion } from "@prisma/client";
 
-import { Alerta } from "@/components/ui/alerta";
+import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { estilosBoton } from "@/components/ui/boton";
 import { BotonEnvio } from "@/components/ui/boton-envio";
 import { Campo, Casilla, Entrada, Seleccion } from "@/components/ui/campo";
@@ -63,9 +63,7 @@ export function FormularioEdicion({
       <input type="hidden" name="feriaId" value={feriaId} />
       {edicion && <input type="hidden" name="edicionId" value={edicion.id} />}
 
-      {estado.mensaje && (
-        <Alerta tipo={estado.ok ? "exito" : "error"}>{estado.mensaje}</Alerta>
-      )}
+      <AvisoDelEnvio estado={estado} />
 
       <Tarjeta>
         <TarjetaEncabezado

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import type { Variante } from "@/lib/fotos-producto";
-import { Alerta } from "@/components/ui/alerta";
+import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { estilosBoton } from "@/components/ui/boton";
 import { BotonEnvio } from "@/components/ui/boton-envio";
 import { AreaTexto, Campo, Casilla, Entrada } from "@/components/ui/campo";
@@ -119,9 +119,7 @@ export function FormularioProducto({
         value={descartadas.join(",")}
       />
 
-      {estado.mensaje && (
-        <Alerta tipo={estado.ok ? "exito" : "error"}>{estado.mensaje}</Alerta>
-      )}
+      <AvisoDelEnvio estado={estado} />
 
       <Tarjeta>
         <TarjetaEncabezado

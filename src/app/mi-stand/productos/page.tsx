@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 
 import { alternarDisponibilidad, eliminarProducto } from "@/actions/productos";
+import { AvisoDeLlegada } from "@/components/ui/aviso-flotante";
 import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import { Badge } from "@/components/ui/badge";
 import { BotonLink } from "@/components/ui/boton";
@@ -13,8 +14,14 @@ import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Catálogo" };
 
-export default async function PaginaProductos() {
+export default async function PaginaProductos({
+  searchParams,
+}: {
+  searchParams: Promise<{ agregado?: string }>;
+}) {
   const { vendedor } = await requerirVendedorAprobado();
+  // Llega acá después de «Agregar al catálogo» (ver `crearProducto`).
+  const { agregado } = await searchParams;
 
   const productos = await prisma.producto.findMany({
     where: { vendedorId: vendedor.id },
@@ -23,6 +30,13 @@ export default async function PaginaProductos() {
 
   return (
     <>
+      {agregado !== undefined && (
+        <AvisoDeLlegada
+          mensaje="Producto agregado al catálogo."
+          parametro="agregado"
+        />
+      )}
+
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">

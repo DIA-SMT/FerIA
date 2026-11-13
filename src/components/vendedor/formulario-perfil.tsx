@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import type { Rubro } from "@prisma/client";
 
 import { actualizarPerfilVendedor } from "@/actions/vendedores";
-import { Alerta } from "@/components/ui/alerta";
+import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { BotonEnvio } from "@/components/ui/boton-envio";
 import {
   AreaTexto,
@@ -62,7 +62,7 @@ export function FormularioPerfil({
   const errores = estado.errores;
 
   // Estos tres son controlados porque el asistente de redacción los lee en vivo:
-  // la descripción para saber si mejora o arma un borrador, y el nombre y el
+  // la descripción para saber si la mejora o hace preguntas, y el nombre y el
   // rubro para ambientar el texto —el feriante puede estar cambiándolos acá
   // mismo—. El resto del formulario sigue sin control.
   const [emprendimiento, setEmprendimiento] = useState(perfil.emprendimiento);
@@ -71,9 +71,7 @@ export function FormularioPerfil({
 
   return (
     <form action={accion} className="space-y-5" noValidate>
-      {estado.mensaje && (
-        <Alerta tipo={estado.ok ? "exito" : "error"}>{estado.mensaje}</Alerta>
-      )}
+      <AvisoDelEnvio estado={estado} />
 
       <Tarjeta>
         <TarjetaEncabezado
