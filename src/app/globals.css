@@ -100,6 +100,26 @@
   [disabled] {
     @apply cursor-not-allowed opacity-60;
   }
+
+  /*
+    Safari de iPhone agranda la página al enfocar un campo con letra de menos
+    de 16 px, y no la vuelve a su tamaño al salir. Los campos usan `text-sm`
+    (14 px), así que al abrir el chat de Migue la página quedaba agrandada y el
+    panel cortado a la derecha.
+
+    En pantallas táctiles todos los campos van a 16 px; con mouse cada uno
+    conserva su tamaño. Va acá, para todos, y no campo por campo: un campo
+    nuevo con `text-sm` volvería a traer el problema sin que nadie lo note en
+    la computadora. `!important` porque `text-sm` es una utilidad, y una
+    utilidad le gana a la capa base.
+  */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: 1rem !important;
+    }
+  }
 }
 
 @layer utilities {

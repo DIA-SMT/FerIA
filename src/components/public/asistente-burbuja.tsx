@@ -110,8 +110,14 @@ export function AsistenteBurbuja() {
     listaRef.current?.scrollTo({ top: listaRef.current.scrollHeight });
   }, [mensajes, pendiente]);
 
+  // Con mouse, el campo queda listo para escribir. En el celular no: el
+  // teclado sube apenas se abre el panel y tapa el saludo, que es lo que
+  // explica qué se le puede preguntar. Ahí la persona toca el campo cuando
+  // quiere escribir.
   useEffect(() => {
-    if (abierto) entradaRef.current?.focus();
+    if (abierto && window.matchMedia("(pointer: fine)").matches) {
+      entradaRef.current?.focus();
+    }
   }, [abierto]);
 
   // Esc cierra el panel, como en cualquier diálogo. Es no-modal a propósito:
