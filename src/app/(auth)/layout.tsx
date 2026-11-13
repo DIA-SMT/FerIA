@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { hayIAConfigurada } from "@/lib/ai";
 
 export default function LayoutAuth({ children }: { children: ReactNode }) {
   return (
@@ -20,7 +22,9 @@ export default function LayoutAuth({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="flex flex-1 items-start justify-center px-4 py-10 sm:py-16">
+      {/* Abajo deja lugar para la burbuja de Migue: sin eso, al final de la
+          página tapa el botón de enviar de la encuesta. */}
+      <main className="flex flex-1 items-start justify-center px-4 pt-10 pb-24 sm:pt-16">
         {children}
       </main>
 
@@ -29,6 +33,9 @@ export default function LayoutAuth({ children }: { children: ReactNode }) {
         <div className="flex-1 bg-celeste-400" />
         <div className="w-16 bg-acento-400" />
       </div>
+
+      {/* Quien está entrando o pidiendo el alta es quien más dudas tiene. */}
+      {hayIAConfigurada() && <AsistenteBurbuja />}
     </div>
   );
 }

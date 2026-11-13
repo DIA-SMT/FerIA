@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cerrarSesion } from "@/actions/auth";
+import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import {
   NavegacionFeriante,
   type PestaniaFeriante,
@@ -9,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { hayIAConfigurada } from "@/lib/ai";
 import { ESTADOS_VENDEDOR, TONO_ESTADO_VENDEDOR } from "@/lib/labels";
 import { hayPedidos } from "@/lib/marketplace";
 import { hayCanon } from "@/lib/modulo-canon";
@@ -93,9 +95,13 @@ export default async function LayoutMiStand({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* El `pb-24` deja lugar para la burbuja de Migue al final de la página,
+          donde suelen estar los botones de guardar. */}
+      <main className="mx-auto max-w-6xl px-4 pt-6 pb-24 sm:px-6 lg:px-8">
         {children}
       </main>
+
+      {hayIAConfigurada() && <AsistenteBurbuja area="feriante" />}
     </div>
   );
 }

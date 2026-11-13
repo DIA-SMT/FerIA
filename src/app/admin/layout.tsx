@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cerrarSesion } from "@/actions/auth";
+import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import {
   BarraLateralAdmin,
   MenuAdminMovil,
@@ -9,6 +10,7 @@ import {
 } from "@/components/admin/navegacion-admin";
 import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { hayIAConfigurada } from "@/lib/ai";
 import { prisma } from "@/lib/db";
 import { SOLICITUD_PENDIENTE } from "@/lib/feriantes";
 import { hayCanon } from "@/lib/modulo-canon";
@@ -107,10 +109,14 @@ export default async function LayoutAdmin({
           <BarraLateralAdmin entradas={entradas} />
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        {/* El `pb-24` deja lugar para la burbuja de Migue al final de la
+            página, donde suelen estar los botones de guardar. */}
+        <main className="min-w-0 flex-1 px-4 pt-6 pb-24 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>
+
+      {hayIAConfigurada() && <AsistenteBurbuja area="administracion" />}
     </div>
   );
 }

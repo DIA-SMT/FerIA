@@ -14,7 +14,7 @@ import {
 import { preguntarAlAsistente } from "@/actions/asistente";
 import { IconoCerrar, IconoEnviar } from "@/components/ui/iconos";
 import { useAsistente } from "@/components/public/estado-asistente";
-import type { TurnoAsistente } from "@/lib/ia-asistente";
+import type { AreaAsistente, TurnoAsistente } from "@/lib/ia-asistente";
 
 /**
  * La cara de Migue, para la burbuja y el encabezado del chat.
@@ -32,7 +32,8 @@ import type { TurnoAsistente } from "@/lib/ia-asistente";
 const MIGUE_CARA = "/migue-cara.webp";
 
 /**
- * La burbuja del asistente, presente en todas las páginas públicas.
+ * La burbuja del asistente, presente en todas las pantallas: el sitio público,
+ * el ingreso y el alta, el panel del feriante y el de administración.
  *
  * La conversación vive en el estado del componente y muere al recargar: no hay
  * sesión ni identificador del visitante. Lo único que persiste es la pregunta,
@@ -45,10 +46,23 @@ const MIGUE_CARA = "/migue-cara.webp";
  * emitir HTML—, acá nada se interpreta: sólo se enlazan rutas internas.
  */
 
-const SALUDO: TurnoAsistente = {
-  rol: "asistente",
-  texto:
-    "¡Hola! Puedo ayudarte a encontrar productos y feriantes, contarte cuándo es cada feria o explicarte cómo participar. ¿Qué estás buscando?",
+/** El saludo dice qué se le puede preguntar, y eso cambia según la pantalla. */
+const SALUDOS: Record<AreaAsistente, TurnoAsistente> = {
+  publico: {
+    rol: "asistente",
+    texto:
+      "¡Hola! Puedo ayudarte a encontrar productos y feriantes, contarte cuándo es cada feria o explicarte cómo participar. ¿Qué estás buscando?",
+  },
+  feriante: {
+    rol: "asistente",
+    texto:
+      "¡Hola! Te ayudo con tu panel: cómo armar tu vidriera, cargar productos o sumarte a una feria. También te cuento cuándo y dónde son las ferias. ¿Qué necesitás?",
+  },
+  administracion: {
+    rol: "asistente",
+    texto:
+      "¡Hola! Te ayudo con el panel: ferias y ediciones, postulaciones y feriantes. También puedo buscarte feriantes o productos. ¿Qué necesitás?",
+  },
 };
 
 /** Convierte [texto](/ruta) en enlaces internos; el resto queda plano. */
@@ -78,7 +92,16 @@ function TextoConEnlaces({ texto }: { texto: string }) {
   return <>{partes}</>;
 }
 
-export function AsistenteBurbuja() {
+export function AsistenteBurbuja({
+  area = "publico",
+}: {
+  /**
+   * Desde qué parte del sitio se pregunta. Cambia el saludo y suma al prompt
+   * la guía de uso de ese panel; los datos del sitio son los mismos.
+   */
+  area?: AreaAsistente;
+}) {
+  const saludo = SALUDOS[area];
   // El estado de apertura vive en el contexto y no acá porque el buscador de
   // la portada también la abre. `useAsistente` puede devolver `null` sólo si
   // alguien monta la burbuja fuera del proveedor; el layout público siempre la
@@ -98,7 +121,7 @@ export function AsistenteBurbuja() {
     [asistente],
   );
 
-  const [mensajes, setMensajes] = useState<TurnoAsistente[]>([SALUDO]);
+  const [mensajes, setMensajes] = useState<TurnoAsistente[]>([saludo]);
   const [borrador, setBorrador] = useState("");
   const [pendiente, iniciarTransicion] = useTransition();
 
@@ -144,7 +167,7 @@ export function AsistenteBurbuja() {
     y ahí no se puede llamar a `startTransition`. La consola tiraba «Cannot call
     startTransition while rendering» y la pregunta no se mandaba nunca.
   */
-  const mensajesRef = useRef<TurnoAsistente[]>([SALUDO]);
+  const mensajesRef = useRef<TurnoAsistente[]>([saludo]);
   useEffect(() => {
     mensajesRef.current = mensajes;
   }, [mensajes]);
@@ -156,13 +179,13 @@ export function AsistenteBurbuja() {
     setMensajes((previos) => [...previos, { rol: "usuario", texto: pregunta }]);
 
     iniciarTransicion(async () => {
-      const respuesta = await preguntarAlAsistente(historial, pregunta);
+      const respuesta = await preguntarAlAsistente(historial, pregunta, area);
       setMensajes((actuales) => [
         ...actuales,
         { rol: "asistente", texto: respuesta.texto },
       ]);
     });
-  }, []);
+  }, [area]);
 
   function enviar() {
     const pregunta = borrador.trim();

@@ -4,6 +4,7 @@ import { edicionesVigentes, etapaDeEdicion } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import { CATEGORIAS_FERIA, RUBROS } from "@/lib/labels";
+import { hayPedidos } from "@/lib/marketplace";
 import { hayCanon } from "@/lib/modulo-canon";
 
 /**
@@ -41,6 +42,58 @@ export const MODELO_ASISTENTE_POR_DEFECTO =
 export interface TurnoAsistente {
   rol: "usuario" | "asistente";
   texto: string;
+}
+
+/**
+ * Desde qué parte del sitio se pregunta.
+ *
+ * Migue está en todas las pantallas, y la misma pregunta pide otra respuesta
+ * según dónde se haga: «¿cómo agrego algo?» en el panel del feriante es un
+ * producto, y en la administración es una feria. El área sólo suma una guía de
+ * uso de esa pantalla al prompt: no da acceso a ningún dato que el sitio
+ * público no muestre, así que no importa que la diga el cliente.
+ */
+export type AreaAsistente = "publico" | "feriante" | "administracion";
+
+export const AREAS_ASISTENTE: readonly AreaAsistente[] = [
+  "publico",
+  "feriante",
+  "administracion",
+];
+
+/** A quién le habla y, en los paneles, cómo se usa esa pantalla. */
+function guiaDelArea(area: AreaAsistente): string {
+  if (area === "feriante") {
+    const pestanias = [
+      "«Mi vidriera» (/mi-stand/perfil): el nombre del emprendimiento, el rubro, la descripción (con un botón para redactarla con ayuda de IA), la portada, el logo, el WhatsApp y las redes",
+      "«Catálogo» (/mi-stand/productos): agregar, editar o pausar productos, con su nombre, descripción y fotos",
+      ...(hayPedidos() ? ["«Pedidos» (/mi-stand/pedidos): los pedidos que le hicieron los vecinos"] : []),
+      ...(hayCanon() ? ["«Canon» (/mi-stand/canon): lo que tiene registrado por participar de cada edición"] : []),
+    ];
+
+    return `QUIÉN PREGUNTA: un feriante, desde su panel (/mi-stand). Además de lo de siempre, lo ayudás a usar el panel.
+
+CÓMO SE USA EL PANEL DEL FERIANTE (lo único que existe; no inventes pantallas, botones ni pasos; las rutas entre paréntesis se pueden enlazar):
+- Arriba hay pestañas. «Resumen» (/mi-stand) muestra el estado de su solicitud (pendiente, aprobada o rechazada), sus próximas ferias y desde ahí pide sumarse a una feria presencial.
+- Con la solicitud aprobada aparecen además:
+${pestanias.map((pestania) => `  · ${pestania}`).join("\n")}
+- «Ver mi stand», arriba, abre la página pública del stand.
+- Para lo que el panel no resuelve, la vía es la Dirección de Ferias y Mercados.`;
+  }
+
+  if (area === "administracion") {
+    return `QUIÉN PREGUNTA: personal de la Dirección de Ferias y Mercados, desde el panel de administración (/admin). Además de lo de siempre, lo ayudás a usar el panel.
+
+CÓMO SE USA EL PANEL DE ADMINISTRACIÓN (lo único que existe; no inventes pantallas, botones ni pasos; las rutas entre paréntesis se pueden enlazar):
+- «Estadísticas» (/admin): el resumen de ferias, ediciones, feriantes por rubro y ocupación de stands.
+- «Ferias y ediciones» (/admin/ferias): crear y editar ferias (nombre, descripción, portada, ubicación y si está activa) y sus ediciones, con fechas y horarios.
+- «Postulaciones» (/admin/postulaciones): las altas de feriantes nuevos y los pedidos para sumarse a una feria, para aprobarlos o rechazarlos.
+- «Feriantes» (/admin/feriantes): el listado completo, con filtros, incluido el padrón importado de Feria Digital.${
+      hayCanon() ? "\n- «Canon y permisos» (/admin/canon): los pagos de canon de cada feriante." : ""
+    }`;
+  }
+
+  return "QUIÉN PREGUNTA: un vecino o alguien que quiere ser feriante, desde el sitio público.";
 }
 
 export class ErrorDeAsistente extends Error {}
@@ -246,11 +299,12 @@ export function construirMensajes(
   contexto: string,
   historial: TurnoAsistente[],
   pregunta: string,
+  area: AreaAsistente = "publico",
 ): Array<{ role: "system" | "user" | "assistant"; content: string }> {
   return [
     {
       role: "system",
-      content: `${REGLAS}\n\nSos el asistente del sitio de Ferias Municipales de San Miguel de Tucumán. Ayudás a los vecinos a encontrar productos y feriantes, a saber cuándo y dónde son las ferias, y a quien quiere ser feriante le explicás cómo participar.\n\n${ESTILO}\n\nDATOS:\n${contexto}`,
+      content: `${REGLAS}\n\nSos el asistente del sitio de Ferias Municipales de San Miguel de Tucumán. Ayudás a los vecinos a encontrar productos y feriantes, a saber cuándo y dónde son las ferias, y a quien quiere ser feriante le explicás cómo participar.\n\n${guiaDelArea(area)}\n\n${ESTILO}\n\nDATOS:\n${contexto}`,
     },
     ...historial.map((turno) => ({
       role: turno.rol === "usuario" ? ("user" as const) : ("assistant" as const),
@@ -266,7 +320,7 @@ export function construirMensajes(
 export async function responderConsulta(
   historial: TurnoAsistente[],
   pregunta: string,
-  opciones?: { modelo?: string },
+  opciones?: { modelo?: string; area?: AreaAsistente },
 ): Promise<string> {
   const cliente = obtenerClienteIA();
   const contexto = await contextoDelSitio();
@@ -279,7 +333,7 @@ export async function responderConsulta(
       max_tokens: 400,
       // Baja: acá se quiere fidelidad a los datos, no creatividad.
       temperature: 0.3,
-      messages: construirMensajes(contexto, historial, pregunta),
+      messages: construirMensajes(contexto, historial, pregunta, opciones?.area),
     });
   } catch (error) {
     throw new ErrorDeAsistente(

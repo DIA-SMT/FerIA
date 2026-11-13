@@ -5,8 +5,10 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { esControlDeFlujoDeNext } from "@/lib/errores";
 import {
+  AREAS_ASISTENTE,
   ErrorDeAsistente,
   responderConsulta,
+  type AreaAsistente,
   type TurnoAsistente,
 } from "@/lib/ia-asistente";
 
@@ -90,8 +92,14 @@ function sanearHistorial(historial: unknown): TurnoAsistente[] {
 export async function preguntarAlAsistente(
   historial: TurnoAsistente[],
   pregunta: string,
+  area?: AreaAsistente,
 ): Promise<RespuestaAsistente> {
   try {
+    // Viene del cliente: lo que no sea un área conocida se trata como público.
+    const areaValida: AreaAsistente = AREAS_ASISTENTE.includes(area as AreaAsistente)
+      ? (area as AreaAsistente)
+      : "publico";
+
     const texto = String(pregunta ?? "").trim();
 
     if (texto.length < 2) {
@@ -104,9 +112,15 @@ export async function preguntarAlAsistente(
       };
     }
 
+    // `X-Real-IP` primero: nginx la pisa con la IP real de la conexión. El
+    // primer valor de `X-Forwarded-For`, en cambio, lo escribe el cliente
+    // (nginx agrega la suya al final), así que mandando uno distinto en cada
+    // pedido se esquivaba el límite.
     const cabeceras = await headers();
     const ip =
-      cabeceras.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "sin-ip";
+      cabeceras.get("x-real-ip")?.trim() ||
+      cabeceras.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "sin-ip";
 
     if (superaElLimite(ip)) {
       return {
@@ -137,7 +151,9 @@ export async function preguntarAlAsistente(
       console.error("[asistente] no se pudo registrar la consulta", error);
     }
 
-    const respuesta = await responderConsulta(sanearHistorial(historial), texto);
+    const respuesta = await responderConsulta(sanearHistorial(historial), texto, {
+      area: areaValida,
+    });
     return { ok: true, texto: respuesta };
   } catch (error) {
     if (esControlDeFlujoDeNext(error)) throw error;
