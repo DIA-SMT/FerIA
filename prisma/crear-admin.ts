@@ -1,7 +1,7 @@
 /**
  * Alta de una cuenta de administración del panel.
  *
- *   npm run db:admin -- direccionia@smt.gob.ar --nombre "Dirección de Innovación"
+ *   npm run db:admin -- direccionia@smt.gob.ar --nombre "Dirección de Inteligencia Artificial"
  *
  * Existe porque hasta ahora la única cuenta ADMIN la creaba el seed, y el seed
  * **borra toda la base** antes de correr: pedir una cuenta nueva no puede
