@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import type { Rubro } from "@prisma/client";
+import { useActionState, useState } from "react";
 
+import { redactarDescripcionDelAlta } from "@/actions/descripcion-ia";
 import { enviarEncuesta } from "@/actions/postulaciones";
 import { Alerta } from "@/components/ui/alerta";
 import { BotonEnvio } from "@/components/ui/boton-envio";
@@ -11,6 +13,7 @@ import {
   TarjetaCuerpo,
   TarjetaEncabezado,
 } from "@/components/ui/tarjeta";
+import { AsistenteDeDescripcion } from "@/components/vendedor/asistente-de-descripcion";
 import { ESTADO_INICIAL } from "@/lib/form";
 import { aOpciones, RUBROS } from "@/lib/labels";
 
@@ -37,13 +40,22 @@ export interface FeriaParaElegir {
 export function FormularioEncuesta({
   ferias,
   persona,
+  hayIA,
 }: {
   ferias: FeriaParaElegir[];
   /** Lo que ya trajo CiDiTuc. `documento` es null si entró con contraseña. */
   persona: { nombre: string; email: string; documento: string | null };
+  /** Sin IA configurada no se ofrece la redacción asistida. */
+  hayIA: boolean;
 }) {
   const [estado, enviar] = useActionState(enviarEncuesta, ESTADO_INICIAL);
   const errores = estado.errores;
+
+  // Controlados porque el asistente de la descripción los lee para ambientar
+  // el texto, y porque así un error de validación no borra lo escrito.
+  const [emprendimiento, setEmprendimiento] = useState("");
+  const [rubro, setRubro] = useState<Rubro | "">("");
+  const [descripcion, setDescripcion] = useState("");
 
   return (
     <form action={enviar} className="space-y-6">
@@ -76,6 +88,8 @@ export function FormularioEncuesta({
             <Entrada
               name="emprendimiento"
               placeholder="Ej. Tejidos del Norte"
+              value={emprendimiento}
+              onChange={(evento) => setEmprendimiento(evento.target.value)}
               errores={errores?.emprendimiento}
               required
             />
@@ -89,6 +103,8 @@ export function FormularioEncuesta({
           >
             <Seleccion
               name="rubro"
+              value={rubro}
+              onChange={(evento) => setRubro(evento.target.value as Rubro | "")}
               errores={errores?.rubro}
               placeholder="Elegí un rubro"
               opciones={aOpciones(RUBROS).map((opcion) => ({
@@ -106,11 +122,23 @@ export function FormularioEncuesta({
           >
             <AreaTexto
               name="descripcion"
-              rows={3}
+              rows={5}
               maxLength={1500}
+              value={descripcion}
+              onChange={(evento) => setDescripcion(evento.target.value)}
               errores={errores?.descripcion}
             />
           </Campo>
+
+          {hayIA && (
+            <AsistenteDeDescripcion
+              valor={descripcion}
+              nombreEmprendimiento={emprendimiento}
+              rubro={rubro}
+              onAplicar={setDescripcion}
+              accion={redactarDescripcionDelAlta}
+            />
+          )}
         </TarjetaCuerpo>
       </Tarjeta>
 

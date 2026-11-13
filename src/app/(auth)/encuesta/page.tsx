@@ -4,6 +4,7 @@ import {
   FormularioEncuesta,
   type FeriaParaElegir,
 } from "@/components/vendedor/formulario-encuesta";
+import { hayIAConfigurada } from "@/lib/ai";
 import { prisma } from "@/lib/db";
 import { documentoVerificado, obtenerSesion } from "@/lib/session";
 
@@ -73,6 +74,7 @@ export default async function PaginaEncuesta() {
           email: sesion.email,
           documento: typeof documento === "string" ? documento : null,
         }}
+        hayIA={hayIAConfigurada()}
       />
     </div>
   );

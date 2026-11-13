@@ -29,16 +29,23 @@ export function AsistenteDeDescripcion({
   nombreEmprendimiento,
   rubro,
   onAplicar,
+  accion = redactarDescripcion,
 }: {
   /** Lo que hay hoy en el campo. */
   valor: string;
   /** Se mandan al prompt para ambientar el texto. */
   nombreEmprendimiento: string;
-  rubro: Rubro;
+  /** Vacío mientras no se eligió: en la encuesta del alta arranca así. */
+  rubro: Rubro | "";
   onAplicar: (texto: string) => void;
+  /**
+   * La del perfil exige un feriante aprobado; la encuesta del alta pasa
+   * `redactarDescripcionDelAlta`, que sólo pide sesión.
+   */
+  accion?: typeof redactarDescripcion;
 }) {
   const [estado, redactar, redactando] = useActionState(
-    redactarDescripcion,
+    accion,
     ESTADO_REDACCION_INICIAL,
   );
 
@@ -53,6 +60,9 @@ export function AsistenteDeDescripcion({
   const sugerencia = abierto && !redactando ? estado.sugerencia : undefined;
   const hayTexto = valor.trim().length > 0;
   const vaAMejorar = valor.trim().length >= MINIMO_PARA_MEJORAR;
+  // Sin nombre ni rubro la IA no sabe de qué escribir. En el perfil siempre
+  // están; en la encuesta del alta, no hasta que la persona los completa.
+  const faltaContexto = !nombreEmprendimiento.trim() || !rubro;
 
   function pedir() {
     setAbierto(true);
@@ -86,7 +96,7 @@ export function AsistenteDeDescripcion({
           variante="contorno"
           tamanio="sm"
           onClick={pedir}
-          disabled={redactando}
+          disabled={redactando || faltaContexto}
         >
           {redactando
             ? "Escribiendo…"
@@ -95,7 +105,11 @@ export function AsistenteDeDescripcion({
               : "Ayudame a escribirla"}
         </Boton>
 
-        {!vaAMejorar && (
+        {faltaContexto ? (
+          <span className="text-xs text-slate-500">
+            Completá el nombre y el rubro, así la IA sabe de qué escribir.
+          </span>
+        ) : !vaAMejorar && (
           <span className="text-xs text-slate-500">
             {hayTexto
               ? "Te armamos la estructura sin perder lo que ya pusiste."
