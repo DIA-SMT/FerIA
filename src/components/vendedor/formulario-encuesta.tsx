@@ -3,7 +3,6 @@
 import type { Rubro } from "@prisma/client";
 import { useActionState, useState } from "react";
 
-import { redactarDescripcionDelAlta } from "@/actions/descripcion-ia";
 import { enviarEncuesta } from "@/actions/postulaciones";
 import { Alerta } from "@/components/ui/alerta";
 import { BotonEnvio } from "@/components/ui/boton-envio";
@@ -136,7 +135,7 @@ export function FormularioEncuesta({
               nombreEmprendimiento={emprendimiento}
               rubro={rubro}
               onAplicar={setDescripcion}
-              accion={redactarDescripcionDelAlta}
+              puerta="alta"
             />
           )}
         </TarjetaCuerpo>

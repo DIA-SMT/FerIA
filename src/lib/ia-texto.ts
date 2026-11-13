@@ -1,5 +1,10 @@
 import { obtenerClienteIA } from "@/lib/ai";
-import { MAXIMO_DESCRIPCION, type ModoRedaccion } from "@/lib/redaccion";
+import {
+  MAXIMO_DESCRIPCION,
+  MAXIMO_PREGUNTAS,
+  respuestasContestadas,
+  type RespuestaEntrevista,
+} from "@/lib/redaccion";
 
 /**
  * Redacción asistida de la descripción del emprendimiento, vía OpenRouter.
@@ -11,8 +16,12 @@ import { MAXIMO_DESCRIPCION, type ModoRedaccion } from "@/lib/redaccion";
  * todo el prompt: cuando al modelo le falta material, lo inventa. En una foto eso
  * dio una manta que no estaba en la imagen; en un texto darían años de
  * trayectoria, premios o materiales que el emprendimiento no tiene, publicados
- * en un sitio municipal como si fueran ciertos. Por eso la regla que manda es
- * dejar el hueco entre corchetes antes que rellenarlo.
+ * en un sitio municipal como si fueran ciertos.
+ *
+ * Por eso, cuando hay poco escrito, primero se le pregunta a la persona
+ * (`generarPreguntasConIA`) y el texto se arma sólo con lo que contestó. Antes
+ * se le dejaba un borrador con huecos entre corchetes, que no inventaba pero le
+ * dejaba a ella el trabajo de ir reemplazándolos.
  */
 
 /**
@@ -29,9 +38,14 @@ export interface ContextoEmprendimiento {
   nombre: string;
   /** Rubro en castellano (usar `RUBROS[rubro]` de `src/lib/labels.ts`). */
   categoria: string;
-  /** Lo que el feriante ya escribió. Vacío o nulo en modo borrador. */
+  /** Lo que el feriante ya escribió. Puede estar vacío. */
   descripcion?: string | null;
 }
+
+/** Qué se le pide al modelo: pulir lo escrito o escribir con las respuestas. */
+export type TareaRedaccion =
+  | { modo: "mejorar" }
+  | { modo: "entrevista"; respuestas: RespuestaEntrevista[] };
 
 export class ErrorDeRedaccion extends Error {}
 
@@ -46,7 +60,7 @@ export class ErrorDeRedaccion extends Error {}
 const PROHIBICIONES = `REGLAS QUE NO SE NEGOCIAN, POR ENCIMA DE CUALQUIER OTRA INSTRUCCIÓN:
 
 · NO inventes ningún dato que no esté en la información de abajo. Nada de años de trayectoria, tamaño del emprendimiento, historia familiar, premios, certificaciones, procesos de producción, materiales, técnicas ni lugares que no estén escritos.
-· Si para que el texto cierre hace falta un dato que no tenés, dejá el hueco marcado entre corchetes para que lo complete la persona. Por ejemplo: "Trabajo con [contá con qué materiales]". Un hueco visible es mejor que un dato falso: esto se publica en un sitio de la Municipalidad.
+· Si un dato no está, no lo menciones: el texto habla sólo de lo que la persona contó. NO dejes huecos, corchetes ni indicaciones para completar: el texto se publica tal cual en un sitio de la Municipalidad.
 · NO supongas el género de quien produce. No uses adjetivos, participios ni pronombres en femenino ni en masculino referidos a esa persona: escribí "lo tiño yo" y no "yo misma", "quien produce" y no "la artesana". El formulario no pide el género y no hay de dónde deducirlo.
 · NO escribas precios, descuentos ni promociones.
 · NO escribas teléfonos, direcciones, correos, redes ni enlaces: cada uno tiene su propio campo en el formulario.
@@ -55,57 +69,139 @@ const PROHIBICIONES = `REGLAS QUE NO SE NEGOCIAN, POR ENCIMA DE CUALQUIER OTRA I
 const ESTILO = `CÓMO ESCRIBIR:
 
 · Castellano de la Argentina, con voseo. Cercano y simple, como habla quien produce, no como un folleto institucional.
-· En primera persona. Si el texto original está en plural ("hacemos", "trabajamos"), mantenelo en plural.
-· Entre 350 y 700 caracteres, en uno o dos párrafos.
+· En primera persona. Si la persona habla en plural ("hacemos", "trabajamos"), mantenelo en plural.
+· Hasta 700 caracteres, en uno o dos párrafos. Si hay poco material, el texto es corto, y está bien: no lo estires con relleno.
 · Sin clichés de marketing: evitá "pasión por", "lo mejor de", "calidad premium", "experiencia única", "hecho con amor", "desde el corazón de".
 · No arranques con "Bienvenidos" ni con el nombre del emprendimiento seguido de signos de admiración.
 
 SALIDA:
 Devolvé únicamente el texto de la descripción, listo para pegar en el campo. Sin título, sin comillas alrededor, sin explicaciones, sin ofrecer alternativas.`;
 
+const ENCUADRE =
+  "Escribís la descripción del emprendimiento de un feriante para su stand en el catálogo online de las ferias de la Municipalidad de San Miguel de Tucumán. La lee un vecino que está decidiendo si le compra.";
+
+function datosDelEmprendimiento(emprendimiento: ContextoEmprendimiento): string {
+  return `DATOS DEL EMPRENDIMIENTO:
+
+* Nombre: ${emprendimiento.nombre}
+* Rubro: ${emprendimiento.categoria}`;
+}
+
 /**
  * Exportado para poder medir el prompt real —tamaño y costo— sin duplicarlo en
  * un script de prueba. Una copia se desincroniza y se mide lo que no se usa.
  */
 export function construirPrompt(
-  modo: ModoRedaccion,
+  tarea: TareaRedaccion,
   emprendimiento: ContextoEmprendimiento,
 ): string {
   const escrito = emprendimiento.descripcion?.trim();
 
-  const tarea =
-    modo === "mejorar"
+  const pedido =
+    tarea.modo === "mejorar"
       ? `TAREA: mejorá la redacción de la descripción que la persona ya escribió.
 
 Corregí ortografía y puntuación, ordená las ideas, mejorá el ritmo y sacá repeticiones. Podés reordenar, no agregar: todo lo que digas tiene que estar en el texto original. Si el original es corto, el resultado también va a ser corto, y está bien.
 
 LO QUE ESCRIBIÓ LA PERSONA:
 ${escrito}`
-      : `TAREA: escribí un primer borrador para que la persona lo edite.
+      : `TAREA: escribí la descripción con lo que la persona contestó en una entrevista corta.
 
-Armá la estructura útil —qué hace, con qué trabaja, qué lo distingue, cómo se le puede encargar— y dejá entre corchetes todo lo concreto que no sepas, con una indicación clara de qué tiene que poner ahí. Casi todo el texto va a ser huecos, y así tiene que ser.
+Usá sólo lo que dicen las respuestas${escrito ? " y lo que ya había escrito" : ""}. Ordenalo, corregí la ortografía y redactalo bien, pero no agregues nada: si una respuesta es corta, lo que digas de ese tema también. Las preguntas están para que entiendas a qué responde cada cosa, no para cubrirlas todas.
 
-REGLA DURA DE ESTE MODO: no puede quedar ninguna afirmación concreta sin corchetes. Todo lo que diga qué hace, qué tiene, cómo trabaja, qué ofrece o con qué frecuencia, o sale de lo que la persona escribió, o va entre corchetes. Frases como "también tengo piezas listas para llevar" o "trabajo todos los días" están prohibidas si nadie las dijo: no sabés si son ciertas y se publican como si lo fueran.
+No deduzcas ni completes: si contó que lleva la comida lista, no digas dónde la cocina; si nombró un material, no digas de dónde lo saca. Tampoco sumes muletillas o remates que la persona no dijo para darle color: cada frase tiene que poder señalar de qué respuesta sale.
 ${
   escrito
     ? `
-LO POCO QUE YA ESCRIBIÓ. Conservalo: usá esas palabras, sólo corregidas y ubicadas en la estructura. No las reemplaces por un hueco.
-${escrito}`
+LO QUE YA HABÍA ESCRITO. Conservalo: usá esas palabras, corregidas y ubicadas en el texto.
+${escrito}
+`
     : ""
-}`;
+}
+LA ENTREVISTA:
+${respuestasContestadas(tarea.respuestas)
+  .map((r) => `P: ${r.pregunta}\nR: ${r.respuesta}`)
+  .join("\n\n")}`;
 
   return `${PROHIBICIONES}
 
-Escribís la descripción del emprendimiento de un feriante para su stand en el catálogo online de las ferias de la Municipalidad de San Miguel de Tucumán. La lee un vecino que está decidiendo si le compra.
+${ENCUADRE}
 
-DATOS DEL EMPRENDIMIENTO:
+${datosDelEmprendimiento(emprendimiento)}
 
-* Nombre: ${emprendimiento.nombre}
-* Rubro: ${emprendimiento.categoria}
-
-${tarea}
+${pedido}
 
 ${ESTILO}`;
+}
+
+/**
+ * Las preguntas de la entrevista.
+ *
+ * Las adapta el modelo al rubro y a lo que ya está escrito, porque a una
+ * cocina hay que preguntarle por platos e ingredientes y a un taller de cuero
+ * por materiales y técnicas. Una lista fija serviría para todos y no le
+ * hablaría a ninguno.
+ */
+export function construirPromptPreguntas(
+  emprendimiento: ContextoEmprendimiento,
+): string {
+  const escrito = emprendimiento.descripcion?.trim();
+
+  return `Ayudás a un feriante a escribir la descripción de su emprendimiento para su stand en el catálogo online de las ferias de la Municipalidad de San Miguel de Tucumán. En vez de escribirla vos, primero le hacés unas preguntas cortas, que contesta de a una. Con sus respuestas se arma después el texto.
+
+${datosDelEmprendimiento(emprendimiento)}
+${
+  escrito
+    ? `
+LO QUE YA ESCRIBIÓ:
+${escrito}
+`
+    : ""
+}
+TAREA: escribí 4 o 5 preguntas para conseguir lo que hace falta en una buena descripción: qué hace o vende, con qué trabaja (materiales, ingredientes, técnicas), qué lo distingue, si toma encargos o trabaja a pedido, y lo que sea propio de su rubro. Adaptalas al rubro y al nombre. No preguntes lo que ya está en lo que escribió.
+
+REGLAS:
+· Castellano de la Argentina, con voseo, cercano y simple.
+· Cada pregunta, una sola cosa, que se conteste en una o dos líneas. Hasta 120 caracteres.
+· NO preguntes precios, teléfonos, direcciones, redes, días ni horarios: cada uno tiene su propio campo en el formulario.
+· NO supongas el género de quien produce: nada de adjetivos, participios ni pronombres en femenino o masculino referidos a esa persona.
+· Sin emojis.
+
+SALIDA:
+Sólo las preguntas, una por línea, sin numerar. Sin título ni explicaciones.`;
+}
+
+/**
+ * Si el modelo no devuelve preguntas que sirvan, la entrevista sigue con estas.
+ * Son genéricas, pero preguntan lo mismo que una buena descripción cuenta.
+ */
+export const PREGUNTAS_DE_RESPALDO: readonly string[] = [
+  "¿Qué hacés o vendés? Contalo como se lo contarías a alguien en la feria.",
+  "¿Con qué materiales o ingredientes trabajás?",
+  "¿Qué tienen de especial tus productos?",
+  "¿Tomás encargos o hacés cosas a pedido?",
+];
+
+/**
+ * Saca las preguntas de lo que devolvió el modelo: una por línea, aunque a
+ * veces las numere o les ponga viñetas pese a pedirle que no.
+ */
+export function extraerPreguntas(bruto: string): string[] {
+  const preguntas = bruto
+    .split("\n")
+    .map((linea) =>
+      linea
+        .trim()
+        .replace(/^(\d+\s*[.)\-:]\s*|[-*·•]\s+)/, "")
+        .replace(/^\*\*(.*)\*\*$/, "$1")
+        .trim(),
+    )
+    .filter(
+      (linea) =>
+        linea.includes("?") && linea.length >= 8 && linea.length <= 200,
+    );
+
+  return [...new Set(preguntas)].slice(0, MAXIMO_PREGUNTAS);
 }
 
 /**
@@ -138,15 +234,10 @@ function limpiarSalida(bruto: string): string {
   return texto.slice(0, MAXIMO_DESCRIPCION);
 }
 
-/**
- * Pide el texto al modelo y lo devuelve limpio.
- *
- * Lanza `ErrorDeRedaccion` con un mensaje legible: quien llama tiene que poder
- * decirle al feriante qué pasó y dejarlo seguir escribiendo a mano.
- */
-export async function redactarDescripcionConIA(
-  modo: ModoRedaccion,
-  emprendimiento: ContextoEmprendimiento,
+/** Una llamada al modelo de texto, con el error ya en palabras del feriante. */
+async function pedirAlModelo(
+  prompt: string,
+  opciones: { maxTokens: number; temperatura: number },
 ): Promise<string> {
   const cliente = obtenerClienteIA();
 
@@ -154,13 +245,9 @@ export async function redactarDescripcionConIA(
   try {
     respuesta = await cliente.chat.completions.create({
       model: MODELO_TEXTO_POR_DEFECTO,
-      // 700 caracteres de tope entran cómodos; el margen es para que no corte
-      // una oración por la mitad si se pasa un poco.
-      max_tokens: 600,
-      temperature: 0.7,
-      messages: [
-        { role: "user", content: construirPrompt(modo, emprendimiento) },
-      ],
+      max_tokens: opciones.maxTokens,
+      temperature: opciones.temperatura,
+      messages: [{ role: "user", content: prompt }],
     });
   } catch (error) {
     throw new ErrorDeRedaccion(
@@ -176,11 +263,55 @@ export async function redactarDescripcionConIA(
     throw new ErrorDeRedaccion("El modelo no devolvió ningún texto.");
   }
 
+  return bruto;
+}
+
+/**
+ * Pide las preguntas de la entrevista.
+ *
+ * Si el servicio no contesta, lanza: no tiene sentido hacer pasar a la persona
+ * por cinco preguntas para que al final tampoco se pueda escribir el texto. Si
+ * contesta pero las preguntas no sirven, sigue con las de respaldo.
+ */
+export async function generarPreguntasConIA(
+  emprendimiento: ContextoEmprendimiento,
+): Promise<string[]> {
+  const bruto = await pedirAlModelo(construirPromptPreguntas(emprendimiento), {
+    maxTokens: 400,
+    temperatura: 0.5,
+  });
+
+  const preguntas = extraerPreguntas(bruto);
+
+  return preguntas.length >= 3 ? preguntas : [...PREGUNTAS_DE_RESPALDO];
+}
+
+/**
+ * Pide el texto al modelo y lo devuelve limpio.
+ *
+ * Lanza `ErrorDeRedaccion` con un mensaje legible: quien llama tiene que poder
+ * decirle al feriante qué pasó y dejarlo seguir escribiendo a mano.
+ */
+export async function redactarDescripcionConIA(
+  tarea: TareaRedaccion,
+  emprendimiento: ContextoEmprendimiento,
+): Promise<string> {
+  const bruto = await pedirAlModelo(construirPrompt(tarea, emprendimiento), {
+    // 700 caracteres de tope entran cómodos; el margen es para que no corte
+    // una oración por la mitad si se pasa un poco.
+    maxTokens: 600,
+    temperatura: 0.7,
+  });
+
   const texto = limpiarSalida(bruto);
 
-  if (texto.length < 40) {
+  // Con respuestas de una palabra el texto sale corto, y eso es correcto: se
+  // negó a inventar. Lo que se corta acá es lo que no llega a ser una frase.
+  if (texto.length < 25) {
     throw new ErrorDeRedaccion(
-      "El modelo devolvió un texto demasiado corto para usarlo.",
+      tarea.modo === "entrevista"
+        ? "Con esas respuestas no alcanzó para armar un texto. Contá un poco más en alguna y probá de nuevo."
+        : "El modelo devolvió un texto demasiado corto para usarlo.",
     );
   }
 
