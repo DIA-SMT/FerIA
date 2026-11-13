@@ -11,7 +11,7 @@ describe("urlDeIngreso", () => {
   const url = urlDeIngreso("abc123");
 
   it("pone el state DENTRO del fragmento, al lado de next", () => {
-    // El Derivador usa HashRouter y lee la query del hash, no la de la URL.
+    // El login usa HashRouter y lee la query del hash, no la de la URL.
     // Puesto afuera, la vuelta falla siempre con «estado» y no hay forma de
     // darse cuenta mirando el código de acá.
     expect(url).toContain("/#/login?");

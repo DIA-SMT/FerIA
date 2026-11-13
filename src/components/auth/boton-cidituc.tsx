@@ -4,7 +4,7 @@ import { IconoEnlaceExterno } from "@/components/ui/iconos";
  * Entrada por CiDiTuc, la identidad digital del municipio.
  *
  * Es un enlace y no un botón de formulario: la ruta `/auth/cidituc/ingresar`
- * planta la cookie del `state` y redirige al Derivador.
+ * planta la cookie del `state` y redirige al login de Ciudad Digital.
  *
  * Para el feriante es la única puerta: su ficha viene del padrón importado de
  * Feria Digital y nunca tuvo contraseña acá. El correo y la contraseña quedan

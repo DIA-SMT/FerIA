@@ -8,15 +8,20 @@ import { nombreCookie } from "@/lib/cookies";
  * Ingreso con CiDiTuc, la identidad digital de la Municipalidad.
  *
  * **No es OpenID Connect.** No hay `client_id`, ni `client_secret`, ni
- * descubrimiento: la app se manda a una pantalla del Derivador, la persona
+ * descubrimiento: la app se manda al login de Ciudad Digital, la persona
  * vuelve con un token en la URL y ese token se valida consultando el perfil.
  * Si el backend contesta el perfil, el token es bueno.
  *
- * Lo único que pide DITEC es registrar la app en el Derivador. Eso es un
+ * Lo único que pide DITEC es registrar la app en ese login, en
+ * `src/routes/PrivateRoute.jsx` del repo `ditec-desarrollo/cidituc`. Eso es un
  * cambio en **su** repo y un deploy de **ellos**: hasta que el bundle
- * desplegado de cidituc.smt.gob.ar nombre nuestra clave, la persona entra
- * bien a CiDiTuc y queda varada ahí, sin mensaje. Por eso el botón se prende
- * recién después de verificarlo, con `CIDITUC_INGRESO_HABILITADO`.
+ * desplegado de ciudaddigital.smt.gob.ar nombre nuestro callback, la persona
+ * entra bien a CiDiTuc y queda varada ahí, sin mensaje. Por eso el botón se
+ * prende recién después de verificarlo, con `CIDITUC_INGRESO_HABILITADO`.
+ *
+ * Hasta el 5/11/2026 el login era el del Derivador, en cidituc.smt.gob.ar, y
+ * FerIA estaba registrada ahí. DITEC lo borró («chau login viejo») y el
+ * registro se fue con él: el alta hubo que pedirla de nuevo en el repo nuevo.
  *
  * Es sólo para feriantes. El vecino que compra no necesita cuenta: el carrito
  * y el pedido no piden sesión en ningún momento.
@@ -29,20 +34,18 @@ import { nombreCookie } from "@/lib/cookies";
 // Las URLs van en el código y no en el entorno a propósito: la de ingreso
 // lleva un `#`, y en un archivo `.env` el `#` abre un comentario y se come el
 // resto de la línea. La redirección moría en silencio.
-const DERIVADOR = "https://cidituc.smt.gob.ar";
+const LOGIN = "https://ciudaddigital.smt.gob.ar";
 const PERFIL = "https://estadisticas.smt.gob.ar:5000/usuarios/authStatus";
 
 /**
- * La clave con la que DITEC registró esta app en el Derivador.
+ * La clave con la que DITEC registró esta app en el login (el `next`).
  *
- * La URL del callback que les pedimos registrar es
- * `https://feria.smt.gob.ar/auth/cidituc/callback`, el dominio definitivo —no
- * el de Vercel—, porque **no se puede cambiar después sin un deploy de ellos**.
- * Hasta que ese dominio esté apuntando acá, el ingreso real no se puede
- * probar: por eso `CIDITUC_INGRESO_HABILITADO` queda apagado.
+ * La URL del callback registrada es
+ * `https://feria.smt.gob.ar/auth/cidituc/callback`, el dominio definitivo,
+ * porque **no se puede cambiar después sin un deploy de ellos**.
  *
  * Nada de este archivo depende del dominio: el callback arma sus redirecciones
- * contra la URL del pedido que recibe, así que anda en cualquiera de los dos.
+ * contra la URL del pedido que recibe.
  */
 export const CLAVE_APP = process.env.CIDITUC_APP ?? "feria";
 
@@ -60,14 +63,14 @@ export function nuevoEstado(): string {
 }
 
 /**
- * El `state` va **dentro del fragmento**, al lado de `next`: el Derivador usa
+ * El `state` va **dentro del fragmento**, al lado de `next`: el login usa
  * HashRouter y lee la query del hash, no la de la URL. Puesto afuera, la
  * vuelta falla siempre con «estado» y no hay forma de darse cuenta mirando el
  * código de acá.
  */
 export function urlDeIngreso(estado: string): string {
   const parametros = new URLSearchParams({ next: CLAVE_APP, state: estado });
-  return `${DERIVADOR}/#/login?${parametros}`;
+  return `${LOGIN}/#/login?${parametros}`;
 }
 
 /**

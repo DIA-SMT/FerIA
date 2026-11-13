@@ -25,7 +25,7 @@ const ERRORES_CIDITUC: Record<string, string> = {
   "cidituc-sin-perfil":
     "No pudimos consultar tus datos en CiDiTuc en este momento. Volvé a intentar en unos minutos.",
   "cidituc-sin-documento":
-    "Tu cuenta de CiDiTuc no tiene un número de documento válido. Revisalo en cidituc.smt.gob.ar y volvé a entrar.",
+    "Tu cuenta de CiDiTuc no tiene un número de documento válido. Revisalo en ciudaddigital.smt.gob.ar y volvé a entrar.",
   "cidituc-sin-cuenta":
     "No pudimos crear tu cuenta en la plataforma. Volvé a intentar en unos minutos.",
   "cidituc-sesion":
@@ -71,7 +71,8 @@ export default async function PaginaIngresar({
     uno la puerta equivocada.
 
     Con el flag apagado, que es el estado de hoy hasta que DITEC nos dé el alta
-    en el Derivador, se muestran las dos: si no, no entraría nadie.
+    en el login de Ciudad Digital, se muestran las dos: si no, no entraría
+    nadie.
   */
   const esPanel = destino.startsWith("/admin");
   const mostrarCidituc = cidituc && !esPanel;
@@ -100,9 +101,9 @@ export default async function PaginaIngresar({
 
       <Tarjeta className="mt-6">
         <TarjetaCuerpo className="sm:p-6">
-          {/* El botón sólo aparece una vez que DITEC desplegó el Derivador con
-              nuestra clave. Prendido antes, la persona se autentica bien en
-              CiDiTuc y queda varada ahí, sin ningún mensaje. */}
+          {/* El botón sólo aparece una vez que DITEC desplegó el login de
+              Ciudad Digital con nuestra clave. Prendido antes, la persona se
+              autentica bien en CiDiTuc y queda varada ahí, sin ningún mensaje. */}
           {mostrarCidituc && <BotonCidituc conSeparador={mostrarCredenciales} />}
 
           {/* Las credenciales se resuelven en el servidor: si el panel está

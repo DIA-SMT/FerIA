@@ -12,7 +12,7 @@ import { atributosCookie } from "@/lib/cookies";
 /**
  * Salida hacia CiDiTuc.
  *
- * El botón «Ingresar con CiDiTuc» no apunta al Derivador: apunta acá. Una
+ * El botón «Ingresar con CiDiTuc» no apunta al login: apunta acá. Una
  * página no puede escribir cookies mientras se dibuja, y hace falta plantar la
  * del `state` **antes** de redirigir.
  *

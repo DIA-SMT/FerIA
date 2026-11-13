@@ -351,16 +351,17 @@ Cómo funciona:
 
 ### Ingreso con CiDiTuc
 
-[CiDiTuc](https://cidituc.smt.gob.ar/) es la identidad digital del municipio.
+[CiDiTuc](https://ciudaddigital.smt.gob.ar/) es la identidad digital del municipio.
 Acá es **sólo para feriantes**: el vecino que compra no necesita cuenta, y el
 carrito y el pedido no piden sesión en ningún momento.
 
 No es OpenID Connect. No hay `client_id` ni `client_secret`: se manda a la
-persona al Derivador, vuelve con un token en la URL y ese token se valida
-consultando su perfil. Si el backend contesta el perfil, el token es bueno.
+persona al login de Ciudad Digital (`ciudaddigital.smt.gob.ar/#/login`),
+vuelve con un token en la URL y ese token se valida consultando su perfil. Si
+el backend contesta el perfil, el token es bueno.
 
 ```
-/auth/cidituc/ingresar   planta la cookie del state y redirige al Derivador
+/auth/cidituc/ingresar   planta la cookie del state y redirige al login
 /auth/cidituc/callback   verifica el state, consulta el perfil y abre la sesión
 ```
 
@@ -379,18 +380,22 @@ exactamente para lo que `Vendedor.usuarioId` es opcional.
 Quien entra sin ficha no es un error: es alguien que todavía no se postuló, y
 va a `/registro` a completar su alta.
 
-**El PR lo abrimos nosotros; el deploy lo hace DITEC.** El cambio va en los
-**dos** mapas de `src/components/Login/Login.jsx` del repo
-[`ditec-desarrollo/derivador`](https://github.com/ditec-desarrollo/derivador):
-`APPS_EXTERNAS` y `RESPALDO_CALLBACK`. El respaldo no es opcional, porque Vite
-hornea las `VITE_*` al compilar y sin él el bundle sale con
-`callbackUrl: undefined`.
+**El PR lo abrimos nosotros; el deploy lo hace DITEC.** El cambio va en
+`src/routes/PrivateRoute.jsx` del repo
+[`ditec-desarrollo/cidituc`](https://github.com/ditec-desarrollo/cidituc): la
+constante del callback, la clave en `PIDEN_CLAVE_SIEMPRE` y un bloque
+`else if` que devuelve el token en `auth` y el `state`. El nuestro es la rama
+`feria`; el precedente, `41af364`, «SMT EstudIA entra por el login de Ciudad
+Digital», es exactamente la misma forma de cambio.
 
-El precedente está en ese repo: `491548f`, «SMT EstudIA entra por la misma
-puerta que las demas», es exactamente la misma forma de cambio.
+Hasta el 5/11/2026 el login era el del Derivador (`ditec-desarrollo/derivador`,
+en cidituc.smt.gob.ar) y FerIA estaba registrada ahí. DITEC lo borró («chau
+login viejo») y el registro se fue con él: si el login vuelve a mudarse, el
+alta hay que pedirla de nuevo.
 
 Y **mergear no alcanza**: la entrada recién existe cuando ellos redespliegan,
-así que hay que verificar el bundle **desplegado**.
+así que hay que verificar el bundle **desplegado** (los `curl` están en
+`.env.example`, al lado del flag).
 
 La URL que hay que registrar es la del **dominio definitivo**:
 
@@ -399,25 +404,24 @@ clave:    feria
 callback: https://feria.smt.gob.ar/auth/cidituc/callback
 ```
 
-No la de Vercel. Cambiarla después obliga a otro deploy de ellos, así que el
-orden correcto es: primero el dominio apuntando acá, después el alta en el
-Derivador, y al final el flag.
+Cambiarla después obliga a otro deploy de ellos, así que el orden correcto es:
+primero el dominio apuntando acá, después el alta en el login, y al final el
+flag.
 
 > `CIDITUC_INGRESO_HABILITADO=true` va **último**, después de ese `curl`. Antes,
 > la persona entra bien a CiDiTuc y queda varada en su pantalla sin mensaje.
 
-#### Mudanza a `feria.smt.gob.ar`
+#### El dominio `feria.smt.gob.ar`
 
-El dominio está cableado en tres lugares y ninguno es el código de CiDiTuc,
-que trabaja contra la URL del pedido que recibe:
+Apunta a la VPS desde el 13/11/2026. El dominio está cableado en tres lugares
+y ninguno es el código de CiDiTuc, que trabaja contra la URL del pedido que
+recibe:
 
-| Dónde | Qué cambiar |
-| ----- | ----------- |
-| Vercel | Agregar el dominio al proyecto, y el CNAME en el DNS de `smt.gob.ar` |
-| `NEXT_PUBLIC_APP_URL` | A `https://feria.smt.gob.ar` — gobierna `metadataBase`, o sea las URLs canónicas y las de Open Graph |
-| `.github/workflows/mantener-base-despierta.yml` | La variable `SITIO` |
-
-Conviene hacerlo **antes** de pedirle el alta a DITEC, por lo de arriba.
+| Dónde | Qué tiene |
+| ----- | --------- |
+| nginx de la VPS | `server_name` y el certificado; la dirección `sslip.io` de la primera etapa redirige acá |
+| `NEXT_PUBLIC_APP_URL` | `https://feria.smt.gob.ar` — gobierna `metadataBase`, o sea las URLs canónicas y las de Open Graph |
+| `.github/workflows/mantener-base-despierta.yml` | La variable `SITIO` del repositorio |
 
 La guía completa, con las trampas que costaron caro en el Presupuesto
 Participativo y en el Portal del Becario, está en el documento «Integrar el

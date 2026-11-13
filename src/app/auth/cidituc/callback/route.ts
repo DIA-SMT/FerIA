@@ -13,7 +13,7 @@ import { borradoCookie } from "@/lib/cookies";
 /**
  * Vuelta desde CiDiTuc.
  *
- * Esta URL es la que DITEC registró en el Derivador, así que **no se puede
+ * Esta URL es la que DITEC registró en el login, así que **no se puede
  * mover**: cambiarla obliga a un deploy de ellos.
  *
  * Siempre termina en una redirección a una URL limpia. El token llega en la
