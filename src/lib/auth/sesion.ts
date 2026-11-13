@@ -60,10 +60,21 @@ export function instanteDeInvalidacion(ahora = new Date()): Date {
  * Es la revocación. Un JWT no se puede retirar de circulación antes de que
  * venza —tampoco los de Supabase se podían—, así que en vez de perseguir el
  * token se mueve la fecha contra la que se lo compara.
+ *
+ * Se compara en segundos enteros porque `iat` viene así, y la fecha de la base
+ * trae milisegundos. Comparando en milisegundos, una cuenta creada a las
+ * 16:38:41.221 rechazaba su propio primer token, emitido en ese mismo segundo
+ * (16:38:41.000): pasaba en casi todo primer ingreso por CiDiTuc, que crea la
+ * cuenta y abre la sesión en el mismo pedido. El middleware, que no consulta
+ * la base, sí aceptaba el token, y la persona quedaba rebotando entre
+ * /mi-stand e /ingresar. Lo que se cede es que un token emitido en el mismo
+ * segundo que una revocación, pero antes, siga valiendo.
  */
 export function tokenSigueValiendo(
   credencial: Credencial,
   sesionesValidasDesde: Date,
 ): boolean {
-  return credencial.emitidoEn.getTime() >= sesionesValidasDesde.getTime();
+  const desdeEnSegundos = Math.floor(sesionesValidasDesde.getTime() / 1000);
+  const emitidoEnSegundos = Math.floor(credencial.emitidoEn.getTime() / 1000);
+  return emitidoEnSegundos >= desdeEnSegundos;
 }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NOMBRE_COOKIE, opcionesCookie, opcionesParaBorrar } from "@/lib/auth/cookie";
 import { hashearPassword, verificarPassword } from "@/lib/auth/password";
+import { tokenSigueValiendo } from "@/lib/auth/sesion";
 import {
   convieneRenovar,
   DURACION_SEGUNDOS,
@@ -184,6 +185,35 @@ describe("renovación deslizante", () => {
   it("renueva pasada la mitad de la vida", () => {
     // Tres días de vida: a las 37 horas ya pasó la mitad.
     expect(convieneRenovar(credencial, new Date("2026-10-30T23:00:00Z"))).toBe(true);
+  });
+});
+
+describe("revocación", () => {
+  const credencial = (emitidoEn: string) => ({
+    usuarioId: "11111111-1111-1111-1111-111111111111",
+    rol: "VENDEDOR" as const,
+    emitidoEn: new Date(emitidoEn),
+  });
+
+  it("acepta el primer token de una cuenta creada en ese mismo segundo", () => {
+    // El caso del primer ingreso por CiDiTuc: la cuenta nace a las .221 y el
+    // token, emitido después, dice .000 porque `iat` va en segundos enteros.
+    // Rechazarlo dejaba a la persona rebotando entre /mi-stand e /ingresar.
+    expect(
+      tokenSigueValiendo(
+        credencial("2026-11-13T16:38:41.000Z"),
+        new Date("2026-11-13T16:38:41.221Z"),
+      ),
+    ).toBe(true);
+  });
+
+  it("rechaza un token emitido antes de la revocación", () => {
+    expect(
+      tokenSigueValiendo(
+        credencial("2026-11-13T16:38:40.000Z"),
+        new Date("2026-11-13T16:38:41.221Z"),
+      ),
+    ).toBe(false);
   });
 });
 
