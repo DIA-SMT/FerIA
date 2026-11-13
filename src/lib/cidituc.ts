@@ -46,8 +46,12 @@ const PERFIL = "https://estadisticas.smt.gob.ar:5000/usuarios/authStatus";
  *
  * Nada de este archivo depende del dominio: el callback arma sus redirecciones
  * contra la URL del pedido que recibe.
+ *
+ * `||` y no `??`: el `.env.example` trae `CIDITUC_APP=""`, y una variable
+ * vacía no es `undefined`. Con `??` la URL salía con `next=` vacío y el login
+ * no sabía a qué app devolver a la persona.
  */
-export const CLAVE_APP = process.env.CIDITUC_APP ?? "feria";
+export const CLAVE_APP = process.env.CIDITUC_APP || "feria";
 
 export const COOKIE_ESTADO = nombreCookie("feria_cidituc_estado");
 

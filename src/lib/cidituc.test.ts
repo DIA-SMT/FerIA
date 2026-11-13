@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   mismoEstado,
@@ -22,6 +22,29 @@ describe("urlDeIngreso", () => {
   it("no deja nada en la query de la URL", () => {
     const sinFragmento = url.split("#")[0] ?? "";
     expect(sinFragmento).not.toContain("?");
+  });
+});
+
+describe("la clave de la app", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // Se lee al cargar el módulo, por eso cada caso lo vuelve a importar.
+  async function urlConClave(valor: string): Promise<string> {
+    vi.stubEnv("CIDITUC_APP", valor);
+    vi.resetModules();
+    const { urlDeIngreso: armar } = await import("@/lib/cidituc");
+    return armar("abc123");
+  }
+
+  it("usa «feria» si CIDITUC_APP está vacía, como la deja el .env.example", async () => {
+    expect(await urlConClave("")).toContain("next=feria&");
+  });
+
+  it("respeta CIDITUC_APP si tiene un valor", async () => {
+    expect(await urlConClave("feria-prueba")).toContain("next=feria-prueba&");
   });
 });
 
