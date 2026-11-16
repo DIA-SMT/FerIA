@@ -292,6 +292,15 @@ export function IconoUsuarios(props: PropsIcono) {
   );
 }
 
+export function IconoUsuario(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4.5 20c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6" />
+    </Base>
+  );
+}
+
 export function IconoDinero(props: PropsIcono) {
   return (
     <Base {...props}>

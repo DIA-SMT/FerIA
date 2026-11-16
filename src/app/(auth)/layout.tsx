@@ -22,11 +22,10 @@ export default function LayoutAuth({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Abajo deja lugar para la burbuja de Migue: sin eso, al final de la
-          página tapa el botón de enviar de la encuesta. */}
-      <main className="flex flex-1 items-start justify-center px-4 pt-10 pb-24 sm:pt-16">
-        {children}
-      </main>
+      {/* Sin márgenes propios: el ingreso es una escena de borde a borde
+          (`EscenaIngreso`), y el registro y la encuesta ponen los suyos con
+          `MarcoAuth`. */}
+      <main className="flex flex-1 flex-col">{children}</main>
 
       <div className="flex h-1.5" aria-hidden="true">
         <div className="flex-1 bg-municipal-500" />

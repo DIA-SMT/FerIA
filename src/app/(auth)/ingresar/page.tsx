@@ -3,8 +3,12 @@ import Link from "next/link";
 
 import { BotonCidituc } from "@/components/auth/boton-cidituc";
 import { FormularioIngreso } from "@/components/auth/formulario-ingreso";
+import {
+  EscenaIngreso,
+  TarjetaIngreso,
+} from "@/components/auth/escena-ingreso";
 import { Alerta } from "@/components/ui/alerta";
-import { Tarjeta, TarjetaCuerpo } from "@/components/ui/tarjeta";
+import { IconoInfo } from "@/components/ui/iconos";
 import { cuentasDemo } from "@/lib/accesos-demo";
 import { hayIngresoCidituc } from "@/lib/cidituc";
 
@@ -79,32 +83,36 @@ export default async function PaginaIngresar({
   const mostrarCredenciales = !cidituc || esPanel;
 
   return (
-    <div className="w-full max-w-md">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+    <EscenaIngreso conMigue={!esPanel}>
+      <TarjetaIngreso>
+        <h1 className="text-[38px] leading-tight font-extrabold tracking-tight text-municipal-950 sm:text-[44px]">
           {esPanel ? "Panel municipal" : "Ingresar"}
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-base text-slate-600 sm:text-[17px]">
           {esPanel
             ? "Acceso para el personal de la Municipalidad."
             : cidituc
               ? "Si sos feriante, entrá con tu Ciudadano Digital."
               : "Acceso para feriantes y personal municipal."}
         </p>
-      </div>
 
-      {mensajeCidituc && (
-        <Alerta tipo="error" className="mt-6">
-          {mensajeCidituc}
-        </Alerta>
-      )}
+        {mensajeCidituc && (
+          <Alerta tipo="error" className="mt-5 text-left">
+            {mensajeCidituc}
+          </Alerta>
+        )}
 
-      <Tarjeta className="mt-6">
-        <TarjetaCuerpo className="sm:p-6">
+        <div className="mt-7 text-left">
           {/* El botón sólo aparece una vez que DITEC desplegó el login de
               Ciudad Digital con nuestra clave. Prendido antes, la persona se
-              autentica bien en CiDiTuc y queda varada ahí, sin ningún mensaje. */}
-          {mostrarCidituc && <BotonCidituc conSeparador={mostrarCredenciales} />}
+              autentica bien en CiDiTuc y queda varada ahí, sin ningún mensaje.
+              Grande cuando es la única puerta: es lo que más se tiene que ver. */}
+          {mostrarCidituc && (
+            <BotonCidituc
+              conSeparador={mostrarCredenciales}
+              grande={!mostrarCredenciales}
+            />
+          )}
 
           {/* Las credenciales se resuelven en el servidor: si el panel está
               apagado, `cuentasDemo()` devuelve vacío y nada de esto llega al
@@ -112,35 +120,44 @@ export default async function PaginaIngresar({
           {mostrarCredenciales && (
             <FormularioIngreso volverA={destino} cuentasDemo={cuentasDemo()} />
           )}
-        </TarjetaCuerpo>
-      </Tarjeta>
+        </div>
 
-      {esPanel && cidituc ? (
-        <p className="mt-6 text-center text-sm text-slate-600">
-          ¿Sos feriante?{" "}
-          <Link
-            href="/ingresar"
-            className="font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-          >
-            Entrá con CiDiTuc
-          </Link>
-        </p>
-      ) : esPanel ? null : cidituc ? (
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Con CiDiTuc no hace falta registrarse: la primera vez que entres te
-          vamos a pedir los datos de tu emprendimiento.
-        </p>
-      ) : (
-        <p className="mt-6 text-center text-sm text-slate-600">
-          ¿Todavía no tenés cuenta?{" "}
-          <Link
-            href="/registro"
-            className="font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-          >
-            Registrate como feriante
-          </Link>
-        </p>
-      )}
-    </div>
+        {esPanel && cidituc ? (
+          <p className="mt-6 text-sm text-slate-600">
+            ¿Sos feriante?{" "}
+            <Link
+              href="/ingresar"
+              className="font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+            >
+              Entrá con CiDiTuc
+            </Link>
+          </p>
+        ) : esPanel ? null : cidituc ? (
+          <>
+            <div className="my-6 h-px bg-slate-200" aria-hidden="true" />
+            <p className="flex gap-3 rounded-2xl border border-celeste-100 bg-celeste-50 px-4 py-3.5 text-left text-sm leading-relaxed text-slate-700">
+              <IconoInfo className="mt-0.5 size-5 shrink-0 text-municipal-500" />
+              <span>
+                <strong className="font-semibold text-municipal-700">
+                  Con CiDiTuc no hace falta registrarse:
+                </strong>{" "}
+                la primera vez que entres te vamos a pedir los datos de tu
+                emprendimiento.
+              </span>
+            </p>
+          </>
+        ) : (
+          <p className="mt-6 text-sm text-slate-600">
+            ¿Todavía no tenés cuenta?{" "}
+            <Link
+              href="/registro"
+              className="font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+            >
+              Registrate como feriante
+            </Link>
+          </p>
+        )}
+      </TarjetaIngreso>
+    </EscenaIngreso>
   );
 }

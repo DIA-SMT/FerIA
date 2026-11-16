@@ -1,4 +1,5 @@
 import { IconoEnlaceExterno } from "@/components/ui/iconos";
+import { cn } from "@/lib/cn";
 
 /**
  * Entrada por CiDiTuc, la identidad digital del municipio.
@@ -19,20 +20,36 @@ export function BotonCidituc({
    * Solo en la pantalla, deja una raya suelta al final de la tarjeta.
    */
   conSeparador = true,
+  /**
+   * Grande cuando es la única puerta de la pantalla: tiene que ser lo que más
+   * se ve. Chico cuando comparte la tarjeta con el formulario de correo.
+   */
+  grande = false,
 }: {
   conSeparador?: boolean;
+  grande?: boolean;
 }) {
   return (
     <div>
       <a
         href="/auth/cidituc/ingresar"
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-municipal-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600"
+        className={cn(
+          "inline-flex w-full items-center justify-center gap-2 bg-municipal-500 text-white transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2",
+          grande
+            ? "h-14 rounded-xl px-6 text-base font-bold shadow-lg shadow-municipal-500/30 focus-visible:outline-acento-400"
+            : "rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm focus-visible:outline-municipal-600",
+        )}
       >
-        <IconoEnlaceExterno className="size-4" />
+        <IconoEnlaceExterno className={grande ? "size-5" : "size-4"} />
         Ingresar con CiDiTuc
       </a>
 
-      <p className="mt-2 text-center text-xs text-slate-500">
+      <p
+        className={cn(
+          "mx-auto mt-2 text-center text-slate-500",
+          grande ? "mt-3.5 max-w-xs text-sm text-slate-600" : "text-xs",
+        )}
+      >
         Con tu CUIL y la clave de Ciudadano Digital de San Miguel de Tucumán.
       </p>
 
