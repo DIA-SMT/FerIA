@@ -163,7 +163,7 @@ export async function preguntarAlAsistente(
       ok: false,
       texto:
         error instanceof ErrorDeAsistente
-          ? "El asistente no está disponible en este momento. Probá de nuevo en un rato, o buscá directamente en el directorio de stands."
+          ? "El asistente no está disponible en este momento. Probá de nuevo en un rato, o buscá directamente en el catálogo de emprendedores."
           : "Algo salió mal. Probá de nuevo en un rato.",
     };
   }

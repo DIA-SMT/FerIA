@@ -42,10 +42,10 @@ export function ListaCarritos() {
         icono={IconoCarrito}
         className="mt-8"
         titulo="Todavía no agregaste nada"
-        descripcion="Entrá al directorio de stands, mirá los catálogos y agregá lo que quieras pedirle a cada feriante."
+        descripcion="Entrá al catálogo de emprendedores, mirá lo que ofrece cada uno y agregá lo que quieras pedirle."
         accion={
           <Link href="/stands" className={estilosBoton("primario", "md")}>
-            Ver stands
+            Ver emprendedores
           </Link>
         }
       />

@@ -14,9 +14,9 @@ import { RUBROS } from "@/lib/labels";
 import { leerPagina } from "@/lib/paginacion";
 
 export const metadata: Metadata = {
-  title: "Directorio de stands",
+  title: "Catálogo de emprendedores",
   description:
-    "Todos los feriantes aprobados de las ferias municipales de San Miguel de Tucumán. Buscá por emprendimiento, rubro o feria.",
+    "Todos los emprendedores aprobados de las ferias municipales de San Miguel de Tucumán. Buscá por emprendimiento, rubro o feria.",
 };
 
 const RUBROS_VALIDOS = new Set(Object.keys(RUBROS));
@@ -82,11 +82,11 @@ async function ContenidoStands({
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <header>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Directorio de stands
+          Catálogo de emprendedores
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
           Todos los emprendimientos habilitados para participar de las ferias
-          municipales. Entrá a cada stand para ver el catálogo y escribirle
+          municipales. Entrá a cada stand para ver sus productos y escribirle
           directamente por WhatsApp.
         </p>
       </header>
@@ -101,7 +101,7 @@ async function ContenidoStands({
       <p className="mt-6 text-sm text-slate-500" aria-live="polite">
         {total === 0
           ? "Sin resultados"
-          : `${formatearNumero(total)} ${total === 1 ? "stand" : "stands"}${
+          : `${formatearNumero(total)} ${total === 1 ? "emprendedor" : "emprendedores"}${
               paginas > 1 ? ` · página ${pagina} de ${paginas}` : ""
             }`}
       </p>
@@ -112,13 +112,13 @@ async function ContenidoStands({
           className="mt-4"
           titulo={
             hayFiltros
-              ? "No encontramos stands con esos filtros"
-              : "Todavía no hay stands publicados"
+              ? "No encontramos emprendedores con esos filtros"
+              : "Todavía no hay emprendedores publicados"
           }
           descripcion={
             hayFiltros
               ? "Probá con otra búsqueda, cambiá el rubro o quitá el filtro de feria."
-              : "Los feriantes aprobados por la municipalidad van a aparecer en este directorio."
+              : "Los emprendedores aprobados por la municipalidad van a aparecer en este catálogo."
           }
         />
       ) : (

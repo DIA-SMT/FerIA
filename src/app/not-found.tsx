@@ -36,7 +36,7 @@ export default function NoEncontrado() {
               href="/stands"
               className="font-medium text-municipal-600 hover:text-municipal-700"
             >
-              explorar el directorio de stands
+              explorar el catálogo de emprendedores
             </Link>
             .
           </p>

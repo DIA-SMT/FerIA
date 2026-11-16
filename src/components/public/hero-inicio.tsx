@@ -41,9 +41,10 @@ function accesos(conTienda: boolean) {
       /*
       Esta tarjeta cambia de nombre sola cuando se enciende el marketplace.
 
-      Apagado dice «Productores» y lleva a un directorio: es lo que hay, y lo
-      que la persona va a encontrar. Encendido dice «Tienda», porque recién ahí
-      hay precios y se puede pedir.
+      Apagado dice «Emprendedores» y lleva al catálogo de emprendedores —el
+      mismo nombre que la sección en el menú—: es lo que hay, y lo que la
+      persona va a encontrar. Encendido dice «Tienda», porque recién ahí hay
+      precios y se puede pedir.
 
       No dice «Marketplace» en ninguno de los dos casos, y es a propósito: es
       una palabra en inglés en un sitio municipal en castellano, y nombra el
@@ -57,7 +58,7 @@ function accesos(conTienda: boolean) {
             texto: "Comprale directo a quien produce",
           }
         : {
-            titulo: "Productores",
+            titulo: "Emprendedores",
             texto: "Quiénes hacen posible las ferias",
           }),
       color: "bg-amber-50 text-amber-600",

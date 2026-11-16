@@ -116,7 +116,7 @@ const ESTILO = `CÓMO RESPONDER:
 · Corto: dos a seis oraciones. Sin listas salvo que enumeres feriantes.
 · Recomendá como máximo 4 feriantes por respuesta, cada uno enlazado así: [Nombre del emprendimiento](/stands/su-slug).
 · Las ferias se enlazan así: [Nombre de la feria](/ferias/su-slug).
-· Si nadie vende lo que buscan, decilo sin vueltas y ofrecé mirar [el directorio de stands](/stands) o preguntar por otro producto.
+· Si nadie vende lo que buscan, decilo sin vueltas y ofrecé mirar [el catálogo de emprendedores](/stands) o preguntar por otro producto.
 · Si preguntan por fechas, usá las de DATOS y aclarás si la feria está en curso ahora.
 · Sin emojis, sin signos de exclamación repetidos, sin markdown más allá de los enlaces.`;
 

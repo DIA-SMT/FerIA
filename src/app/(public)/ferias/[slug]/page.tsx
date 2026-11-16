@@ -307,8 +307,8 @@ export default async function PaginaFeria({
                     className="text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
                   >
                     {feriantes.total > feriantes.muestra.length
-                      ? `Ver los ${formatearNumero(feriantes.total)} en el directorio`
-                      : "Ver en el directorio"}
+                      ? `Ver los ${formatearNumero(feriantes.total)} en el catálogo`
+                      : "Ver en el catálogo"}
                   </Link>
                 )}
               </div>

@@ -13,7 +13,7 @@ const SECCIONES = [
     titulo: "Ferias",
     enlaces: [
       { href: "/ferias", texto: "Todas las ferias" },
-      { href: "/stands", texto: "Directorio de stands" },
+      { href: "/stands", texto: "Catálogo de emprendedores" },
     ],
   },
   {
@@ -60,8 +60,8 @@ export function PiePublico() {
             </p>
           </div>
 
-          {/* Columnas a su ancho natural: en una grilla fija «Directorio de
-              stands» se partía en dos renglones. */}
+          {/* Columnas a su ancho natural: en una grilla fija «Catálogo de
+              emprendedores» se partía en dos renglones. */}
           <nav
             aria-label="Pie de página"
             className="flex flex-wrap gap-x-16 gap-y-8 lg:col-span-6 lg:justify-end"

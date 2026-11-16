@@ -58,7 +58,7 @@ export async function crearPedido(
 
     if (!vendedor) {
       return estadoDeError(
-        "Ese stand ya no está disponible. Volvé al directorio y buscá otro.",
+        "Ese stand ya no está disponible. Volvé al catálogo de emprendedores y buscá otro.",
       );
     }
 

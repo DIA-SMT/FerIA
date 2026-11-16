@@ -145,7 +145,7 @@ export function FormularioPerfil({
       <Tarjeta>
         <TarjetaEncabezado
           titulo="Imágenes"
-          descripcion="La portada encabeza tu stand; el logo aparece en el directorio."
+          descripcion="La portada encabeza tu stand; el logo aparece en el catálogo de emprendedores."
         />
         <TarjetaCuerpo className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">

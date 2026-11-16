@@ -239,7 +239,7 @@ export default async function PaginaStand({
             className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-municipal-700"
           >
             <IconoFlechaIzquierda className="size-4" />
-            Volver al directorio
+            Volver al catálogo
           </Link>
         </div>
 

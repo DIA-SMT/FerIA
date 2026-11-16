@@ -11,7 +11,7 @@ import { obtenerSesion } from "@/lib/session";
 const ENLACES = [
   { href: "/", texto: "Inicio" },
   { href: "/ferias", texto: "Ferias" },
-  { href: "/stands", texto: "Stands" },
+  { href: "/stands", texto: "Emprendedores" },
 ];
 
 export async function EncabezadoPublico() {
