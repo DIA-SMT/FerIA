@@ -1,16 +1,37 @@
 import type { Metadata, Viewport } from "next";
-import { Baloo_2, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
 import "./globals.css";
 
+/*
+  Las dos tipografías viven en `src/fuentes/`, dentro del repo, y no se bajan
+  de Google al construir.
+
+  Antes eran `next/font/google`, que las descarga en cada build. En la VPS esa
+  descarga fallaba de vez en cuando —«An error occurred in `next/font`.
+  TypeError: Cannot read properties of null (reading '1')»— y el build había
+  que reintentarlo. Ahora el build no sale a internet por ellas.
+
+  Son los mismos archivos que servía Google, sacados de los paquetes Fontsource
+  (`@fontsource-variable/inter` y `@fontsource/baloo-2`, 5.3.0), en el subset
+  latino, que cubre todo el castellano. La licencia de cada una (SIL OFL 1.1)
+  va al lado, como pide la licencia.
+
+  El navegador del vecino nunca le pide nada a Google, igual que antes: no se
+  suma un tercero a la política de privacidad.
+*/
+
 /**
  * Tipografía institucional.
  * Inter tiene muy buena legibilidad en pantallas chicas, que es por donde
- * entra la mayoría de los vecinos.
+ * entra la mayoría de los vecinos. Es la variable: un solo archivo para todos
+ * los pesos.
  */
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "../fuentes/inter-latin-wght-normal.woff2",
+  weight: "100 900",
+  style: "normal",
   variable: "--fuente-institucional",
   display: "swap",
 });
@@ -25,14 +46,20 @@ const inter = Inter({
  *
  * Es deliberadamente de un solo uso. Si aparece en un título, en un botón o en
  * una tarjeta, deja de ser la voz de Migue y pasa a ser decoración.
- *
- * `next/font` la descarga en tiempo de build y la sirve desde nuestro dominio:
- * el navegador del vecino nunca le pide nada a Google, así que esto no suma
- * un tercero a la política de privacidad.
  */
-const baloo = Baloo_2({
-  subsets: ["latin"],
-  weight: ["600", "800"],
+const baloo = localFont({
+  src: [
+    {
+      path: "../fuentes/baloo-2-latin-600-normal.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../fuentes/baloo-2-latin-800-normal.woff2",
+      weight: "800",
+      style: "normal",
+    },
+  ],
   variable: "--fuente-globo",
   display: "swap",
 });
