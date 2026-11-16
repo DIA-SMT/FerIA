@@ -6,6 +6,8 @@ import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import { CarruselDeFotos } from "@/components/ui/carrusel-de-fotos";
 import { IconoEtiqueta, IconoLapiz, IconoMas } from "@/components/ui/iconos";
 import { Tarjeta } from "@/components/ui/tarjeta";
+import { EstadoDeRevision } from "@/components/vendedor/estado-de-revision";
+import type { EstadoDeRevision as Estado } from "@/lib/revision";
 
 /** Lo que necesita la tarjeta del dueño; sale tal cual de `prisma.producto`. */
 export interface ProductoPropio {
@@ -26,7 +28,17 @@ export interface ProductoPropio {
  * de consultar no va a propósito: cada toque cuenta como una consulta en las
  * estadísticas de la vidriera, y las del dueño no son de nadie.
  */
-export function TarjetaProductoPropio({ producto }: { producto: ProductoPropio }) {
+export function TarjetaProductoPropio({
+  producto,
+  revision = null,
+  nuevo = false,
+}: {
+  producto: ProductoPropio;
+  /** Si tiene un cambio esperando la revisión de la administración. */
+  revision?: Estado | null;
+  /** Si ese cambio es el alta: todavía no lo ve ningún vecino. */
+  nuevo?: boolean;
+}) {
   return (
     <Tarjeta className="flex h-full flex-col overflow-hidden">
       <div className="relative">
@@ -58,6 +70,14 @@ export function TarjetaProductoPropio({ producto }: { producto: ProductoPropio }
           <p className="lineas-2 mt-1 text-sm text-slate-600">
             {producto.descripcion}
           </p>
+        )}
+        {revision && (
+          <EstadoDeRevision
+            revision={revision}
+            que={nuevo ? "Producto nuevo" : undefined}
+            sinDescartar={nuevo}
+            className="mt-3"
+          />
         )}
 
         <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">

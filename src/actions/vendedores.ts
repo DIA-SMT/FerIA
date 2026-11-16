@@ -12,11 +12,14 @@ import {
 } from "@/lib/form";
 import { LADO_LOGO } from "@/lib/imagenes";
 import { obtenerVendedorActual, requerirAdmin } from "@/lib/session";
-import { generarSlugUnico } from "@/lib/slug";
-import { almacenamiento, guardarImagenOpcional } from "@/lib/storage";
+import {
+  descartarCambio,
+  type DatosPorSeccion,
+  proponerCambio,
+} from "@/lib/revision";
+import { guardarImagenOpcional } from "@/lib/storage";
 import {
   aprobarVendedorSchema,
-  type PerfilVendedor,
   perfilVendedorSchema,
   rechazarVendedorSchema,
 } from "@/lib/validations/vendedor";
@@ -130,14 +133,15 @@ export async function reabrirSolicitud(datos: FormData): Promise<void> {
  */
 const SECCIONES_DE_TEXTO = {
   identidad: {
+    seccion: "IDENTIDAD",
     esquema: perfilVendedorSchema.pick({ emprendimiento: true, rubro: true }),
-    exito: "Nombre y rubro actualizados.",
   },
   descripcion: {
+    seccion: "DESCRIPCION",
     esquema: perfilVendedorSchema.pick({ descripcion: true }),
-    exito: "Descripción actualizada.",
   },
   contacto: {
+    seccion: "CONTACTO",
     esquema: perfilVendedorSchema.pick({
       whatsapp: true,
       telefono: true,
@@ -147,17 +151,12 @@ const SECCIONES_DE_TEXTO = {
       sitioWeb: true,
       direccion: true,
     }),
-    exito: "Contacto actualizado.",
   },
 } as const;
 
 const SECCIONES_DE_IMAGEN = {
-  portada: {
-    campo: "imagenPortada",
-    lado: undefined,
-    exito: "Portada actualizada.",
-  },
-  logo: { campo: "logo", lado: LADO_LOGO, exito: "Logo actualizado." },
+  portada: { campo: "imagenPortada", lado: undefined },
+  logo: { campo: "logo", lado: LADO_LOGO },
 } as const;
 
 function esSeccionDeTexto(
@@ -172,12 +171,18 @@ function esSeccionDeImagen(
   return Object.hasOwn(SECCIONES_DE_IMAGEN, seccion);
 }
 
+/** Lo que se le dice al feriante al mandar algo: que no salió todavía. */
+const ENVIADO_A_REVISION =
+  "Listo, quedó en revisión. Los vecinos ven lo anterior hasta que la Dirección lo apruebe.";
+
 /**
- * Guarda una sola parte de la vidriera: la que dice el campo `seccion`.
+ * Manda a revisión una sola parte de la vidriera: la que dice el campo
+ * `seccion`.
  *
- * Reemplaza al formulario único de «Mi vidriera», que mandaba todo junto. Ahora
- * el feriante edita sobre su propio stand, una parte por vez, y cada lápiz abre
- * sólo los campos de esa parte.
+ * No publica nada: deja un `CambioDelStand` pendiente (ver `src/lib/revision.ts`)
+ * y el vecino sigue viendo lo anterior hasta que la administración lo aprueba.
+ * El feriante, en cambio, ve lo nuevo en «Mi stand», con el cartel «En
+ * revisión».
  */
 export async function actualizarSeccionDelStand(
   _estado: EstadoFormulario,
@@ -196,7 +201,7 @@ export async function actualizarSeccionDelStand(
 
     // ------------------------------ Portada o logo ---------------------------
     if (esSeccionDeImagen(seccion)) {
-      const { campo, lado, exito } = SECCIONES_DE_IMAGEN[seccion];
+      const { campo, lado } = SECCIONES_DE_IMAGEN[seccion];
       const nueva = await guardarImagenOpcional(
         datos.get(campo),
         "vendedores",
@@ -210,52 +215,57 @@ export async function actualizarSeccionDelStand(
         };
       }
 
-      const anterior = campo === "logo" ? vendedor.logo : vendedor.imagenPortada;
-      await prisma.vendedor.update({
-        where: { id: vendedor.id },
-        data: campo === "logo" ? { logo: nueva } : { imagenPortada: nueva },
-      });
-      if (anterior) await almacenamiento.eliminar(anterior);
+      if (campo === "logo") {
+        await proponerCambio({
+          vendedorId: vendedor.id,
+          seccion: "LOGO",
+          datos: { logo: nueva },
+        });
+      } else {
+        await proponerCambio({
+          vendedorId: vendedor.id,
+          seccion: "PORTADA",
+          datos: { imagenPortada: nueva },
+        });
+      }
 
       revalidatePath("/mi-stand");
-      revalidarVendedores(vendedor.slug);
-      return estadoDeExito(exito);
+      revalidatePath("/admin/revisiones");
+      return estadoDeExito(ENVIADO_A_REVISION);
     }
 
     // ----------------------------- Secciones de texto ------------------------
     if (!esSeccionDeTexto(seccion)) {
       return estadoDeError("No sabemos qué parte del stand querés guardar.");
     }
-    const { esquema, exito } = SECCIONES_DE_TEXTO[seccion];
+    const { esquema, seccion: tipo } = SECCIONES_DE_TEXTO[seccion];
 
     const validacion = esquema.safeParse(Object.fromEntries(datos));
     if (!validacion.success) return estadoDesdeZod(validacion.error);
-    const entrada: Partial<PerfilVendedor> = validacion.data;
 
-    // El slug acompaña al nombre del emprendimiento (es la URL pública).
-    let slug = vendedor.slug;
-    if (
-      entrada.emprendimiento &&
-      entrada.emprendimiento !== vendedor.emprendimiento
-    ) {
-      slug = await generarSlugUnico(
-        entrada.emprendimiento,
-        async (candidato) =>
-          (await prisma.vendedor.count({
-            where: { slug: candidato, id: { not: vendedor.id } },
-          })) > 0,
-      );
-    }
-
-    await prisma.vendedor.update({
-      where: { id: vendedor.id },
-      data: { ...entrada, slug },
+    await proponerCambio({
+      vendedorId: vendedor.id,
+      seccion: tipo,
+      datos: validacion.data as DatosPorSeccion[typeof tipo],
     });
 
     revalidatePath("/mi-stand");
-    revalidarVendedores(slug);
-    if (slug !== vendedor.slug) revalidatePath(`/stands/${vendedor.slug}`);
-
-    return estadoDeExito(exito);
+    revalidatePath("/admin/revisiones");
+    return estadoDeExito(ENVIADO_A_REVISION);
   });
+}
+
+/**
+ * El feriante retira un cambio que todavía no se revisó, o da por visto uno
+ * que le rechazaron. Lo publicado no se toca.
+ */
+export async function descartarCambioDelStand(datos: FormData): Promise<void> {
+  const { vendedor } = await obtenerVendedorActual();
+  const cambioId = String(datos.get("cambioId") ?? "");
+  if (!cambioId) return;
+
+  if (await descartarCambio(cambioId, vendedor.id)) {
+    revalidatePath("/mi-stand");
+    revalidatePath("/admin/revisiones");
+  }
 }

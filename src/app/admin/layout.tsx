@@ -39,11 +39,13 @@ export default async function LayoutAdmin({
   // pueden estar pendientes pero nadie las presentó, así que un contador que
   // las incluyera diría casi mil para siempre. Y los pedidos de feria se cuentan
   // sólo si la ficha ya está aprobada, que es cuando se pueden contestar.
-  const [altas, pedidos] = await Promise.all([
+  const [altas, pedidos, cambios] = await Promise.all([
     prisma.vendedor.count({ where: SOLICITUD_PENDIENTE }),
     prisma.postulacion.count({
       where: { estado: "PENDIENTE", vendedor: { estado: "APROBADO" } },
     }),
+    // Lo que los feriantes cambiaron en su stand y espera aprobación.
+    prisma.cambioDelStand.count({ where: { estado: "PENDIENTE" } }),
   ]);
 
   // El canon no se cobra, así que la sección no se ofrece. Se arma aparte y no
@@ -60,6 +62,12 @@ export default async function LayoutAdmin({
       texto: "Postulaciones",
       icono: "postulaciones",
       contador: altas + pedidos,
+    },
+    {
+      href: "/admin/revisiones",
+      texto: "Revisiones",
+      icono: "revisiones",
+      contador: cambios,
     },
     { href: "/admin/feriantes", texto: "Feriantes", icono: "feriantes" },
     ...canon,

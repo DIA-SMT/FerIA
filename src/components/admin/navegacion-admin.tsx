@@ -14,6 +14,7 @@ import {
   IconoGrafico,
   IconoMenu,
   IconoTienda,
+  IconoTildeCirculo,
   IconoUsuarios,
 } from "@/components/ui/iconos";
 
@@ -30,6 +31,7 @@ const ICONOS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   ferias: IconoTienda,
   solicitudes: IconoBandeja,
   postulaciones: IconoDocumento,
+  revisiones: IconoTildeCirculo,
   feriantes: IconoUsuarios,
   canon: IconoDinero,
 };

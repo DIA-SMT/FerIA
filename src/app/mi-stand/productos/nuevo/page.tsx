@@ -45,6 +45,11 @@ export default async function PaginaNuevoProducto() {
         <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
           Agregar producto
         </h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Los vecinos lo van a ver cuando lo apruebe la Dirección de Relaciones
+          Institucionales. Mientras tanto aparece en tu stand como «en
+          revisión».
+        </p>
       </header>
 
       <FormularioProducto

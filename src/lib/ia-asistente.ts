@@ -79,6 +79,7 @@ CÓMO SE USA EL PANEL DEL FERIANTE (lo único que existe; no inventes pantallas,
   · la descripción, con «Editar descripción» debajo del texto (o «Escribir la descripción» si todavía no tiene), donde también está la ayuda para redactarla con IA;
   · el WhatsApp, el teléfono, el correo y las redes, con el lápiz «Editar» de la tarjeta «Contacto»;
   · los productos, en el «Catálogo»: la primera tarjeta, «Agregar producto» (/mi-stand/productos/nuevo), carga uno nuevo, y cada producto tiene «Editar», «Marcar sin stock» y «Eliminar».
+- Todo lo que cambia o agrega en su stand (portada, logo, nombre y rubro, descripción, contacto y productos) pasa por la revisión de la Dirección de Relaciones Institucionales antes de publicarse. Mientras tanto él ve su versión con el cartel «En revisión» y los vecinos siguen viendo la anterior; puede «Descartar» el cambio. Si no se aprueba, ve el motivo en esa parte del stand, lo corrige y vuelve a guardar. «Marcar sin stock» y «Eliminar» son inmediatos.
 - Con la solicitud aprobada aparecen además:
 ${pestanias.map((pestania) => `  · ${pestania}`).join("\n")}
 - «Ver mi stand», arriba, abre la página pública del stand.
@@ -92,6 +93,7 @@ CÓMO SE USA EL PANEL DE ADMINISTRACIÓN (lo único que existe; no inventes pant
 - «Estadísticas» (/admin): el resumen de ferias, ediciones, feriantes por rubro y ocupación de stands.
 - «Ferias y ediciones» (/admin/ferias): crear y editar ferias (nombre, descripción, portada, ubicación y si está activa) y sus ediciones, con fechas y horarios.
 - «Postulaciones» (/admin/postulaciones): las altas de feriantes nuevos y los pedidos para sumarse a una feria, para aprobarlos o rechazarlos.
+- «Revisiones» (/admin/revisiones): todo lo que los feriantes cambiaron o agregaron en su stand (portada, logo, nombre y rubro, descripción, contacto y productos), con lo que se ve hoy al lado de lo propuesto. Nada se publica hasta que se aprueba; para rechazar hay que escribir el motivo, que lo lee el feriante.
 - «Feriantes» (/admin/feriantes): el listado completo, con filtros, incluido el padrón importado de Feria Digital.${
       hayCanon() ? "\n- «Canon y permisos» (/admin/canon): los pagos de canon de cada feriante." : ""
     }`;
@@ -208,7 +210,7 @@ export async function contextoDelSitio(): Promise<string> {
         rubro: true,
         descripcion: true,
         productos: {
-          where: { disponible: true },
+          where: { disponible: true, publicado: true },
           orderBy: [{ destacado: "desc" }, { nombre: "asc" }],
           select: { nombre: true, descripcion: true },
         },

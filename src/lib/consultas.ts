@@ -235,7 +235,10 @@ export async function vendedoresAprobados(filtros?: {
       { descripcion: { contains: filtros.busqueda, mode: "insensitive" } },
       {
         productos: {
-          some: { nombre: { contains: filtros.busqueda, mode: "insensitive" } },
+          some: {
+            publicado: true,
+            nombre: { contains: filtros.busqueda, mode: "insensitive" },
+          },
         },
       },
       // También por el nombre de la feria de la que es parte. El buscador de
@@ -272,7 +275,9 @@ export async function vendedoresAprobados(filtros?: {
       descripcion: true,
       imagenPortada: true,
       logo: true,
-      _count: { select: { productos: { where: { disponible: true } } } },
+      _count: {
+        select: { productos: { where: { disponible: true, publicado: true } } },
+      },
     },
     // El id desempata. En el padrón hay nombres de emprendimiento repetidos, y
     // sin un orden total la base puede devolverlos distinto en cada consulta:

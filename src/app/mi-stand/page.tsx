@@ -18,6 +18,7 @@ import {
   EditarLogo,
   EditarPortada,
 } from "@/components/vendedor/editar-stand";
+import { EstadoDeRevision } from "@/components/vendedor/estado-de-revision";
 import { LineaDeInteres } from "@/components/vendedor/interes-en-la-vidriera";
 import { MisFerias } from "@/components/vendedor/mis-ferias";
 import {
@@ -30,14 +31,19 @@ import { formatearFechaHora } from "@/lib/format";
 import { obtenerInteresDelStand } from "@/lib/interes";
 import { RUBROS } from "@/lib/labels";
 import { feriasDelFeriante, proximasAsignaciones } from "@/lib/mis-ferias";
+import {
+  cambiosAbiertos,
+  productoDelDueno,
+  standDelDueno,
+} from "@/lib/revision";
 import { obtenerVendedorActual } from "@/lib/session";
 
 export const metadata = { title: "Mi stand" };
 
 /** Para que el aviso de llegada diga lo que pasó (ver `actions/productos`). */
 const AVISOS_DE_LLEGADA = {
-  agregado: "Producto agregado al catálogo.",
-  actualizado: "Producto actualizado.",
+  agregado: "Producto enviado a revisión: lo vas a ver publicado cuando lo aprueben.",
+  actualizado: "Cambios enviados a revisión: los vecinos ven la versión anterior hasta que los aprueben.",
 } as const;
 
 export default async function PaginaMiStand({
@@ -201,26 +207,49 @@ export default async function PaginaMiStand({
     stand se editaba en otras dos pestañas, «Mi vidriera» y «Catálogo», sin ver
     cómo quedaba. Ahora el feriante entra y lo primero que ve es su stand, y lo
     cambia donde lo ve. Las ferias pasaron a la pestaña «Mis ferias».
-  */
-  const [parametros, productos, participaciones, interes] = await Promise.all([
-    searchParams,
-    prisma.producto.findMany({
-      where: { vendedorId: vendedor.id },
-      orderBy: [{ destacado: "desc" }, { disponible: "desc" }, { nombre: "asc" }],
-      select: {
-        id: true,
-        nombre: true,
-        descripcion: true,
-        imagenes: true,
-        disponible: true,
-        destacado: true,
-      },
-    }),
-    proximasAsignaciones(vendedor.id),
-    obtenerInteresDelStand(vendedor.id),
-  ]);
 
-  const sinStock = productos.filter((producto) => !producto.disponible).length;
+    Lo que cambia pasa por la revisión de la administración (ver
+    `src/lib/revision.ts`). Acá el feriante ve su versión, con lo pendiente ya
+    aplicado y un cartel en cada parte que espera; el vecino sigue viendo la
+    aprobada hasta que la Dirección la apruebe.
+  */
+  const [parametros, publicados, participaciones, interes, cambios] =
+    await Promise.all([
+      searchParams,
+      prisma.producto.findMany({
+        where: { vendedorId: vendedor.id },
+        orderBy: [
+          { destacado: "desc" },
+          { disponible: "desc" },
+          { nombre: "asc" },
+        ],
+        select: {
+          id: true,
+          nombre: true,
+          descripcion: true,
+          imagenes: true,
+          disponible: true,
+          destacado: true,
+          publicado: true,
+          precio: true,
+          stock: true,
+        },
+      }),
+      proximasAsignaciones(vendedor.id),
+      obtenerInteresDelStand(vendedor.id),
+      cambiosAbiertos(vendedor.id),
+    ]);
+
+  const { vendedor: stand, estados } = standDelDueno(vendedor, cambios);
+  const productos = publicados.map((producto) =>
+    productoDelDueno(producto, cambios),
+  );
+
+  const pendientes = cambios.filter((c) => c.estado === "PENDIENTE").length;
+  const rechazados = cambios.length - pendientes;
+
+  const sinStock = productos.filter(({ producto }) => !producto.disponible)
+    .length;
   const enStock = productos.length - sinStock;
   const resumenCatalogo =
     productos.length === 0
@@ -232,6 +261,14 @@ export default async function PaginaMiStand({
   const llegada = (
     Object.keys(AVISOS_DE_LLEGADA) as Array<keyof typeof AVISOS_DE_LLEGADA>
   ).find((clave) => parametros[clave] !== undefined);
+
+  const cartel = (
+    parte: keyof typeof estados,
+    que?: string,
+  ) => {
+    const revision = estados[parte];
+    return revision ? <EstadoDeRevision revision={revision} que={que} /> : null;
+  };
 
   return (
     <>
@@ -245,7 +282,9 @@ export default async function PaginaMiStand({
       <div className="mb-5 space-y-3">
         <p className="text-sm text-slate-600">
           <span className="font-medium text-slate-900">
-            Así te ven los vecinos.
+            {pendientes > 0
+              ? "Así va a quedar tu stand."
+              : "Así te ven los vecinos."}
           </span>{" "}
           Tocá el lápiz o la cámara para cambiar cualquier parte.{" "}
           {/* En pantallas anchas el enlace está arriba, en el encabezado. */}
@@ -257,52 +296,73 @@ export default async function PaginaMiStand({
             Ver mi stand público
           </Link>
         </p>
+
+        {(pendientes > 0 || rechazados > 0) && (
+          <Alerta tipo={rechazados > 0 ? "advertencia" : "info"}>
+            {pendientes > 0 &&
+              `${pendientes === 1 ? "Tenés 1 cambio" : `Tenés ${pendientes} cambios`} esperando la revisión de la Dirección de Relaciones Institucionales. Hasta que lo${pendientes === 1 ? "" : "s"} aprueben, los vecinos ven la versión anterior. `}
+            {rechazados > 0 &&
+              `${rechazados === 1 ? "1 cambio no se aprobó" : `${rechazados} cambios no se aprobaron`}: fijate el motivo en esa parte del stand, corregilo y volvé a guardar.`}
+          </Alerta>
+        )}
+
         <LineaDeInteres resumen={interes} />
       </div>
 
       <VistaStand
-        vendedor={vendedor}
+        vendedor={stand}
         participaciones={participaciones as ParticipacionVistaStand[]}
         resumenCatalogo={resumenCatalogo}
         edicion={{
-          portada: <EditarPortada actual={vendedor.imagenPortada} />,
-          logo: <EditarLogo actual={vendedor.logo} />,
+          portada: <EditarPortada actual={stand.imagenPortada} />,
+          logo: <EditarLogo actual={stand.logo} />,
           identidad: (
             <EditarIdentidad
-              emprendimiento={vendedor.emprendimiento}
-              rubro={vendedor.rubro}
+              emprendimiento={stand.emprendimiento}
+              rubro={stand.rubro}
             />
           ),
           descripcion: (
             <EditarDescripcion
-              descripcion={vendedor.descripcion}
-              emprendimiento={vendedor.emprendimiento}
-              rubro={vendedor.rubro}
+              descripcion={stand.descripcion}
+              emprendimiento={stand.emprendimiento}
+              rubro={stand.rubro}
               hayIA={hayIAConfigurada()}
             />
           ),
           contacto: (
             <EditarContacto
               contacto={{
-                whatsapp: vendedor.whatsapp,
-                telefono: vendedor.telefono,
-                email: vendedor.email,
-                direccion: vendedor.direccion,
-                instagram: vendedor.instagram,
-                facebook: vendedor.facebook,
-                sitioWeb: vendedor.sitioWeb,
+                whatsapp: stand.whatsapp,
+                telefono: stand.telefono,
+                email: stand.email,
+                direccion: stand.direccion,
+                instagram: stand.instagram,
+                facebook: stand.facebook,
+                sitioWeb: stand.sitioWeb,
               }}
             />
           ),
+          revisiones: {
+            portada: cartel("PORTADA", "Portada"),
+            logo: cartel("LOGO", "Logo"),
+            identidad: cartel("IDENTIDAD", "Nombre y rubro"),
+            descripcion: cartel("DESCRIPCION", "Descripción"),
+            contacto: cartel("CONTACTO"),
+          },
         }}
         catalogo={
           <ul className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <li>
               <TarjetaAgregarProducto />
             </li>
-            {productos.map((producto) => (
+            {productos.map(({ producto, revision, nuevo }) => (
               <li key={producto.id}>
-                <TarjetaProductoPropio producto={producto} />
+                <TarjetaProductoPropio
+                  producto={producto}
+                  revision={revision}
+                  nuevo={nuevo}
+                />
               </li>
             ))}
           </ul>

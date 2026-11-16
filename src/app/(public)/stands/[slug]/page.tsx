@@ -20,7 +20,10 @@ async function obtenerStand(slug: string) {
   return prisma.vendedor.findFirst({
     where: { slug, estado: "APROBADO" },
     include: {
+      // Sólo los aprobados: uno nuevo se ve recién cuando lo aprueba la
+      // administración (ver `src/lib/revision.ts`).
       productos: {
+        where: { publicado: true },
         orderBy: [
           { destacado: "desc" },
           { disponible: "desc" },

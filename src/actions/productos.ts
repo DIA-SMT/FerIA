@@ -11,9 +11,22 @@ import {
   type EstadoFormulario,
 } from "@/lib/form";
 import { rutaEsDelVendedor } from "@/lib/fotos-producto";
+import {
+  esProductoNuevo,
+  imagenesDelCambio,
+  leerDatos,
+  proponerCambio,
+} from "@/lib/revision";
 import { requerirVendedorAprobado } from "@/lib/session";
 import { almacenamiento } from "@/lib/storage";
 import { productoSchema } from "@/lib/validations/producto";
+
+/*
+  Los productos pasan por la revisión de la administración (ver
+  `src/lib/revision.ts`): uno nuevo nace sin publicar, y los cambios a uno
+  publicado esperan aprobación mientras el vecino ve el de antes. Marcarlo sin
+  stock y eliminarlo, en cambio, son inmediatos: sólo sacan algo de la vista.
+*/
 
 const MAXIMO_IMAGENES = 4;
 
@@ -21,6 +34,7 @@ function revalidarCatalogo(slug: string): void {
   revalidatePath("/mi-stand");
   revalidatePath("/stands");
   revalidatePath(`/stands/${slug}`);
+  revalidatePath("/admin/revisiones");
 }
 
 /** Separa un campo de rutas separadas por coma. */
@@ -81,7 +95,8 @@ export async function crearProducto(
     const entrada = validacion.data;
     const imagenes = fotosElegidas(datos, vendedor.id, 0);
 
-    await prisma.producto.create({
+    // Nace sin publicar: el vecino lo ve recién cuando se aprueba su alta.
+    const producto = await prisma.producto.create({
       data: {
         vendedorId: vendedor.id,
         nombre: entrada.nombre,
@@ -91,7 +106,15 @@ export async function crearProducto(
         disponible: entrada.disponible,
         destacado: entrada.destacado,
         imagenes,
+        publicado: false,
       },
+      select: { id: true },
+    });
+    await proponerCambio({
+      vendedorId: vendedor.id,
+      seccion: "PRODUCTO",
+      productoId: producto.id,
+      datos: { nuevo: true },
     });
 
     // Recién con el producto guardado se borran las variantes sin elegir: si el
@@ -121,7 +144,7 @@ export async function actualizarProducto(
 
     const actual = await prisma.producto.findUnique({
       where: { id: productoId },
-      select: { id: true, vendedorId: true, imagenes: true },
+      select: { id: true, vendedorId: true, imagenes: true, publicado: true },
     });
 
     // Un feriante sólo puede tocar su propio catálogo.
@@ -134,28 +157,72 @@ export async function actualizarProducto(
 
     const entrada = validacion.data;
 
+    // La versión que el feriante tenía en pantalla: la propuesta pendiente si
+    // había una, o la publicada. Sus fotos son las que puede conservar.
+    const pendiente = actual.publicado
+      ? await prisma.cambioDelStand.findFirst({
+          where: { productoId, seccion: "PRODUCTO", estado: "PENDIENTE" },
+          select: { datos: true },
+        })
+      : null;
+    const propuesta = pendiente ? leerDatos("PRODUCTO", pendiente.datos) : null;
+    const imagenesEnPantalla =
+      propuesta && !esProductoNuevo(propuesta)
+        ? propuesta.imagenes
+        : actual.imagenes;
+
     // Las que el feriante dejó marcadas + las que eligió en el selector.
     const conservadas = entrada.imagenesActuales.filter((ruta) =>
-      actual.imagenes.includes(ruta),
+      imagenesEnPantalla.includes(ruta),
     );
     const nuevas = fotosElegidas(datos, vendedor.id, conservadas.length);
+    const imagenes = [...conservadas, ...nuevas];
 
-    await prisma.producto.update({
-      where: { id: productoId },
-      data: {
-        nombre: entrada.nombre,
-        descripcion: entrada.descripcion,
-        precio: entrada.precio,
-        stock: entrada.stock,
-        disponible: entrada.disponible,
-        destacado: entrada.destacado,
-        imagenes: [...conservadas, ...nuevas],
-      },
-    });
-
-    // Borramos del disco las fotos que se quitaron y las variantes sin elegir.
-    for (const ruta of actual.imagenes) {
-      if (!conservadas.includes(ruta)) await almacenamiento.eliminar(ruta);
+    if (!actual.publicado) {
+      // Todavía no lo ve nadie: se corrige en su propia fila y vuelve a
+      // revisión (si lo habían rechazado, con esto queda pendiente de nuevo).
+      await prisma.producto.update({
+        where: { id: productoId },
+        data: {
+          nombre: entrada.nombre,
+          descripcion: entrada.descripcion,
+          precio: entrada.precio,
+          stock: entrada.stock,
+          disponible: entrada.disponible,
+          destacado: entrada.destacado,
+          imagenes,
+        },
+      });
+      for (const ruta of actual.imagenes) {
+        if (!conservadas.includes(ruta)) await almacenamiento.eliminar(ruta);
+      }
+      await proponerCambio({
+        vendedorId: vendedor.id,
+        seccion: "PRODUCTO",
+        productoId,
+        datos: { nuevo: true },
+      });
+    } else {
+      // Publicado: el vecino lo sigue viendo como está hasta que se apruebe.
+      // Sólo la disponibilidad se aplica ya, como el botón «Marcar sin stock».
+      // Las fotos publicadas que el feriante sacó no se borran todavía: se ven.
+      await prisma.producto.update({
+        where: { id: productoId },
+        data: { disponible: entrada.disponible },
+      });
+      await proponerCambio({
+        vendedorId: vendedor.id,
+        seccion: "PRODUCTO",
+        productoId,
+        datos: {
+          nombre: entrada.nombre,
+          descripcion: entrada.descripcion,
+          imagenes,
+          precio: entrada.precio ?? null,
+          stock: entrada.stock ?? null,
+          destacado: entrada.destacado,
+        },
+      });
     }
     await descartarVariantes(datos, vendedor.id);
 
@@ -175,14 +242,25 @@ export async function eliminarProducto(datos: FormData): Promise<void> {
 
   const producto = await prisma.producto.findUnique({
     where: { id: productoId },
-    select: { vendedorId: true, imagenes: true },
+    select: {
+      vendedorId: true,
+      imagenes: true,
+      cambios: { select: { seccion: true, datos: true } },
+    },
   });
 
   if (!producto || producto.vendedorId !== vendedor.id) return;
 
+  // Se van con el producto: los cambios en revisión caen en cascada.
   await prisma.producto.delete({ where: { id: productoId } });
 
-  for (const ruta of producto.imagenes) {
+  const fotos = new Set([
+    ...producto.imagenes,
+    ...producto.cambios.flatMap((cambio) =>
+      imagenesDelCambio(cambio.seccion, cambio.datos),
+    ),
+  ]);
+  for (const ruta of fotos) {
     await almacenamiento.eliminar(ruta);
   }
 

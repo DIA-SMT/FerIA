@@ -5,9 +5,11 @@ import { notFound } from "next/navigation";
 import { actualizarProducto } from "@/actions/productos";
 import { FormularioProducto } from "@/components/vendedor/formulario-producto";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
+import { EstadoDeRevision } from "@/components/vendedor/estado-de-revision";
 import { prisma } from "@/lib/db";
 import { aNumero } from "@/lib/format";
 import { hayPreciosPublicos } from "@/lib/marketplace";
+import { cambiosAbiertos, productoDelDueno } from "@/lib/revision";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Editar producto" };
@@ -41,11 +43,19 @@ export default async function PaginaEditarProducto({
   const { id } = await params;
 
   // El filtro por `vendedorId` evita que un feriante abra el producto de otro.
-  const producto = await prisma.producto.findFirst({
-    where: { id, vendedorId: vendedor.id },
-  });
+  const [publicado, cambios] = await Promise.all([
+    prisma.producto.findFirst({ where: { id, vendedorId: vendedor.id } }),
+    cambiosAbiertos(vendedor.id),
+  ]);
 
-  if (!producto) notFound();
+  if (!publicado) notFound();
+
+  // Si tiene un cambio en revisión, el formulario arranca desde esa versión: es
+  // la que el feriante ve en su stand y la que va a seguir corrigiendo.
+  const { producto, revision, nuevo } = productoDelDueno(
+    { ...publicado, precio: publicado.precio === null ? null : aNumero(publicado.precio) },
+    cambios,
+  );
 
   return (
     <div className="max-w-3xl">
@@ -60,6 +70,18 @@ export default async function PaginaEditarProducto({
         <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
           Editar producto
         </h1>
+        {revision && (
+          <EstadoDeRevision
+            revision={revision}
+            que={nuevo ? "Producto nuevo" : undefined}
+            sinDescartar={nuevo}
+            className="mt-3"
+          />
+        )}
+        <p className="mt-3 text-sm text-slate-600">
+          Lo que cambies pasa por la revisión de la Dirección de Relaciones
+          Institucionales antes de publicarse. Marcarlo sin stock es inmediato.
+        </p>
       </header>
 
       <FormularioProducto
@@ -73,7 +95,7 @@ export default async function PaginaEditarProducto({
           imagenes: producto.imagenes,
           disponible: producto.disponible,
           destacado: producto.destacado,
-          precio: producto.precio === null ? null : aNumero(producto.precio),
+          precio: producto.precio,
           stock: producto.stock,
         }}
       />

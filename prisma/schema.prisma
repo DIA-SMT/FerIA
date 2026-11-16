@@ -200,6 +200,9 @@ model Usuario {
 
   vendedor Vendedor?
 
+  /// Los cambios de stands que revisó, si es de la administración.
+  cambiosRevisados CambioDelStand[]
+
   @@index([rol])
   @@map("usuarios")
 }
@@ -285,6 +288,7 @@ model Vendedor {
   pedidos       Pedido[]
   postulaciones Postulacion[]
   interes       InteresStand[]
+  cambios       CambioDelStand[]
 
   // Idempotencia de la importación. Postgres admite varios NULL en un índice
   // único, así que las fichas propias (idExterno null) no chocan entre sí.
@@ -439,14 +443,21 @@ model Producto {
   disponible Boolean @default(true)
   destacado  Boolean @default(false)
 
+  /// Si el vecino lo ve. Un producto nuevo nace en `false` y pasa a `true`
+  /// cuando la administración aprueba su alta (ver `CambioDelStand`). Los que
+  /// ya existían antes de la revisión quedaron en `true`.
+  publicado Boolean @default(true)
+
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
   items   ItemPedido[]
   interes InteresProducto[]
+  cambios CambioDelStand[]
 
   @@index([vendedorId])
   @@index([disponible])
+  @@index([publicado])
   @@map("productos")
 }
 
@@ -668,4 +679,59 @@ model InteresProducto {
   @@id([productoId, fecha])
   @@index([fecha])
   @@map("interes_producto")
+}
+
+/// Qué parte del stand toca un cambio. Cada una se revisa por separado.
+enum SeccionDelStand {
+  PORTADA
+  LOGO
+  IDENTIDAD
+  DESCRIPCION
+  CONTACTO
+  PRODUCTO
+}
+
+enum EstadoRevision {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+/// Un cambio que un feriante propuso para su stand y espera la revisión de la
+/// administración.
+///
+/// Nada de lo que el feriante cambia se publica solo: mientras el cambio está
+/// pendiente, el vecino sigue viendo la última versión aprobada, y el feriante
+/// ve la suya con el cartel «En revisión». Al aprobarse se copia a `Vendedor` o
+/// a `Producto`; al rechazarse queda con el motivo para que lo corrija.
+///
+/// Hay a lo sumo uno PENDIENTE por sección (y por producto): volver a editar
+/// la misma parte reemplaza la propuesta en vez de apilar otra. La forma de
+/// `datos` según la sección está en `src/lib/revision.ts`.
+model CambioDelStand {
+  id         String   @id @default(cuid())
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  seccion SeccionDelStand
+
+  /// Sólo en los cambios de producto.
+  productoId String?
+  producto   Producto? @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  datos Json
+
+  estado        EstadoRevision @default(PENDIENTE)
+  motivoRechazo String?
+  revisadoEn    DateTime?
+  revisadoPorId String?        @db.Uuid
+  revisadoPor   Usuario?       @relation(fields: [revisadoPorId], references: [id], onDelete: SetNull)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([estado, creadoEn])
+  @@index([vendedorId])
+  @@index([productoId])
+  @@map("cambios_del_stand")
 }

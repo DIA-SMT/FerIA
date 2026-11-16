@@ -95,7 +95,9 @@ async function obtenerFeriantes(slug: string) {
         descripcion: true,
         imagenPortada: true,
         logo: true,
-        _count: { select: { productos: { where: { disponible: true } } } },
+        _count: {
+          select: { productos: { where: { disponible: true, publicado: true } } },
+        },
       },
       orderBy: [{ emprendimiento: "asc" }, { id: "asc" }],
       take: FERIANTES_A_LA_VISTA,

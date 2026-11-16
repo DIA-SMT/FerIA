@@ -69,7 +69,11 @@ export async function crearPedido(
     // El `vendedorId` en el where es lo que impide armar un pedido mezclando
     // productos de otro stand mandando sus ids a mano.
     const productos = await prisma.producto.findMany({
-      where: { id: { in: [...pedidos.keys()] }, vendedorId: vendedor.id },
+      where: {
+        id: { in: [...pedidos.keys()] },
+        vendedorId: vendedor.id,
+        publicado: true,
+      },
       select: {
         id: true,
         nombre: true,

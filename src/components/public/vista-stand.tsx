@@ -74,6 +74,14 @@ export interface EdicionVistaStand {
    */
   descripcion: ReactNode;
   contacto: ReactNode;
+  /**
+   * Los carteles de revisión de cada parte («En revisión», «No se aprobó»).
+   * El del logo y el del nombre van juntos debajo del encabezado, así que
+   * tienen que decir de qué parte son.
+   */
+  revisiones?: Partial<
+    Record<"portada" | "logo" | "identidad" | "descripcion" | "contacto", ReactNode>
+  >;
 }
 
 const ESTILO_BOTON_WHATSAPP =
@@ -133,6 +141,11 @@ export function VistaStand({
             {edicion.portada}
           </div>
         )}
+        {edicion?.revisiones?.portada && (
+          <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-1.5rem)]">
+            {edicion.revisiones.portada}
+          </div>
+        )}
       </div>
 
       <div className={cn(!propio && "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8")}>
@@ -184,6 +197,12 @@ export function VistaStand({
                 Feriante habilitado
               </Badge>
             </div>
+            {(edicion?.revisiones?.logo || edicion?.revisiones?.identidad) && (
+              <div className="mt-3 flex flex-wrap items-start gap-2">
+                {edicion.revisiones.logo}
+                {edicion.revisiones.identidad}
+              </div>
+            )}
           </div>
         </div>
 
@@ -202,6 +221,9 @@ export function VistaStand({
         <div className="mt-6 grid gap-10 pb-10 lg:grid-cols-3">
           {/* --------------------------- Columna principal -------------------- */}
           <div className="lg:col-span-2">
+            {edicion?.revisiones?.descripcion && (
+              <div className="mb-3">{edicion.revisiones.descripcion}</div>
+            )}
             {vendedor.descripcion ? (
               <section>
                 <h2 className="sr-only">Sobre el emprendimiento</h2>
@@ -286,6 +308,7 @@ export function VistaStand({
                 </h2>
                 {edicion?.contacto}
               </div>
+              {edicion?.revisiones?.contacto}
 
               {/* El botón principal de toda la vidriera. Cuenta como consulta
                   del stand y no de un producto: acá nadie nombró ninguno. En
