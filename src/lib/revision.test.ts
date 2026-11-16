@@ -118,6 +118,7 @@ import {
   proponerCambio,
   rechazarCambio,
   standDelDueno,
+  tipoDelCambio,
 } from "@/lib/revision";
 
 const VENDEDOR = {
@@ -466,5 +467,22 @@ describe("lo que ve el dueño", () => {
     expect(alta.producto.nombre).toBe("Dulce");
 
     expect(productoDelDueno(producto, []).revision).toBeNull();
+  });
+});
+
+describe("el tipo de cada cambio, para filtrar la bandeja", () => {
+  it("separa el alta de un producto de los cambios a uno publicado", () => {
+    expect(tipoDelCambio("PRODUCTO", { nuevo: true })).toBe("producto-nuevo");
+    expect(
+      tipoDelCambio("PRODUCTO", {
+        nombre: "x",
+        descripcion: null,
+        imagenes: [],
+        precio: null,
+        stock: null,
+        destacado: false,
+      }),
+    ).toBe("producto");
+    expect(tipoDelCambio("LOGO", { logo: "a.webp" })).toBe("logo");
   });
 });

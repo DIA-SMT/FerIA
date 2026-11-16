@@ -8,6 +8,7 @@ import type {
 import { prisma } from "@/lib/db";
 import { generarSlugUnico } from "@/lib/slug";
 import { almacenamiento } from "@/lib/storage";
+import type { TipoDeCambio } from "@/lib/tipos-de-cambio";
 
 /*
   Revisión de los cambios del stand.
@@ -120,6 +121,32 @@ async function imagenesPublicadas(
     );
   }
   return [];
+}
+
+// ---------------------------------------------------------------------------
+// Tipos de cambio, para filtrar la bandeja de la administración
+// ---------------------------------------------------------------------------
+
+export function tipoDelCambio(
+  seccion: SeccionDelStand,
+  datos: unknown,
+): TipoDeCambio {
+  switch (seccion) {
+    case "PORTADA":
+      return "portada";
+    case "LOGO":
+      return "logo";
+    case "IDENTIDAD":
+      return "identidad";
+    case "DESCRIPCION":
+      return "descripcion";
+    case "CONTACTO":
+      return "contacto";
+    case "PRODUCTO":
+      return esProductoNuevo(leerDatos("PRODUCTO", datos))
+        ? "producto-nuevo"
+        : "producto";
+  }
 }
 
 // ---------------------------------------------------------------------------
