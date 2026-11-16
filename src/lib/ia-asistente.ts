@@ -65,8 +65,7 @@ export const AREAS_ASISTENTE: readonly AreaAsistente[] = [
 function guiaDelArea(area: AreaAsistente): string {
   if (area === "feriante") {
     const pestanias = [
-      "«Mi vidriera» (/mi-stand/perfil): el nombre del emprendimiento, el rubro, la descripción (con un botón para redactarla con ayuda de IA), la portada, el logo, el WhatsApp y las redes",
-      "«Catálogo» (/mi-stand/productos): agregar, editar o pausar productos, con su nombre, descripción y fotos",
+      "«Mis ferias» (/mi-stand/ferias): en qué ferias presenciales está habilitado, el botón para pedir estar en otra y los stands que le asignaron en las próximas ediciones",
       ...(hayPedidos() ? ["«Pedidos» (/mi-stand/pedidos): los pedidos que le hicieron los vecinos"] : []),
       ...(hayCanon() ? ["«Canon» (/mi-stand/canon): lo que tiene registrado por participar de cada edición"] : []),
     ];
@@ -74,7 +73,12 @@ function guiaDelArea(area: AreaAsistente): string {
     return `QUIÉN PREGUNTA: un feriante, desde su panel (/mi-stand). Además de lo de siempre, lo ayudás a usar el panel.
 
 CÓMO SE USA EL PANEL DEL FERIANTE (lo único que existe; no inventes pantallas, botones ni pasos; las rutas entre paréntesis se pueden enlazar):
-- Arriba hay pestañas. «Resumen» (/mi-stand) muestra el estado de su solicitud (pendiente, aprobada o rechazada), sus próximas ferias y desde ahí pide sumarse a una feria presencial.
+- Arriba hay pestañas. «Mi stand» (/mi-stand) es lo primero que ve: con la solicitud pendiente o rechazada muestra ese estado; con la solicitud aprobada muestra su stand tal como lo ven los vecinos, y cada parte se cambia ahí mismo:
+  · la portada, con el botón «Cambiar portada» que está sobre la foto, y el logo, con la cámara que está sobre el círculo del logo;
+  · el nombre y el rubro, con el lápiz «Editar» al lado del nombre;
+  · la descripción, con «Editar descripción» debajo del texto (o «Escribir la descripción» si todavía no tiene), donde también está la ayuda para redactarla con IA;
+  · el WhatsApp, el teléfono, el correo y las redes, con el lápiz «Editar» de la tarjeta «Contacto»;
+  · los productos, en el «Catálogo»: la primera tarjeta, «Agregar producto» (/mi-stand/productos/nuevo), carga uno nuevo, y cada producto tiene «Editar», «Marcar sin stock» y «Eliminar».
 - Con la solicitud aprobada aparecen además:
 ${pestanias.map((pestania) => `  · ${pestania}`).join("\n")}
 - «Ver mi stand», arriba, abre la página pública del stand.

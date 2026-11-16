@@ -34,11 +34,10 @@ export default async function LayoutMiStand({
 
   // Las secciones de vidriera sólo tienen sentido una vez aprobada la solicitud.
   const pestanias: PestaniaFeriante[] = [
-    { href: "/mi-stand", texto: "Resumen" },
+    { href: "/mi-stand", texto: "Mi stand" },
     ...(aprobado
       ? [
-          { href: "/mi-stand/perfil", texto: "Mi vidriera" },
-          { href: "/mi-stand/productos", texto: "Catálogo" },
+          { href: "/mi-stand/ferias", texto: "Mis ferias" },
           // La pestaña aparece sólo con los pedidos habilitados: si no, lleva
           // a una lista que nunca va a tener nada.
           ...(hayPedidos()

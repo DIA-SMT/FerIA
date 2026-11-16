@@ -21,9 +21,11 @@ export function NavegacionFeriante({
   return (
     <nav aria-label="Secciones de mi stand" className="-mb-px flex gap-1 overflow-x-auto">
       {pestanias.map((pestania) => {
+        // «Mi stand» abarca también la carga y edición de productos, que se
+        // abren desde su catálogo y vuelven a él.
         const activa =
           pestania.href === "/mi-stand"
-            ? ruta === "/mi-stand"
+            ? ruta === "/mi-stand" || ruta.startsWith("/mi-stand/productos")
             : ruta.startsWith(pestania.href);
 
         return (

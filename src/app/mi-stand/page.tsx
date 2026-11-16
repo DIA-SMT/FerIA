@@ -1,119 +1,59 @@
 import Link from "next/link";
 
-import { Alerta } from "@/components/ui/alerta";
-import { Badge } from "@/components/ui/badge";
-import { BotonLink } from "@/components/ui/boton";
-import { EstadoVacio } from "@/components/ui/estado-vacio";
 import {
-  IconoCalendario,
-  IconoEnlaceExterno,
-  IconoEtiqueta,
-  IconoUbicacion,
-} from "@/components/ui/iconos";
+  VistaStand,
+  type ParticipacionVistaStand,
+} from "@/components/public/vista-stand";
+import { Alerta } from "@/components/ui/alerta";
+import { AvisoDeLlegada } from "@/components/ui/aviso-flotante";
 import {
   Tarjeta,
   TarjetaCuerpo,
   TarjetaEncabezado,
 } from "@/components/ui/tarjeta";
-import { InteresEnLaVidriera } from "@/components/vendedor/interes-en-la-vidriera";
-import { MisFerias } from "@/components/vendedor/mis-ferias";
-import { EDICIONES_PUBLICAS, edicionesVigentes } from "@/lib/consultas";
-import { prisma } from "@/lib/db";
 import {
-  formatearFecha,
-  formatearFechaHora,
-  formatearRangoFechas,
-  hoyEnZona,
-} from "@/lib/format";
-import { resumenHorario } from "@/lib/horarios";
+  EditarContacto,
+  EditarDescripcion,
+  EditarIdentidad,
+  EditarLogo,
+  EditarPortada,
+} from "@/components/vendedor/editar-stand";
+import { LineaDeInteres } from "@/components/vendedor/interes-en-la-vidriera";
+import { MisFerias } from "@/components/vendedor/mis-ferias";
+import {
+  TarjetaAgregarProducto,
+  TarjetaProductoPropio,
+} from "@/components/vendedor/tarjeta-producto-propio";
+import { hayIAConfigurada } from "@/lib/ai";
+import { prisma } from "@/lib/db";
+import { formatearFechaHora } from "@/lib/format";
 import { obtenerInteresDelStand } from "@/lib/interes";
 import { RUBROS } from "@/lib/labels";
+import { feriasDelFeriante, proximasAsignaciones } from "@/lib/mis-ferias";
 import { obtenerVendedorActual } from "@/lib/session";
 
-export const metadata = { title: "Resumen" };
+export const metadata = { title: "Mi stand" };
 
-/**
- * Las ferias del feriante y las que le quedan por pedir.
- *
- * Va en una función porque las tres ramas de la pantalla —pendiente, rechazada
- * y aprobada— muestran lo mismo: a qué ferias pertenece. Es justamente el dato
- * que antes no existía en ningún lado.
- */
-async function ferias(vendedorId: string) {
-  const postulaciones = await prisma.postulacion.findMany({
-    where: { vendedorId },
-    orderBy: { creadoEn: "desc" },
-    select: {
-      id: true,
-      estado: true,
-      motivoRechazo: true,
-      creadoEn: true,
-      revisadoEn: true,
-      feria: { select: { nombre: true, slug: true } },
-    },
-  });
+/** Para que el aviso de llegada diga lo que pasó (ver `actions/productos`). */
+const AVISOS_DE_LLEGADA = {
+  agregado: "Producto agregado al catálogo.",
+  actualizado: "Producto actualizado.",
+} as const;
 
-  // Sólo las que todavía no pidió: volver a postularse a la misma feria lo
-  // resuelve la acción reabriendo la postulación, pero ofrecerlo en la lista
-  // haría pensar que son dos pedidos distintos.
-  const yaPedidas = postulaciones.map((postulacion) => postulacion.feria.slug);
-  const hoy = hoyEnZona();
-
-  const ferias = await prisma.feria.findMany({
-    where: { activa: true, slug: { notIn: yaPedidas } },
-    select: {
-      id: true,
-      nombre: true,
-      // La próxima edición publicada, que es lo que ordena la lista.
-      ediciones: {
-        where: edicionesVigentes(hoy),
-        orderBy: { fechaInicio: "asc" },
-        take: 1,
-        select: { fechaInicio: true },
-      },
-    },
-  });
-
-  /*
-    Ordenadas por fecha y no alfabéticamente.
-
-    La lista alfabética daba lo mismo mirarla que no mirarla: decidir a qué
-    feria pedir depende de cuándo es la próxima, no de con qué letra empieza.
-    Una feria sin edición publicada igual se ofrece —estar habilitado en una
-    feria no depende de que haya fecha cargada— pero va al final, porque pedirla
-    no tiene un horizonte concreto. Entre esas se vuelve al orden alfabético,
-    que es lo único que queda para desempatar.
-
-    El orden se arma acá y no con `orderBy` porque es por un campo de la
-    relación: Prisma no ordena por el mínimo de una lista anidada, y con cinco
-    ferias traerlas y acomodarlas sale más barato que inventar una consulta.
-  */
-  const disponibles = ferias
-    .map((feria) => ({
-      id: feria.id,
-      nombre: feria.nombre,
-      proxima: feria.ediciones[0]?.fechaInicio ?? null,
-    }))
-    .sort((a, b) => {
-      if (a.proxima && b.proxima) {
-        return a.proxima.getTime() - b.proxima.getTime();
-      }
-      if (a.proxima) return -1;
-      if (b.proxima) return 1;
-      return a.nombre.localeCompare(b.nombre, "es");
-    })
-    .map((feria) => ({
-      id: feria.id,
-      nombre: feria.nombre,
-      proxima: feria.proxima ? formatearFecha(feria.proxima) : null,
-    }));
-
-  return { postulaciones, disponibles };
-}
-
-export default async function PaginaMiStand() {
+export default async function PaginaMiStand({
+  searchParams,
+}: {
+  searchParams: Promise<{ agregado?: string; actualizado?: string }>;
+}) {
   const { vendedor } = await obtenerVendedorActual();
-  const { postulaciones, disponibles } = await ferias(vendedor.id);
+
+  // Las dos ramas sin alta muestran a qué ferias pertenece, aunque no dejen
+  // pedir otra. Con el alta aprobada eso vive en «Mis ferias».
+  const { postulaciones, disponibles } =
+    vendedor.estado === "APROBADO"
+      ? { postulaciones: [], disponibles: [] }
+      : await feriasDelFeriante(vendedor.id);
+
 
   // -------------------------- Pendiente de aprobación ------------------------
   if (vendedor.estado === "PENDIENTE") {
@@ -254,194 +194,120 @@ export default async function PaginaMiStand() {
   }
 
   // -------------------------------- Aprobada --------------------------------
-  const hoy = hoyEnZona();
+  /*
+    El stand tal como lo ve el vecino, con un lápiz en cada parte.
 
-  const [asignaciones, productos, productosDisponibles, interes] =
-    await Promise.all([
-      prisma.stand.findMany({
-        where: {
-          vendedorId: vendedor.id,
-          edicion: { ...EDICIONES_PUBLICAS, fechaFin: { gte: hoy } },
-        },
-        orderBy: { edicion: { fechaInicio: "asc" } },
-        include: {
-          edicion: {
-            include: {
-              feria: { select: { nombre: true, slug: true, direccion: true } },
-            },
-          },
-        },
-      }),
-      prisma.producto.count({ where: { vendedorId: vendedor.id } }),
-      prisma.producto.count({
-        where: { vendedorId: vendedor.id, disponible: true },
-      }),
-      obtenerInteresDelStand(vendedor.id),
-    ]);
+    Antes esta pantalla era un resumen —tres números, avisos y ferias— y el
+    stand se editaba en otras dos pestañas, «Mi vidriera» y «Catálogo», sin ver
+    cómo quedaba. Ahora el feriante entra y lo primero que ve es su stand, y lo
+    cambia donde lo ve. Las ferias pasaron a la pestaña «Mis ferias».
+  */
+  const [parametros, productos, participaciones, interes] = await Promise.all([
+    searchParams,
+    prisma.producto.findMany({
+      where: { vendedorId: vendedor.id },
+      orderBy: [{ destacado: "desc" }, { disponible: "desc" }, { nombre: "asc" }],
+      select: {
+        id: true,
+        nombre: true,
+        descripcion: true,
+        imagenes: true,
+        disponible: true,
+        destacado: true,
+      },
+    }),
+    proximasAsignaciones(vendedor.id),
+    obtenerInteresDelStand(vendedor.id),
+  ]);
 
-  const vidrieraIncompleta =
-    !vendedor.descripcion || !vendedor.imagenPortada || productos === 0;
+  const sinStock = productos.filter((producto) => !producto.disponible).length;
+  const enStock = productos.length - sinStock;
+  const resumenCatalogo =
+    productos.length === 0
+      ? null
+      : `${enStock} ${enStock === 1 ? "disponible" : "disponibles"}${
+          sinStock > 0 ? ` · ${sinStock} sin stock` : ""
+        }`;
+
+  const llegada = (
+    Object.keys(AVISOS_DE_LLEGADA) as Array<keyof typeof AVISOS_DE_LLEGADA>
+  ).find((clave) => parametros[clave] !== undefined);
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Hola, {vendedor.emprendimiento}
-          </h1>
-          <p className="mt-1 text-slate-600">
-            Tu stand está publicado en el market municipal.
-          </p>
-        </div>
-        <BotonLink href={`/stands/${vendedor.slug}`} externo variante="contorno">
-          Ver mi stand
-          <IconoEnlaceExterno className="size-4" />
-        </BotonLink>
-      </div>
-
-      {vidrieraIncompleta && (
-        <Alerta
-          tipo="info"
-          titulo="Completá tu vidriera"
-          className="mt-5"
-        >
-          <ul className="mt-1 list-inside list-disc space-y-0.5">
-            {!vendedor.descripcion && (
-              <li>Contá de qué se trata tu emprendimiento.</li>
-            )}
-            {!vendedor.imagenPortada && (
-              <li>Subí una foto de portada para tu stand.</li>
-            )}
-            {productos === 0 && <li>Cargá al menos un producto al catálogo.</li>}
-          </ul>
-          <p className="mt-2 flex flex-wrap gap-3">
-            <Link
-              href="/mi-stand/perfil"
-              className="font-medium underline underline-offset-2"
-            >
-              Editar mi vidriera
-            </Link>
-            <Link
-              href="/mi-stand/productos/nuevo"
-              className="font-medium underline underline-offset-2"
-            >
-              Agregar un producto
-            </Link>
-          </p>
-        </Alerta>
+      {llegada && (
+        <AvisoDeLlegada
+          mensaje={AVISOS_DE_LLEGADA[llegada]}
+          parametro={llegada}
+        />
       )}
 
-      {/* -------------------------- Métricas rápidas ------------------------- */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <Tarjeta>
-          <TarjetaCuerpo>
-            <p className="text-sm text-slate-500">Ferias próximas</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              {asignaciones.length}
-            </p>
-          </TarjetaCuerpo>
-        </Tarjeta>
-        <Tarjeta>
-          <TarjetaCuerpo>
-            <p className="text-sm text-slate-500">Productos en catálogo</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{productos}</p>
-          </TarjetaCuerpo>
-        </Tarjeta>
-        <Tarjeta>
-          <TarjetaCuerpo>
-            <p className="text-sm text-slate-500">Disponibles</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              {productosDisponibles}
-            </p>
-          </TarjetaCuerpo>
-        </Tarjeta>
+      <div className="mb-5 space-y-3">
+        <p className="text-sm text-slate-600">
+          <span className="font-medium text-slate-900">
+            Así te ven los vecinos.
+          </span>{" "}
+          Tocá el lápiz o la cámara para cambiar cualquier parte.{" "}
+          {/* En pantallas anchas el enlace está arriba, en el encabezado. */}
+          <Link
+            href={`/stands/${vendedor.slug}`}
+            target="_blank"
+            className="font-medium text-municipal-600 hover:text-municipal-700 sm:hidden"
+          >
+            Ver mi stand público
+          </Link>
+        </p>
+        <LineaDeInteres resumen={interes} />
       </div>
 
-      {/* ------------------------ Interés en la vidriera --------------------- */}
-      <div className="mt-6">
-        <InteresEnLaVidriera resumen={interes} />
-      </div>
-
-      {/* ------------------------- Ferias de las que es parte ---------------- */}
-      <div className="mt-6">
-        <MisFerias
-          postulaciones={postulaciones}
-          feriasDisponibles={disponibles}
-          puedePedir
-        />
-      </div>
-
-      {/* ---------------------------- Asignaciones --------------------------- */}
-      <Tarjeta className="mt-6">
-        <TarjetaEncabezado
-          titulo="Mis próximas ferias"
-          descripcion="Las asignaciones las define la Dirección de Relaciones Institucionales."
-        />
-        <TarjetaCuerpo>
-          {asignaciones.length === 0 ? (
-            <EstadoVacio
-              icono={IconoCalendario}
-              titulo="Todavía no tenés stands asignados"
-              descripcion="Cuando te asignen un lugar en una próxima edición, lo vas a ver acá."
-              accion={
-                <BotonLink href="/ferias" variante="contorno" tamanio="sm">
-                  Ver ferias publicadas
-                </BotonLink>
-              }
+      <VistaStand
+        vendedor={vendedor}
+        participaciones={participaciones as ParticipacionVistaStand[]}
+        resumenCatalogo={resumenCatalogo}
+        edicion={{
+          portada: <EditarPortada actual={vendedor.imagenPortada} />,
+          logo: <EditarLogo actual={vendedor.logo} />,
+          identidad: (
+            <EditarIdentidad
+              emprendimiento={vendedor.emprendimiento}
+              rubro={vendedor.rubro}
             />
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {asignaciones.map((stand) => {
-                const horario = resumenHorario(stand.edicion);
-
-                return (
-                  <li
-                    key={stand.id}
-                    className="flex flex-wrap items-start justify-between gap-3 py-4 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0">
-                      <Link
-                        href={`/ferias/${stand.edicion.feria.slug}`}
-                        className="font-semibold text-slate-900 transition-colors hover:text-municipal-700"
-                      >
-                        {stand.edicion.feria.nombre}
-                      </Link>
-                      {stand.edicion.nombre && (
-                        <p className="text-sm text-municipal-600">
-                          {stand.edicion.nombre}
-                        </p>
-                      )}
-                      <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
-                        <IconoCalendario className="size-4 shrink-0 text-slate-400" />
-                        {formatearRangoFechas(
-                          stand.edicion.fechaInicio,
-                          stand.edicion.fechaFin,
-                        )}
-                        {horario ? ` · ${horario}` : ""}
-                      </p>
-                      <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-600">
-                        <IconoUbicacion className="size-4 shrink-0 text-slate-400" />
-                        {stand.edicion.feria.direccion}
-                      </p>
-                    </div>
-                    <Badge tono="amarillo">Stand {stand.numero}</Badge>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </TarjetaCuerpo>
-      </Tarjeta>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <BotonLink href="/mi-stand/productos/nuevo" variante="secundario">
-          <IconoEtiqueta className="size-4" />
-          Agregar producto
-        </BotonLink>
-        <BotonLink href="/mi-stand/perfil" variante="contorno">
-          Editar mi vidriera
-        </BotonLink>
-      </div>
+          ),
+          descripcion: (
+            <EditarDescripcion
+              descripcion={vendedor.descripcion}
+              emprendimiento={vendedor.emprendimiento}
+              rubro={vendedor.rubro}
+              hayIA={hayIAConfigurada()}
+            />
+          ),
+          contacto: (
+            <EditarContacto
+              contacto={{
+                whatsapp: vendedor.whatsapp,
+                telefono: vendedor.telefono,
+                email: vendedor.email,
+                direccion: vendedor.direccion,
+                instagram: vendedor.instagram,
+                facebook: vendedor.facebook,
+                sitioWeb: vendedor.sitioWeb,
+              }}
+            />
+          ),
+        }}
+        catalogo={
+          <ul className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <li>
+              <TarjetaAgregarProducto />
+            </li>
+            {productos.map((producto) => (
+              <li key={producto.id}>
+                <TarjetaProductoPropio producto={producto} />
+              </li>
+            ))}
+          </ul>
+        }
+      />
     </>
   );
 }

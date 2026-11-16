@@ -23,6 +23,57 @@ const PRODUCTOS_EN_LA_LISTA = 8;
  *     diciéndole hace cuánto lo miran sin que nadie se lo hubiera avisado.
  *   · Pasado el mes, los números del último mes y nada más que los suyos.
  */
+/**
+ * La versión de una línea, para arriba de «Mi stand».
+ *
+ * Ahí el protagonista es el stand, así que el contador no puede ocupar una
+ * tarjeta entera: antes del mes es un renglón, y después un renglón con los
+ * dos números que se despliega para mostrar el detalle completo.
+ */
+export function LineaDeInteres({ resumen }: { resumen: ResumenDeInteres }) {
+  if (resumen.diasQueFaltan > 0) {
+    return (
+      <p className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+        <span className="font-medium text-slate-900">
+          Estamos contando cuánto miran tu vidriera.
+        </span>{" "}
+        {resumen.fechaDeLaDevolucion
+          ? `Tu primer resumen: ${formatearFecha(resumen.fechaDeLaDevolucion)}.`
+          : `Faltan ${resumen.diasQueFaltan} días para el primer resumen.`}{" "}
+        No guardamos quién entra.
+      </p>
+    );
+  }
+
+  const consultas =
+    resumen.consultasDelStand +
+    resumen.productos.reduce((total, producto) => total + producto.consultas, 0);
+
+  return (
+    <details className="group rounded-xl bg-white text-sm ring-1 ring-slate-200">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 text-slate-600 [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="font-medium text-slate-900">
+            Últimos {DIAS_PARA_LA_DEVOLUCION} días:
+          </span>{" "}
+          {resumen.aperturas} {resumen.aperturas === 1 ? "visita" : "visitas"}{" "}
+          · {consultas} {consultas === 1 ? "consulta" : "consultas"} por
+          WhatsApp
+        </span>
+        <span className="font-medium text-municipal-600 group-open:hidden">
+          Ver detalle
+        </span>
+        <span className="hidden font-medium text-municipal-600 group-open:inline">
+          Ocultar
+        </span>
+      </summary>
+      <div className="border-t border-slate-100 p-1">
+        <InteresEnLaVidriera resumen={resumen} />
+      </div>
+    </details>
+  );
+}
+
 export function InteresEnLaVidriera({ resumen }: { resumen: ResumenDeInteres }) {
   if (resumen.diasQueFaltan > 0) {
     return (

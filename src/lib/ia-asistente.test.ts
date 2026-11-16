@@ -24,8 +24,12 @@ describe("la guía de cada área en el prompt de Migue", () => {
 
   it("al feriante le explica su panel con rutas que existen", () => {
     const texto = sistema("feriante");
-    expect(texto).toContain("(/mi-stand/perfil)");
-    expect(texto).toContain("(/mi-stand/productos)");
+    expect(texto).toContain("(/mi-stand)");
+    expect(texto).toContain("(/mi-stand/ferias)");
+    expect(texto).toContain("(/mi-stand/productos/nuevo)");
+    // Las pantallas viejas, que ahora redirigen a «Mi stand».
+    expect(texto).not.toContain("/mi-stand/perfil");
+    expect(texto).not.toContain("(/mi-stand/productos)");
     expect(texto).not.toContain("/admin");
   });
 
@@ -41,6 +45,6 @@ describe("la guía de cada área en el prompt de Migue", () => {
     const texto = sistema("administracion");
     expect(texto).toContain("(/admin/postulaciones)");
     expect(texto).toContain("(/admin/ferias)");
-    expect(texto).not.toContain("/mi-stand/perfil");
+    expect(texto).not.toContain("/mi-stand/ferias");
   });
 });

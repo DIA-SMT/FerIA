@@ -7,7 +7,6 @@ import { prisma } from "@/lib/db";
 import {
   ejecutarAccion,
   estadoDeError,
-  estadoDeExito,
   estadoDesdeZod,
   type EstadoFormulario,
 } from "@/lib/form";
@@ -19,7 +18,7 @@ import { productoSchema } from "@/lib/validations/producto";
 const MAXIMO_IMAGENES = 4;
 
 function revalidarCatalogo(slug: string): void {
-  revalidatePath("/mi-stand/productos");
+  revalidatePath("/mi-stand");
   revalidatePath("/stands");
   revalidatePath(`/stands/${slug}`);
 }
@@ -101,11 +100,11 @@ export async function crearProducto(
 
     revalidarCatalogo(vendedor.slug);
 
-    // Al catálogo, donde se ve el producto recién agregado. Quedarse en el
-    // formulario lo dejaba con el nombre y las fotos todavía cargados, y un
-    // segundo toque creaba otro producto con los mismos archivos: al borrar
-    // uno, el otro se quedaba sin fotos.
-    redirect("/mi-stand/productos?agregado=1");
+    // A «Mi stand», al catálogo, donde se ve el producto recién agregado.
+    // Quedarse en el formulario lo dejaba con el nombre y las fotos todavía
+    // cargados, y un segundo toque creaba otro producto con los mismos
+    // archivos: al borrar uno, el otro se quedaba sin fotos.
+    redirect("/mi-stand?agregado=1#catalogo");
   });
 }
 
@@ -161,7 +160,10 @@ export async function actualizarProducto(
     await descartarVariantes(datos, vendedor.id);
 
     revalidarCatalogo(vendedor.slug);
-    return estadoDeExito("Producto actualizado.");
+
+    // De vuelta al stand, para ver cómo quedó entre los demás: la edición se
+    // abre desde la tarjeta del catálogo y ahí vuelve.
+    redirect("/mi-stand?actualizado=1#catalogo");
   });
 }
 

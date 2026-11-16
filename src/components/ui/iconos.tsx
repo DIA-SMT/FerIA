@@ -349,6 +349,15 @@ export function IconoImagen(props: PropsIcono) {
   );
 }
 
+export function IconoCamara(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <path d="M4 8.5A1.5 1.5 0 015.5 7h2.2l1.4-2h5.8l1.4 2h2.2A1.5 1.5 0 0120 8.5v9a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 17.5v-9z" />
+      <circle cx="12" cy="12.5" r="3.2" />
+    </Base>
+  );
+}
+
 export function IconoEnlaceExterno(props: PropsIcono) {
   return (
     <Base {...props}>

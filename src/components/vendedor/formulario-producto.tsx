@@ -297,7 +297,7 @@ export function FormularioProducto({
         </TarjetaCuerpo>
 
         <TarjetaPie>
-          <Link href="/mi-stand/productos" className={estilosBoton("contorno")}>
+          <Link href="/mi-stand#catalogo" className={estilosBoton("contorno")}>
             Cancelar
           </Link>
           <BotonEnvio>

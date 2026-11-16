@@ -51,11 +51,11 @@ export default async function PaginaEditarProducto({
     <div className="max-w-3xl">
       <header className="mb-6">
         <Link
-          href="/mi-stand/productos"
+          href="/mi-stand#catalogo"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-municipal-700"
         >
           <IconoFlechaIzquierda className="size-4" />
-          Volver al catálogo
+          Volver a mi stand
         </Link>
         <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
           Editar producto
