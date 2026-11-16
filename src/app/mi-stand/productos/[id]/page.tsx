@@ -80,7 +80,8 @@ export default async function PaginaEditarProducto({
         )}
         <p className="mt-3 text-sm text-slate-600">
           Lo que cambies pasa por la revisión de la Dirección de Relaciones
-          Institucionales antes de publicarse. Marcarlo sin stock es inmediato.
+          Institucionales antes de publicarse. La cantidad y «Marcar sin stock» se
+          aplican en el momento.
         </p>
       </header>
 

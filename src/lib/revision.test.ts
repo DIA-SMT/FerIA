@@ -486,3 +486,34 @@ describe("el tipo de cada cambio, para filtrar la bandeja", () => {
     expect(tipoDelCambio("LOGO", { logo: "a.webp" })).toBe("logo");
   });
 });
+
+describe("la cantidad de un producto", () => {
+  it("aprobar un cambio no pisa la cantidad, que se aplica en el momento", async () => {
+    base.productos.push({
+      id: "p1",
+      vendedorId: "v1",
+      publicado: true,
+      nombre: "Dulce",
+      imagenes: [],
+      stock: 7,
+    });
+    await proponerCambio({
+      vendedorId: "v1",
+      seccion: "PRODUCTO",
+      productoId: "p1",
+      datos: {
+        nombre: "Dulce de cayote",
+        descripcion: null,
+        imagenes: [],
+        precio: null,
+        stock: 2,
+        destacado: false,
+      },
+    });
+    await aprobarCambio(base.cambios[0]!.id as string, "admin");
+    expect(base.productos[0]).toMatchObject({
+      nombre: "Dulce de cayote",
+      stock: 7,
+    });
+  });
+});

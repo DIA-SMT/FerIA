@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useCallback, useState } from "react";
+import { useActionState, useCallback, useState, type ReactNode } from "react";
 
 import type { Variante } from "@/lib/fotos-producto";
 import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
@@ -11,12 +11,7 @@ import { BotonEnvio } from "@/components/ui/boton-envio";
 import { AreaTexto, Campo, Casilla, Entrada } from "@/components/ui/campo";
 import { SelectorDeFoto } from "@/components/vendedor/selector-de-foto";
 import { IconoCerrar } from "@/components/ui/iconos";
-import {
-  Tarjeta,
-  TarjetaCuerpo,
-  TarjetaEncabezado,
-  TarjetaPie,
-} from "@/components/ui/tarjeta";
+import { Tarjeta, TarjetaCuerpo, TarjetaPie } from "@/components/ui/tarjeta";
 import { ESTADO_INICIAL, type EstadoFormulario } from "@/lib/form";
 import { urlPublica } from "@/lib/media";
 
@@ -129,70 +124,142 @@ export function FormularioProducto({
 
       <AvisoDelEnvio estado={estado} />
 
+      {/*
+        Un solo recorrido, en el orden en que el feriante piensa un producto:
+        cómo se llama, cómo se ve, qué es y cuántos tiene. Antes eran dos
+        tarjetas —datos arriba, fotos abajo— con dos casillas en el medio, y la
+        foto, que es lo que más pesa en una vidriera, quedaba al final.
+
+        «Disponible» ya no está acá: es el botón «Marcar sin stock» de la
+        tarjeta del producto, en el stand. El valor viaja oculto para que
+        guardar no lo cambie.
+      */}
+      {(producto?.disponible ?? true) && (
+        <input type="hidden" name="disponible" value="on" />
+      )}
+
       <Tarjeta>
-        <TarjetaEncabezado
-          titulo="Datos del producto"
-          descripcion="Lo que ven los vecinos en tu catálogo."
-        />
-        <TarjetaCuerpo className="space-y-4">
-          <Campo
-            htmlFor="nombre"
-            etiqueta="Nombre"
-            errores={errores?.nombre}
-            requerido
-          >
-            <Entrada
-              name="nombre"
-              value={nombre}
-              onChange={(evento) => setNombre(evento.target.value)}
-              placeholder="Ej. Poncho de lana de oveja"
+        <TarjetaCuerpo className="space-y-7">
+          <Paso numero={1}>
+            <Campo
+              htmlFor="nombre"
+              etiqueta="Nombre del producto"
               errores={errores?.nombre}
-              required
-            />
-          </Campo>
+              requerido
+            >
+              <Entrada
+                name="nombre"
+                value={nombre}
+                onChange={(evento) => setNombre(evento.target.value)}
+                placeholder="Ej. Poncho de lana de oveja"
+                errores={errores?.nombre}
+                required
+              />
+            </Campo>
+          </Paso>
 
-          <Campo
-            htmlFor="descripcion"
-            etiqueta="Descripción"
-            ayuda="Materiales, medidas, tiempo de elaboración, variantes disponibles."
-            errores={errores?.descripcion}
-          >
-            <AreaTexto
-              name="descripcion"
-              rows={4}
-              value={descripcion}
-              onChange={(evento) => setDescripcion(evento.target.value)}
+          <Paso numero={2}>
+            <p className="text-sm font-medium text-slate-700">Fotos</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Hasta {MAXIMO_IMAGENES}. La primera es la portada.
+            </p>
+
+            <div className="mt-3 space-y-4">
+              {conservadas.length > 0 && (
+                <ul className="flex flex-wrap gap-3">
+                  {conservadas.map((ruta, indice) => (
+                    <li key={ruta} className="relative">
+                      <Image
+                        src={urlPublica(ruta) ?? ""}
+                        alt={`Foto ${indice + 1}`}
+                        width={112}
+                        height={112}
+                        className="size-28 rounded-lg border border-slate-200 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConservadas((actuales) =>
+                            actuales.filter((item) => item !== ruta),
+                          )
+                        }
+                        aria-label={`Quitar la foto ${indice + 1}`}
+                        className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+                      >
+                        <IconoCerrar className="size-3.5" />
+                      </button>
+                      {indice === 0 && (
+                        <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                          Portada
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {nuevas.length > 0 && (
+                <ul className="flex flex-wrap gap-3">
+                  {nuevas.map((variante, indice) => (
+                    <li key={variante.ruta} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={variante.url}
+                        alt={variante.titulo}
+                        className="size-28 rounded-lg border border-municipal-200 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => quitarNueva(variante.ruta)}
+                        aria-label={`Quitar ${variante.titulo}`}
+                        className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+                      >
+                        <IconoCerrar className="size-3.5" />
+                      </button>
+                      <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                        {conservadas.length === 0 && indice === 0
+                          ? "Portada"
+                          : variante.titulo}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <SelectorDeFoto
+                nombreProducto={nombre}
+                descripcionProducto={descripcion}
+                onConfirmar={alConfirmarFoto}
+                disponibles={espacioLibre}
+                fotosNuevas={nuevas.map((v) => v.ruta)}
+                hayIA={hayIA}
+              />
+            </div>
+          </Paso>
+
+          <Paso numero={3}>
+            <Campo
+              htmlFor="descripcion"
+              etiqueta="Descripción"
+              ayuda="Materiales, medidas, tiempo de elaboración, variantes disponibles."
               errores={errores?.descripcion}
-            />
-          </Campo>
+            >
+              <AreaTexto
+                name="descripcion"
+                rows={4}
+                value={descripcion}
+                onChange={(evento) => setDescripcion(evento.target.value)}
+                errores={errores?.descripcion}
+              />
+            </Campo>
+          </Paso>
 
-          {/* Precio y stock sólo existen con el marketplace habilitado. Con
-              el flag apagado ni siquiera se dibujan los campos: la vidriera
-              sigue siendo una vidriera y el valor se acuerda por WhatsApp. */}
-          {conPrecios && (
-            <div className="grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
-              <Campo
-                htmlFor="precio"
-                etiqueta="Precio"
-                ayuda="Dejalo vacío si es a pedido o si preferís acordarlo por WhatsApp."
-                errores={errores?.precio}
-              >
-                <Entrada
-                  name="precio"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.01"
-                  defaultValue={producto?.precio ?? ""}
-                  placeholder="0,00"
-                  errores={errores?.precio}
-                />
-              </Campo>
-
+          <Paso numero={4}>
+            <div className="grid gap-4 sm:grid-cols-2">
               <Campo
                 htmlFor="stock"
-                etiqueta="Stock"
-                ayuda="Vacío = sin control de stock. Poné 0 si se te terminó."
+                etiqueta="Cantidad disponible (opcional)"
+                ayuda="Dejalo vacío si es a pedido o no llevás la cuenta. Con 0 se muestra «sin stock», y con 5 o menos, cuántos quedan."
                 errores={errores?.stock}
               >
                 <Entrada
@@ -202,107 +269,44 @@ export function FormularioProducto({
                   min={0}
                   step="1"
                   defaultValue={producto?.stock ?? ""}
+                  placeholder="Sin control de stock"
                   errores={errores?.stock}
                 />
               </Campo>
-            </div>
-          )}
 
-          <div className="space-y-3 border-t border-slate-100 pt-4">
-            <Casilla
-              name="disponible"
-              etiqueta="Disponible"
-              ayuda="Si lo desmarcás, se muestra como «sin stock» y no se puede consultar."
-              defaultChecked={producto?.disponible ?? true}
-            />
+              {/* El precio sólo existe con el marketplace habilitado: con el
+                  flag apagado la vidriera sigue siendo una vidriera y el valor
+                  se acuerda por WhatsApp. */}
+              {conPrecios && (
+                <Campo
+                  htmlFor="precio"
+                  etiqueta="Precio (opcional)"
+                  ayuda="Dejalo vacío si preferís acordarlo por WhatsApp."
+                  errores={errores?.precio}
+                >
+                  <Entrada
+                    name="precio"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    defaultValue={producto?.precio ?? ""}
+                    placeholder="0,00"
+                    errores={errores?.precio}
+                  />
+                </Campo>
+              )}
+            </div>
+          </Paso>
+
+          <div className="border-t border-slate-100 pt-5">
             <Casilla
               name="destacado"
               etiqueta="Destacado"
-              ayuda="Los destacados aparecen primero en tu catálogo."
+              ayuda="Aparece primero en tu catálogo."
               defaultChecked={producto?.destacado ?? false}
             />
           </div>
-        </TarjetaCuerpo>
-      </Tarjeta>
-
-      <Tarjeta>
-        <TarjetaEncabezado
-          titulo="Fotos"
-          descripcion={`Hasta ${MAXIMO_IMAGENES} imágenes por producto. La primera es la portada.`}
-        />
-        <TarjetaCuerpo className="space-y-4">
-          {conservadas.length > 0 && (
-            <ul className="flex flex-wrap gap-3">
-              {conservadas.map((ruta, indice) => (
-                <li key={ruta} className="relative">
-                  <Image
-                    src={urlPublica(ruta) ?? ""}
-                    alt={`Foto ${indice + 1}`}
-                    width={112}
-                    height={112}
-                    className="size-28 rounded-lg border border-slate-200 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setConservadas((actuales) =>
-                        actuales.filter((item) => item !== ruta),
-                      )
-                    }
-                    aria-label={`Quitar la foto ${indice + 1}`}
-                    className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
-                  >
-                    <IconoCerrar className="size-3.5" />
-                  </button>
-                  {indice === 0 && (
-                    <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                      Portada
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {nuevas.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-slate-700">
-                Fotos nuevas
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-3">
-                {nuevas.map((variante) => (
-                  <li key={variante.ruta} className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={variante.url}
-                      alt={variante.titulo}
-                      className="size-28 rounded-lg border border-municipal-200 object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => quitarNueva(variante.ruta)}
-                      aria-label={`Quitar ${variante.titulo}`}
-                      className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
-                    >
-                      <IconoCerrar className="size-3.5" />
-                    </button>
-                    <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                      {variante.titulo}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <SelectorDeFoto
-            nombreProducto={nombre}
-            descripcionProducto={descripcion}
-            onConfirmar={alConfirmarFoto}
-            disponibles={espacioLibre}
-            fotosNuevas={nuevas.map((v) => v.ruta)}
-            hayIA={hayIA}
-          />
         </TarjetaCuerpo>
 
         <TarjetaPie>
@@ -315,5 +319,20 @@ export function FormularioProducto({
         </TarjetaPie>
       </Tarjeta>
     </form>
+  );
+}
+
+/** Un paso del recorrido, con su número a la izquierda. */
+function Paso({ numero, children }: { numero: number; children: ReactNode }) {
+  return (
+    <section className="flex gap-3">
+      <span
+        className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-municipal-500 text-xs font-semibold text-white"
+        aria-hidden="true"
+      >
+        {numero}
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </section>
   );
 }

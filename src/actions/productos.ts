@@ -204,11 +204,13 @@ export async function actualizarProducto(
       });
     } else {
       // Publicado: el vecino lo sigue viendo como está hasta que se apruebe.
-      // Sólo la disponibilidad se aplica ya, como el botón «Marcar sin stock».
-      // Las fotos publicadas que el feriante sacó no se borran todavía: se ven.
+      // La disponibilidad y la cantidad se aplican ya, como el botón «Marcar
+      // sin stock»: son el día a día del puesto, no contenido nuevo, y esperar
+      // una revisión las dejaría desactualizadas. Las fotos publicadas que el
+      // feriante sacó no se borran todavía: se siguen viendo.
       await prisma.producto.update({
         where: { id: productoId },
-        data: { disponible: entrada.disponible },
+        data: { disponible: entrada.disponible, stock: entrada.stock ?? null },
       });
       await proponerCambio({
         vendedorId: vendedor.id,

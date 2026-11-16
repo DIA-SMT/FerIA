@@ -358,10 +358,13 @@ export async function aprobarCambio(
           marca,
         ]);
       } else {
+        // La cantidad no se toma de la propuesta: se aplica en el momento en
+        // que el feriante la cambia, y la de la propuesta puede estar vieja.
+        const { stock: _cantidad, ...contenido } = datos;
         await prisma.$transaction([
           prisma.producto.update({
             where: { id: producto.id },
-            data: { ...datos, publicado: true },
+            data: { ...contenido, publicado: true },
           }),
           marca,
         ]);
