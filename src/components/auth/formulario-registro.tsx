@@ -256,8 +256,8 @@ export function FormularioRegistro() {
       <div className="space-y-4 border-t border-slate-200 pt-6">
         <Alerta tipo="info">
           Al enviar el formulario, tu solicitud queda{" "}
-          <strong>pendiente de aprobación</strong>. La Dirección de Ferias y
-          Mercados la revisa y te avisa el resultado. Recién después vas a poder
+          <strong>pendiente de aprobación</strong>. La Dirección de Relaciones
+          Institucionales la revisa y te avisa el resultado. Recién después vas a poder
           cargar tu catálogo y ser asignado a un stand.
         </Alerta>
 

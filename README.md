@@ -3,7 +3,7 @@
 Plataforma de gestión de ferias municipales y sus stands, con un market público
 donde cada feriante tiene su vidriera online.
 
-Desarrollada para la **Dirección de Ferias y Mercados** de la Municipalidad de
+Desarrollada para la **Dirección de Relaciones Institucionales** de la Municipalidad de
 San Miguel de Tucumán.
 
 ---
@@ -347,7 +347,7 @@ Cómo funciona:
 > Antes de prender `PERMITIR_PRECIOS` hay que actualizar
 > `src/components/public/terminos-contenido.tsx`: hoy dice textualmente «La
 > plataforma no publica precios» y que el municipio no interviene en la venta.
-> Eso lo firma la Dirección de Ferias y Mercados y Legales, no un deploy.
+> Eso lo firma la Dirección de Relaciones Institucionales y Legales, no un deploy.
 
 ### Ingreso con CiDiTuc
 
@@ -628,7 +628,7 @@ frenado por `requerirAdmin()`.
 
 El registro público usa `auth.admin.createUser` con `email_confirm: true`, es
 decir **sin verificación por correo**. Es deliberado: la verificación real la
-hace la Dirección de Ferias al aprobar la solicitud, y así el proyecto arranca
+hace la Dirección de Relaciones Institucionales al aprobar la solicitud, y así el proyecto arranca
 sin configurar un SMTP. Para activarla, configurá el SMTP en *Authentication →
 Emails* y cambiá esa llamada por `supabase.auth.signUp`.
 

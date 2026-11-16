@@ -93,7 +93,7 @@ export default async function PaginaCanonFeriante() {
         </h1>
         <p className="mt-1 text-slate-600">
           Estado de tus pagos en cada edición. Los registra la Dirección de
-          Ferias y Mercados: si ves algo que no corresponde, acercate a la
+          Relaciones Institucionales: si ves algo que no corresponde, acercate a la
           oficina.
         </p>
       </header>
@@ -108,7 +108,7 @@ export default async function PaginaCanonFeriante() {
           }
           className="mb-6"
         >
-          Regularizá tu situación en la Dirección de Ferias y Mercados para
+          Regularizá tu situación en la Dirección de Relaciones Institucionales para
           poder seguir participando de las próximas ediciones.
         </Alerta>
       )}

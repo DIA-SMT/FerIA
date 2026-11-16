@@ -13,7 +13,7 @@
  * formulario de edición conserva el canon ya cargado en campos ocultos: el
  * administrador no lo ve ni lo edita, pero guardar una edición no lo borra.
  *
- * Prenderlo es una decisión de la Dirección de Ferias y Mercados, no un
+ * Prenderlo es una decisión de la Dirección de Relaciones Institucionales, no un
  * deploy: si la participación volviera a arancelarse, alcanza con la variable.
  */
 export function hayCanon(): boolean {

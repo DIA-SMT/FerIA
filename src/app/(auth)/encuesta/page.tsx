@@ -52,8 +52,8 @@ export default async function PaginaEncuesta() {
           Pedí el alta como feriante
         </h1>
         <p className="mt-1 text-slate-600">
-          Contanos de tu emprendimiento. Cuando la Dirección de Ferias y
-          Mercados te dé el alta vas a tener tu stand online, y desde ahí podés
+          Contanos de tu emprendimiento. Cuando la Dirección de Relaciones
+          Institucionales te dé el alta vas a tener tu stand online, y desde ahí podés
           pedir estar en las ferias presenciales que quieras.
         </p>
       </header>

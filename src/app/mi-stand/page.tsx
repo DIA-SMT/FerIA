@@ -128,7 +128,7 @@ export default async function PaginaMiStand() {
           titulo="Pendiente de aprobación"
           className="mt-4"
         >
-          La Dirección de Ferias y Mercados está revisando el alta de{" "}
+          La Dirección de Relaciones Institucionales está revisando el alta de{" "}
           <strong>{vendedor.emprendimiento}</strong>. Cuando te den el alta vas
           a tener tu stand online —vas a poder editar tu vidriera y cargar tu
           catálogo— y desde ahí vas a poder pedir estar en las ferias
@@ -207,7 +207,7 @@ export default async function PaginaMiStand() {
 
         <Alerta tipo="error" titulo="Solicitud rechazada" className="mt-4">
           {vendedor.motivoRechazo ??
-            "No se registró un motivo. Comunicate con la Dirección de Ferias y Mercados para más información."}
+            "No se registró un motivo. Comunicate con la Dirección de Relaciones Institucionales para más información."}
         </Alerta>
 
         <Tarjeta className="mt-6">
@@ -227,7 +227,7 @@ export default async function PaginaMiStand() {
                 <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-municipal-100 text-xs font-semibold text-municipal-700">
                   2
                 </span>
-                Acercate a la Dirección de Ferias y Mercados con la documentación
+                Acercate a la Dirección de Relaciones Institucionales con la documentación
                 del emprendimiento para pedir una nueva revisión.
               </li>
             </ol>
@@ -375,7 +375,7 @@ export default async function PaginaMiStand() {
       <Tarjeta className="mt-6">
         <TarjetaEncabezado
           titulo="Mis próximas ferias"
-          descripcion="Las asignaciones las define la Dirección de Ferias y Mercados."
+          descripcion="Las asignaciones las define la Dirección de Relaciones Institucionales."
         />
         <TarjetaCuerpo>
           {asignaciones.length === 0 ? (

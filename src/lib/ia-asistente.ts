@@ -78,11 +78,11 @@ CÓMO SE USA EL PANEL DEL FERIANTE (lo único que existe; no inventes pantallas,
 - Con la solicitud aprobada aparecen además:
 ${pestanias.map((pestania) => `  · ${pestania}`).join("\n")}
 - «Ver mi stand», arriba, abre la página pública del stand.
-- Para lo que el panel no resuelve, la vía es la Dirección de Ferias y Mercados.`;
+- Para lo que el panel no resuelve, la vía es la Dirección de Relaciones Institucionales.`;
   }
 
   if (area === "administracion") {
-    return `QUIÉN PREGUNTA: personal de la Dirección de Ferias y Mercados, desde el panel de administración (/admin). Además de lo de siempre, lo ayudás a usar el panel.
+    return `QUIÉN PREGUNTA: personal de la Dirección de Relaciones Institucionales, desde el panel de administración (/admin). Además de lo de siempre, lo ayudás a usar el panel.
 
 CÓMO SE USA EL PANEL DE ADMINISTRACIÓN (lo único que existe; no inventes pantallas, botones ni pasos; las rutas entre paréntesis se pueden enlazar):
 - «Estadísticas» (/admin): el resumen de ferias, ediciones, feriantes por rubro y ocupación de stands.
@@ -155,7 +155,7 @@ function altaDeFeriante(): string {
       "[la página de ingreso](/ingresar) y completa una encuesta con los datos de su " +
       "emprendimiento y a qué feria quiere sumarse. No hace falta registrarse aparte ni " +
       "crear una contraseña. La postulación queda pendiente hasta que la Dirección de " +
-      `Ferias y Mercados la revisa; al aceptarse, la persona gestiona ${panel} ` +
+      `Relaciones Institucionales la revisa; al aceptarse, la persona gestiona ${panel} ` +
       "desde su panel."
     );
   }
@@ -271,8 +271,8 @@ export async function contextoDelSitio(): Promise<string> {
   // canon llega convencido de que se paga, y el silencio se lo confirma. Con
   // el módulo apagado, Migue lo desmiente en vez de esquivarlo.
   const lineaCanon = hayCanon()
-    ? "El canon (lo que se paga por participar de una edición) lo registra la Dirección de Ferias y Mercados; cada feriante ve el suyo en su panel. Las consultas sobre canon o trámites se hacen ante esa Dirección."
-    : "Participar de las ferias no le cuesta nada al feriante: no se cobra canon, ni arancel, ni alquiler del puesto; los gastos los cubre el municipio. Si alguien pregunta cuánto sale tener un puesto, la respuesta es que no sale nada. Los trámites se hacen ante la Dirección de Ferias y Mercados.";
+    ? "El canon (lo que se paga por participar de una edición) lo registra la Dirección de Relaciones Institucionales; cada feriante ve el suyo en su panel. Las consultas sobre canon o trámites se hacen ante esa Dirección."
+    : "Participar de las ferias no le cuesta nada al feriante: no se cobra canon, ni arancel, ni alquiler del puesto; los gastos los cubre el municipio. Si alguien pregunta cuánto sale tener un puesto, la respuesta es que no sale nada. Los trámites se hacen ante la Dirección de Relaciones Institucionales.";
 
   return `Hoy es ${formatearFechaLarga(hoy)}.
 

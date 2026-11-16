@@ -29,7 +29,7 @@ export default function ErrorGlobal({
         </h1>
         <p className="mt-3 text-slate-600">
           Ocurrió un error inesperado al cargar esta sección. Podés reintentar;
-          si el problema persiste, avisá a la Dirección de Ferias y Mercados.
+          si el problema persiste, avisá a la Dirección de Relaciones Institucionales.
         </p>
 
         {error.digest && (

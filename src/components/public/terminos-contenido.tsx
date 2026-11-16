@@ -150,7 +150,7 @@ export function TerminosContenido() {
           tratan conforme a la Ley N.º 25.326 de Protección de los Datos
           Personales y sus normas complementarias. La persona titular puede
           ejercer los derechos de acceso, rectificación y supresión que esa ley
-          reconoce, presentándose ante la Dirección de Ferias y Mercados.
+          reconoce, presentándose ante la Dirección de Relaciones Institucionales.
         </p>
         <p>
           Las consultas escritas al asistente virtual se almacenan de manera
@@ -165,7 +165,7 @@ export function TerminosContenido() {
         <p>
           Las consultas sobre el funcionamiento de la plataforma, los reclamos
           por contenidos publicados y los pedidos vinculados a datos personales
-          se reciben en la Dirección de Ferias y Mercados de la Municipalidad de
+          se reciben en la Dirección de Relaciones Institucionales de la Municipalidad de
           San Miguel de Tucumán.
         </p>
         <p>

@@ -717,7 +717,7 @@ async function main(): Promise<void> {
   const idAdmin = await crearUsuario(
     "admin@smt.gob.ar",
     PASSWORD_ADMIN,
-    "Dirección de Ferias y Mercados",
+    "Dirección de Relaciones Institucionales",
     Rol.ADMIN,
   );
 
@@ -725,7 +725,7 @@ async function main(): Promise<void> {
     data: {
       id: idAdmin,
       email: "admin@smt.gob.ar",
-      nombre: "Dirección de Ferias y Mercados",
+      nombre: "Dirección de Relaciones Institucionales",
       rol: Rol.ADMIN,
     },
   });

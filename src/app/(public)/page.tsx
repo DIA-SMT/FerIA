@@ -260,7 +260,7 @@ export default async function PaginaInicio() {
                 Ferias en curso y próximas
               </h2>
               <p className="mt-1 text-slate-600">
-                Fechas confirmadas por la Dirección de Ferias y Mercados.
+                Fechas confirmadas por la Dirección de Relaciones Institucionales.
               </p>
             </div>
             <Link
@@ -378,11 +378,13 @@ export default async function PaginaInicio() {
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">
                 ¿Tenés un emprendimiento y querés participar?
               </h2>
+              {/* Pedido de la Dirección: dejar claro que anotarse no asegura un
+                  lugar, porque la gente creía que presentaba los datos y ya
+                  tenía puesto. El cómo y el porqué del cupo están en el paso
+                  3; acá va sólo la advertencia, para no decirlo dos veces. */}
               <p className="mt-3 text-slate-600">
-                Registrate en la plataforma con los datos de tu emprendimiento.
-                La Dirección de Ferias y Mercados revisa cada solicitud y, una
-                vez aprobada, vas a poder cargar tu catálogo y ser asignado a un
-                stand en las próximas ediciones.
+                Registrarte es el primer paso, pero no te asegura un lugar en
+                una feria.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <BotonLink href="/registro" tamanio="lg">
@@ -399,17 +401,18 @@ export default async function PaginaInicio() {
                 {
                   titulo: "Registrás tu emprendimiento",
                   texto:
-                    "Cargás tus datos, el rubro y cómo te pueden contactar.",
+                    "Entrás con tu cuenta de CiDiTuc y completás los datos de tu emprendimiento.",
                 },
                 {
-                  titulo: "La municipalidad revisa la solicitud",
+                  titulo:
+                    "La Dirección de Relaciones Institucionales revisa tu solicitud",
                   texto:
-                    "Verificamos que cumpla con el reglamento de ferias vigente.",
+                    "Verifica que cumpla con el reglamento de ferias vigente. Si se aprueba, se habilita tu stand online para que cargues tus productos.",
                 },
                 {
-                  titulo: "Publicás tu stand y te asignamos un lugar",
+                  titulo: "Esperás un lugar en una feria",
                   texto:
-                    "Subís tus productos y participás de las próximas ediciones.",
+                    "Tu solicitud queda en lista de espera hasta que haya cupo. Los lugares se asignan según lo que se necesite en cada rubro y tipo de producto.",
                 },
               ].map((paso, indice) => (
                 <li key={paso.titulo} className="flex gap-4">
