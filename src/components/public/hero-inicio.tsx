@@ -87,15 +87,15 @@ function accesos(conTienda: boolean) {
  * con `node scripts/medir-contraste-hero.mjs`:
  *
  *   «Ferias» (municipal-950)    12,5:1   AAA
- *   «Tucumanas» (municipal-600)  5,1:1   AA
- *   antetítulo (municipal-700)   6,7:1   AA
+ *   subtítulo (municipal-600)    5,1:1   AA
  *   párrafo (slate-700)          8,0:1   AAA
  *   ayuda del buscador           5,8:1   AA
  *   etiquetas de los números     5,8:1   AA
  *
  * Dos cosas que el medidor corrigió y por eso quedan anotadas: las etiquetas
  * de los contadores empezaron en `slate-500` y daban 3,7:1, que no alcanza
- * para texto chico; y «Tucumanas» empezó en `municipal-500`, que daba 3,8:1 —
+ * para texto chico; y el subtítulo (entonces «Tucumanas») empezó en
+ * `municipal-500`, que daba 3,8:1 —
  * suficiente para texto grande, pero raspando el mínimo con el peor píxel.
  *
  * El peor píxel cae en el borde derecho de la columna de texto, donde el velo
@@ -202,26 +202,34 @@ export function HeroInicio() {
             zona clara de la foto desaparece y el bloque parece flotar.
           */}
           <div className="rounded-3xl bg-white/85 p-6 shadow-xl ring-1 ring-white/70 backdrop-blur-md sm:p-8 lg:col-span-6">
-            <p
-              className="animar-aparecer text-xs font-semibold tracking-[0.2em] text-municipal-700 uppercase"
-              style={{ animationDelay: "60ms" }}
-            >
-              San Miguel de Tucumán
-            </p>
+            {/*
+              «Ferias de la ciudad de San Miguel de Tucumán», a pedido de la
+              Dirección. Antes decía «Ferias Tucumanas».
 
-            {/* Dos tonos y renglones pegados: es lo que le da peso de marca.
-                El `leading` ajustado no es capricho — con el interlineado
-                normal, dos palabras de este tamaño se separan tanto que dejan
-                de leerse como una sola unidad. */}
+              Dos tamaños y dos tonos. «Ferias» conserva el peso de marca; el
+              resto es demasiado largo para ir al mismo tamaño —a 72 px no entra
+              en la columna y en el celular se partía en cuatro renglones—, así
+              que baja a subtítulo dentro del mismo `h1`. El antetítulo «San
+              Miguel de Tucumán» que iba arriba se fue: ahora lo dice el título.
+
+              El espacio entre los dos `span` es explícito porque los saltos de
+              línea de JSX no dejan ninguno, y sin él el texto del título —el que
+              leen los lectores de pantalla y los buscadores— quedaba
+              «Feriasde la ciudad». Y el nombre de la ciudad va con espacios
+              que no se cortan: si no, el renglón se partía en «San» / «Miguel
+              de Tucumán».
+            */}
             <h1
-              className="animar-aparecer mt-2 text-5xl leading-[0.95] font-bold tracking-tight text-municipal-950 sm:text-6xl lg:text-7xl"
+              className="animar-aparecer font-bold tracking-tight"
               style={{ animationDelay: "160ms" }}
             >
-              <span className="relative inline-block">
+              <span className="relative inline-block text-5xl leading-[0.95] text-municipal-950 sm:text-6xl lg:text-7xl">
                 Ferias
                 <AdornoFerias />
+              </span>{" "}
+              <span className="mt-3 block text-2xl leading-tight text-municipal-600 sm:text-3xl">
+                de la ciudad de {"San Miguel de Tucumán"}
               </span>
-              <span className="block text-municipal-600">Tucumanas</span>
             </h1>
 
             <p

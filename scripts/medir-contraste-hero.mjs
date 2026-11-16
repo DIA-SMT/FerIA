@@ -35,8 +35,7 @@ const hex = (h) => [
 // contra el peor píxel de la foto daría un número alarmante y falso.
 const TEXTOS = {
   "titulo (municipal-950)": "#051f47",
-  "Tucumanas (municipal-600)": "#0455cc",
-  "antetitulo (municipal-700)": "#0345a5",
+  "subtitulo (municipal-600)": "#0455cc",
   "parrafo (slate-700)": "#334155",
   "ayuda del buscador (slate-600)": "#475569",
   "etiquetas de los numeros": "#475569",
