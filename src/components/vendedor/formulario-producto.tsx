@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useCallback, useState } from "react";
 
 import type { Variante } from "@/lib/fotos-producto";
 import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
@@ -84,13 +84,21 @@ export function FormularioProducto({
 
   const espacioLibre = MAXIMO_IMAGENES - conservadas.length - nuevas.length;
 
-  function alConfirmarFoto(
-    elegida: Variante | null,
-    sinElegir: string[],
-  ): void {
-    if (elegida) setNuevas((actuales) => [...actuales, elegida]);
-    setDescartadas((actuales) => [...actuales, ...sinElegir]);
-  }
+  // Estable (`useCallback`) porque el selector lo tiene entre las dependencias
+  // del efecto que procesa cada foto que vuelve del servidor.
+  const alConfirmarFoto = useCallback(
+    (elegida: Variante | null, sinElegir: string[], reemplaza?: string) => {
+      if (elegida) {
+        setNuevas((actuales) =>
+          reemplaza && actuales.some((v) => v.ruta === reemplaza)
+            ? actuales.map((v) => (v.ruta === reemplaza ? elegida : v))
+            : [...actuales, elegida],
+        );
+      }
+      setDescartadas((actuales) => [...actuales, ...sinElegir]);
+    },
+    [],
+  );
 
   /** Quitar una foto nueva: su ruta pasa a la lista de descartadas. */
   function quitarNueva(ruta: string): void {
@@ -259,7 +267,7 @@ export function FormularioProducto({
           {nuevas.length > 0 && (
             <div>
               <p className="text-sm font-medium text-slate-700">
-                Fotos nuevas, listas para publicar
+                Fotos nuevas
               </p>
               <ul className="mt-2 flex flex-wrap gap-3">
                 {nuevas.map((variante) => (
@@ -292,6 +300,7 @@ export function FormularioProducto({
             descripcionProducto={descripcion}
             onConfirmar={alConfirmarFoto}
             disponibles={espacioLibre}
+            fotosNuevas={nuevas.map((v) => v.ruta)}
             hayIA={hayIA}
           />
         </TarjetaCuerpo>

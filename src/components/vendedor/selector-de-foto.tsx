@@ -1,79 +1,88 @@
 "use client";
 
-import { startTransition, useActionState, useRef, useState } from "react";
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { generarVariantesDeFoto } from "@/actions/fotos-producto";
 import {
   ESTADO_VARIANTES_INICIAL,
-  type ClaveVariante,
+  type EstadoVariantes,
   type Variante,
 } from "@/lib/fotos-producto";
 import { Alerta } from "@/components/ui/alerta";
 import { Boton } from "@/components/ui/boton";
 import { Campo, CampoArchivo } from "@/components/ui/campo";
-import { IconoCerrar } from "@/components/ui/iconos";
-import { cn } from "@/lib/cn";
+import { IconoTildeCirculo } from "@/components/ui/iconos";
 import { useVistaPreviaLocal } from "@/lib/vista-previa";
 
 /**
- * Agregar una foto a un producto, en tres pasos que se ven venir.
+ * Agregar una foto a un producto.
  *
- * El orden importa y es el arreglo de una versión anterior en la que había que
- * adivinar: se elegía un archivo y no se veía nada, el botón decía «Ver las
- * versiones» sin decir cuáles, y lo que hacía dependía de una casilla puesta
- * más arriba. Ahora:
- *
- * 1. Se elige la foto y **se ve en el acto**, sin subir nada.
- * 2. Dos botones, y cada uno dice lo que hace: publicarla como está, o mandarla
- *    a la IA avisando que tarda. La decisión está en el botón que se aprieta y
- *    no en una casilla separada.
- * 3. Si se pidió la IA, las dos quedan lado a lado —antes y después— y se elige
- *    con cuál se publica.
+ * 1. Se elige la foto y **se agrega sola**: se encuadra en cuadrado, se le
+ *    levanta la luz y se empareja el fondo, y aparece en las fotos del
+ *    producto. Antes había que confirmarla dos veces más —«Usar esta foto» y
+ *    después «Agregar al producto»—, y eso era pedir permiso para algo que el
+ *    feriante ya había decidido al elegir el archivo.
+ * 2. Queda a mano un solo botón, «Mejorar imagen con IA», para esa última foto.
+ * 3. Si lo usa, ve la de antes y la de después lado a lado y elige con un
+ *    toque con cuál se queda. Si elige la de la IA, reemplaza a la que ya
+ *    estaba agregada.
  *
  * Vive **dentro** del formulario del producto, así que no puede tener su propio
- * `<form>`: los formularios anidados son HTML inválido. La acción se dispara por
- * click, armando el `FormData` a mano desde el archivo que guarda el estado. Eso
- * además evita enviar y validar el resto de los campos del producto sólo para
- * generar una vista previa.
+ * `<form>`: los formularios anidados son HTML inválido. La acción se dispara a
+ * mano, armando el `FormData` desde el archivo que guarda el estado. Eso además
+ * evita enviar y validar el resto de los campos del producto.
  *
- * Cuando el feriante confirma una variante se la pasa al padre por
- * `onConfirmar`, junto con las rutas de las que descartó para que las borre al
- * guardar. El padre lleva la cuenta.
+ * Todo lo que se sube y no se usa se le pasa al padre como descartado, para que
+ * lo borre al guardar: si no, quedan huérfanas en el bucket.
  */
 
 /**
  * `form` apuntando a un id que no existe deja al control sin formulario dueño,
- * así que no se envía con el del producto. Hace falta porque estos campos están
- * dentro de ese formulario y el `FormData` lo armamos a mano: sin esto, al
- * guardar el producto se reenviaría la foto original —hasta 5 MB, contra el
- * límite de 1 MB que tiene una Server Action— para nada.
+ * así que no se envía con el del producto. Sin esto, al guardar el producto se
+ * reenviaría la foto original —hasta 5 MB, contra el límite de 1 MB que tiene
+ * una Server Action— para nada.
  */
 const SIN_FORMULARIO = "selector-de-foto-sin-formulario";
+
+type Peticion = "automatica" | "ia";
 
 export function SelectorDeFoto({
   nombreProducto,
   descripcionProducto,
   onConfirmar,
   disponibles,
+  fotosNuevas,
   hayIA = true,
 }: {
   /** Se interpolan en el prompt de la IA para ambientar la escena. */
   nombreProducto: string;
   descripcionProducto: string;
   /**
-   * Recibe la variante elegida y las rutas a borrar. `elegida` es `null` cuando
-   * el feriante descarta la foto entera: ahí se descartan todas las variantes.
+   * Agrega `elegida` a las fotos del producto —o, con `reemplaza`, la pone en
+   * lugar de esa— y anota `descartadas` para borrarlas al guardar.
    */
-  onConfirmar: (elegida: Variante | null, descartadas: string[]) => void;
+  onConfirmar: (
+    elegida: Variante | null,
+    descartadas: string[],
+    reemplaza?: string,
+  ) => void;
   /** Cuántas fotos más se pueden agregar. */
   disponibles: number;
   /**
-   * Si la plataforma tiene `OPENROUTER_API_KEY` cargada. Llega por props y no
-   * se consulta acá: `hayIAConfigurada()` lee `process.env` del servidor y este
-   * componente es de cliente, donde esa variable no existe. La cadena que lo
-   * monta —`productos/[id]` y `productos/nuevo` → `FormularioProducto` → acá—
-   * ya lo pasa; el default en `true` es para cualquier otro lugar que lo monte
-   * sin decir nada.
+   * Las fotos nuevas que ya están en el producto. Si el feriante quitó la que
+   * se acaba de agregar, ya no tiene sentido ofrecer mejorarla.
+   */
+  fotosNuevas: string[];
+  /**
+   * Si la plataforma tiene `OPENROUTER_API_KEY` cargada. Llega por props porque
+   * `hayIAConfigurada()` lee `process.env` del servidor y este componente es de
+   * cliente.
    */
   hayIA?: boolean;
 }) {
@@ -83,276 +92,225 @@ export function SelectorDeFoto({
   );
 
   const archivoRef = useRef<HTMLInputElement>(null);
-
   const [archivo, setArchivo] = useState<File | null>(null);
   const previa = useVistaPreviaLocal(archivo);
 
-  const [elegida, setElegida] = useState<ClaveVariante>("automatica");
+  // Qué se pidió, y el estado que había en ese momento: la respuesta nueva es
+  // la que tiene otra identidad. Sin esto, en el render en que arranca la
+  // transición se podía leer la respuesta de la foto anterior.
+  const [peticion, setPeticion] = useState<Peticion | null>(null);
+  const estadoAlPedir = useRef<EstadoVariantes>(estado);
 
-  // Para qué botón está corriendo la acción: los dos disparan lo mismo y sin
-  // esto no se podría decir cuál de los dos está esperando.
-  const [pidioIA, setPidioIA] = useState(false);
+  // La última foto agregada, a la que se le ofrece la IA.
+  const [agregada, setAgregada] = useState<Variante | null>(null);
+  const [comparacion, setComparacion] = useState<{
+    antes: Variante;
+    despues: Variante;
+  } | null>(null);
+  const [errorIA, setErrorIA] = useState<string | null>(null);
 
-  // El estado de `useActionState` no se puede limpiar desde acá, así que las
-  // variantes siguen ahí después de confirmar. Sin esta bandera, un segundo
-  // click en «Agregar al producto» agregaría la misma ruta de nuevo.
-  const [abierto, setAbierto] = useState(false);
-
-  // Mientras se regenera no mostramos las anteriores: serían de otra foto.
-  const variantes = abierto && !generando ? (estado.variantes ?? []) : [];
-  const hayComparacion = variantes.length > 1;
-
-  /**
-   * Da por perdidas las variantes que hay en pantalla.
-   *
-   * Ya están subidas a Storage, así que avisarle al padre no es opcional: si no,
-   * quedan huérfanas en el bucket para siempre. Se llama también al cambiar de
-   * archivo, que es por donde se escapaban.
-   */
-  function olvidarVariantes(): void {
-    if (variantes.length > 0) {
-      onConfirmar(
-        null,
-        variantes.map((v) => v.ruta),
-      );
-    }
-    setElegida("automatica");
-    setAbierto(false);
-  }
-
-  function limpiarArchivo(): void {
-    if (archivoRef.current) archivoRef.current.value = "";
-    setArchivo(null);
-  }
-
-  function pedirVariantes(conIA: boolean): void {
-    if (!archivo) return;
-
-    setPidioIA(conIA);
-    setAbierto(true);
+  function pedir(tipo: Peticion, foto: File): void {
+    setPeticion(tipo);
+    setErrorIA(null);
+    estadoAlPedir.current = estado;
 
     const datos = new FormData();
-    datos.set("foto", archivo);
-    if (conIA) datos.set("usarIA", "on");
+    datos.set("foto", foto);
+    if (tipo === "ia") datos.set("usarIA", "on");
     datos.set("nombre", nombreProducto);
     datos.set("descripcion", descripcionProducto);
 
     // Sin `startTransition`, `generando` nunca se pone en true: el botón no se
     // deshabilita y el feriante puede clickear de nuevo y pagar otra generación
-    // de IA. Hace falta porque despachamos por click y no por `action` del form.
+    // de IA. Hace falta porque se despacha por click y no por `action`.
     startTransition(() => generar(datos));
   }
 
-  function confirmar(): void {
-    const variante = variantes.find((v) => v.clave === elegida) ?? variantes[0];
-    if (!variante) return;
+  // La respuesta se procesa una sola vez, cuando llega.
+  useEffect(() => {
+    if (!peticion || generando || estado === estadoAlPedir.current) return;
+    setPeticion(null);
 
-    onConfirmar(
-      variante,
-      variantes.filter((v) => v.ruta !== variante.ruta).map((v) => v.ruta),
-    );
+    const variantes = estado.variantes ?? [];
+    const automatica = variantes.find((v) => v.clave === "automatica");
 
-    setElegida("automatica");
-    setAbierto(false);
-    limpiarArchivo();
+    if (peticion === "automatica") {
+      if (!automatica) return;
+      onConfirmar(
+        automatica,
+        variantes.filter((v) => v !== automatica).map((v) => v.ruta),
+      );
+      setAgregada(automatica);
+      return;
+    }
+
+    // Con la IA vuelve también una automática nueva: es una copia de la que ya
+    // está agregada, así que se descarta. Y si mientras tanto el feriante quitó
+    // la foto de arriba, no hay con qué comparar: se descarta también la IA.
+    const ia = variantes.find((v) => v.clave === "ia");
+    const sobrantes = automatica ? [automatica.ruta] : [];
+    if (ia && agregada && fotosNuevas.includes(agregada.ruta)) {
+      setComparacion({ antes: agregada, despues: ia });
+    } else if (ia) {
+      sobrantes.push(ia.ruta);
+    }
+    if (sobrantes.length > 0) onConfirmar(null, sobrantes);
+    setErrorIA(estado.errorIA ?? null);
+  }, [estado, generando, peticion, agregada, fotosNuevas, onConfirmar]);
+
+  function cerrar(): void {
+    setAgregada(null);
+    setComparacion(null);
+    setArchivo(null);
+    if (archivoRef.current) archivoRef.current.value = "";
   }
 
-  function descartar(): void {
-    olvidarVariantes();
-    limpiarArchivo();
+  function alElegirArchivo(foto: File | null): void {
+    // Una comparación a medio decidir es de la foto anterior: la de la IA se
+    // descarta y queda la que ya estaba agregada.
+    if (comparacion) onConfirmar(null, [comparacion.despues.ruta]);
+    setComparacion(null);
+    setAgregada(null);
+    setArchivo(foto);
+    if (foto) pedir("automatica", foto);
   }
 
-  if (disponibles <= 0) {
-    return (
-      <p className="text-sm text-slate-500">
-        Llegaste al máximo de fotos. Quitá alguna para poder agregar otra.
-      </p>
-    );
+  function quedarse(con: "antes" | "despues"): void {
+    if (!comparacion) return;
+    const { antes, despues } = comparacion;
+    if (con === "antes") onConfirmar(null, [despues.ruta]);
+    else onConfirmar(despues, [antes.ruta], antes.ruta);
+    cerrar();
   }
+
+  const ofreceIA =
+    hayIA &&
+    agregada !== null &&
+    fotosNuevas.includes(agregada.ruta) &&
+    comparacion === null;
+  const preparando = generando && peticion === "automatica";
+  const mejorando = generando && peticion === "ia";
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-      <Campo
-        htmlFor="fotoNueva"
-        etiqueta="Agregar una foto"
-        ayuda={`Podés agregar ${disponibles} más. JPG, PNG, WEBP o AVIF, hasta 5 MB.`}
-      >
-        <CampoArchivo
-          name="fotoNueva"
-          ref={archivoRef}
-          form={SIN_FORMULARIO}
-          onChange={(evento) => {
-            // Cambiar de archivo tira lo que hubiera en pantalla: esas
-            // variantes son de la foto anterior.
-            olvidarVariantes();
-            setArchivo(evento.target.files?.[0] ?? null);
-          }}
-        />
-      </Campo>
+    <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+      {disponibles > 0 ? (
+        <Campo
+          htmlFor="fotoNueva"
+          etiqueta="Agregar una foto"
+          ayuda={`Podés agregar ${disponibles} más. JPG, PNG, WEBP o AVIF, hasta 5 MB. Se encuadra en cuadrado, con la luz levantada y el fondo emparejado.`}
+        >
+          <CampoArchivo
+            name="fotoNueva"
+            ref={archivoRef}
+            form={SIN_FORMULARIO}
+            disabled={generando}
+            onChange={(evento) =>
+              alElegirArchivo(evento.target.files?.[0] ?? null)
+            }
+          />
+        </Campo>
+      ) : (
+        !ofreceIA &&
+        !comparacion && (
+          <p className="text-sm text-slate-500">
+            Llegaste al máximo de fotos. Quitá alguna para poder agregar otra.
+          </p>
+        )
+      )}
 
-      {/* Apilado en el teléfono: al lado de la miniatura la columna de botones
-          queda tan angosta que «Mejorar imagen con IA» se parte en dos
-          renglones y la explicación baja en hilera. */}
-      {archivo && variantes.length === 0 && (
-        <div className="mt-4 flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row">
-          <div className="w-28 shrink-0">
-            <div className="aspect-square w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
-              {previa && (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={previa}
-                  alt={`Vista previa de ${archivo.name}`}
-                  className="size-full object-contain"
-                />
-              )}
-            </div>
-            <p className="mt-1 truncate text-[11px] text-slate-500">
-              {archivo.name}
-            </p>
+      {/* Mientras se prepara todavía no está en las fotos del producto: la
+          vista previa local es lo único que hay para mostrar. */}
+      {preparando && archivo && (
+        <div className="flex items-center gap-3 border-t border-slate-200 pt-4">
+          <div className="size-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+            {previa && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={previa}
+                alt={`Vista previa de ${archivo.name}`}
+                className="size-full object-contain"
+              />
+            )}
           </div>
+          <p className="text-sm text-slate-600">Preparando la foto…</p>
+        </div>
+      )}
 
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="flex flex-wrap gap-2">
-              <Boton
-                type="button"
-                onClick={() => pedirVariantes(false)}
-                disabled={generando}
-              >
-                {generando && !pidioIA ? "Preparando la foto…" : "Usar esta foto"}
-              </Boton>
+      {estado !== estadoAlPedir.current &&
+        estado.ok === false &&
+        estado.mensaje && <Alerta tipo="error">{estado.mensaje}</Alerta>}
 
-              {hayIA && (
-                <Boton
-                  type="button"
-                  variante="contorno"
-                  onClick={() => pedirVariantes(true)}
-                  disabled={generando}
-                >
-                  {generando && pidioIA
-                    ? "Mejorando la imagen…"
-                    : "Mejorar imagen con IA"}
-                </Boton>
-              )}
-            </div>
+      {errorIA && <Alerta tipo="error">{errorIA}</Alerta>}
 
-            <p className="text-xs text-slate-500">
-              Se publica encuadrada en cuadrado, con la luz levantada y el fondo
-              emparejado.
-              {hayIA &&
-                " La IA además reemplaza el fondo por un escenario de estudio y te deja comparar; tarda unos 10 segundos."}
+      {/* La foto ya está en el producto (arriba, en «Fotos nuevas»): acá no se
+          repite la miniatura, sólo se ofrece mejorarla. */}
+      {ofreceIA && (
+        <div className="space-y-2 border-t border-slate-200 pt-4">
+          <p className="flex items-center gap-1.5 text-sm text-emerald-700">
+            <IconoTildeCirculo className="size-4 shrink-0" />
+            Se agregó <span className="truncate font-medium">{archivo?.name}</span>
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Boton
+              type="button"
+              variante="contorno"
+              onClick={() => archivo && pedir("ia", archivo)}
+              disabled={generando}
+            >
+              {mejorando ? "Mejorando la imagen…" : "Mejorar imagen con IA"}
+            </Boton>
+            <p className="min-w-0 flex-1 text-xs text-slate-500">
+              Reemplaza el fondo por un escenario de estudio y te deja elegir
+              con cuál quedarte. Tarda unos 10 segundos.
             </p>
           </div>
         </div>
       )}
 
-      {estado.ok === false && estado.mensaje && (
-        <Alerta tipo="error" className="mt-3">
-          {estado.mensaje}
-        </Alerta>
-      )}
-
-      {estado.errorIA && (
-        <Alerta tipo="error" className="mt-3">
-          {estado.errorIA}
-        </Alerta>
-      )}
-
-      {variantes.length > 0 && (
-        <div className="mt-4 border-t border-slate-200 pt-4">
+      {comparacion && (
+        <div className="border-t border-slate-200 pt-4">
           <p className="text-sm font-medium text-slate-700">
-            {hayComparacion ? "Elegí con cuál se publica" : "Así queda"}
-            {archivo && (
-              <span className="font-normal text-slate-500">
-                {" · "}
-                {archivo.name}
-              </span>
-            )}
+            ¿Con cuál te quedás?
           </p>
-
-          <div
-            className={cn(
-              "mt-3 grid gap-3",
-              hayComparacion ? "sm:grid-cols-2" : "max-w-[15rem]",
-            )}
-          >
-            {variantes.map((variante, indice) => {
-              const seleccionada = elegida === variante.clave;
-
-              const lamina = (
-                <>
-                  <div className="aspect-square w-full overflow-hidden rounded bg-slate-100">
-                    {/* La URL sale de Supabase Storage y la miniatura es chica;
-                        no vale la pena pasarla por el optimizador de Next. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={variante.url}
-                      alt={variante.titulo}
-                      className="size-full object-cover"
-                    />
-                  </div>
-                  <p className="mt-1.5 text-xs font-semibold text-slate-800">
-                    {variante.titulo}
-                  </p>
-                  <p className="text-[11px] leading-snug text-slate-500">
-                    {variante.detalle}
-                  </p>
-                </>
-              );
-
-              // Una sola versión no es una elección: mostrarla con el marco de
-              // seleccionada sugeriría que hay otra en algún lado.
-              if (!hayComparacion) {
-                return (
-                  <div
-                    key={variante.clave}
-                    className="rounded-lg border-2 border-slate-200 bg-white p-2"
-                  >
-                    {lamina}
-                  </div>
-                );
-              }
-
-              return (
-                <label
-                  key={variante.clave}
-                  className={cn(
-                    "cursor-pointer rounded-lg border-2 bg-white p-2 transition-colors",
-                    seleccionada
-                      ? "border-municipal-500 ring-2 ring-municipal-500/20"
-                      : "border-slate-200 hover:border-celeste-300",
-                  )}
-                >
-                  <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-                    {indice === 0 ? "Antes" : "Después"}
-                  </span>
-                  <input
-                    type="radio"
-                    name="varianteElegida"
-                    value={variante.clave}
-                    checked={seleccionada}
-                    onChange={() => setElegida(variante.clave)}
-                    form={SIN_FORMULARIO}
-                    className="sr-only"
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {(
+              [
+                ["antes", "Antes", comparacion.antes],
+                ["despues", "Con IA", comparacion.despues],
+              ] as const
+            ).map(([clave, rotulo, variante]) => (
+              <div
+                key={clave}
+                className="rounded-lg border-2 border-slate-200 bg-white p-2"
+              >
+                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                  {rotulo}
+                </span>
+                <div className="aspect-square w-full overflow-hidden rounded bg-slate-100">
+                  {/* Miniatura chica de Storage: no vale la pena pasarla por
+                      el optimizador de Next. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={variante.url}
+                    alt={variante.titulo}
+                    className="size-full object-cover"
                   />
-                  {lamina}
-                </label>
-              );
-            })}
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Boton type="button" onClick={confirmar}>
-              Agregar al producto
-            </Boton>
-            <Boton
-              type="button"
-              variante="fantasma"
-              onClick={descartar}
-              className="text-slate-600"
-            >
-              <IconoCerrar className="size-3.5" />
-              Descartar
-            </Boton>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
+                  {variante.detalle}
+                </p>
+                <Boton
+                  type="button"
+                  variante={clave === "despues" ? "primario" : "contorno"}
+                  tamanio="sm"
+                  ancho
+                  className="mt-2"
+                  onClick={() => quedarse(clave)}
+                >
+                  Quedarme con esta
+                </Boton>
+              </div>
+            ))}
           </div>
         </div>
       )}
