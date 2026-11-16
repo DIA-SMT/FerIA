@@ -25,19 +25,38 @@ const SECCIONES = [
   },
 ];
 
+/**
+ * Pie del sitio público.
+ *
+ * En azul institucional oscuro y no en gris claro: el gris se confundía con el
+ * fondo de la última sección y la página no terminaba en ningún lado. Arriba
+ * lleva la franja con los tres colores del isologo, que es lo que lo ata a la
+ * marca, y abajo, tres bloques en el orden en que se leen: quiénes somos y a
+ * dónde ir, lo que conviene saber antes de comprar, y lo legal.
+ *
+ * Contraste sobre `municipal-950` (#051f47): el texto más flojo, blanco al
+ * 60 %, da 6,5:1 (AA); los títulos de columna en `celeste-300`, 9:1.
+ */
 export function PiePublico() {
   const anio = new Date().getFullYear();
 
   return (
-    <footer className="mt-20 border-t border-slate-200 bg-slate-50">
+    <footer className="mt-20 bg-municipal-950 text-white">
+      {/* Franja institucional con los tres colores del isologo. */}
+      <div className="flex h-1.5" aria-hidden="true">
+        <div className="flex-1 bg-municipal-500" />
+        <div className="flex-1 bg-celeste-400" />
+        <div className="w-16 bg-acento-400" />
+      </div>
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ------------------------- Marca y navegación ------------------------ */}
         <div className="grid gap-10 py-14 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-6">
-            <LogoMunicipal comoEnlace={false} />
+            <LogoMunicipal comoEnlace={false} tono="claro" />
             {/* Sin nombrar a la Municipalidad: lo dice el logo de arriba y lo
                 dice el copyright de abajo. Acá estaba tres veces. */}
-            <p className="mt-5 max-w-sm text-sm leading-relaxed text-slate-600">
+            <p className="mt-6 max-w-sm text-sm leading-relaxed text-white/75">
               La plataforma oficial de las ferias itinerantes. Conocé a los
               feriantes, recorré sus stands online y contactalos directamente.
             </p>
@@ -46,29 +65,31 @@ export function PiePublico() {
                 letra chica legal, así que va con la marca. Abajo a la derecha
                 la tapaba la burbuja del asistente, que flota en esa esquina.
                 El punto amarillo retoma el del isologo. */}
-            <p className="mt-6 flex items-center gap-2 text-xs text-slate-500">
+            <p className="mt-6 flex items-center gap-2 text-xs text-white/60">
               <span
                 className="size-1.5 shrink-0 rounded-full bg-acento-400"
                 aria-hidden="true"
               />
               <span>
                 Creado por la{" "}
-                <span className="font-semibold text-municipal-700">
+                <span className="font-semibold text-white">
                   Dirección de Inteligencia Artificial
                 </span>
               </span>
             </p>
           </div>
 
-          {/* Columnas a su ancho natural: en una grilla fija «Catálogo de
-              emprendedores» se partía en dos renglones. */}
+          {/* En el celular, las dos columnas lado a lado: una abajo de la otra
+              el pie se estiraba casi una pantalla. Ahí «Catálogo de
+              emprendedores» ocupa dos renglones, y está bien. Desde `sm`, cada
+              columna a su ancho natural, para que no se parta. */}
           <nav
             aria-label="Pie de página"
-            className="flex flex-wrap gap-x-16 gap-y-8 lg:col-span-6 lg:justify-end"
+            className="grid grid-cols-2 gap-x-6 gap-y-10 sm:flex sm:flex-wrap sm:gap-x-16 lg:col-span-6 lg:justify-end"
           >
             {SECCIONES.map((seccion) => (
               <div key={seccion.titulo}>
-                <h3 className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                <h3 className="text-xs font-semibold tracking-wider text-celeste-300 uppercase">
                   {seccion.titulo}
                 </h3>
                 <ul className="mt-4 space-y-3">
@@ -76,7 +97,7 @@ export function PiePublico() {
                     <li key={enlace.href}>
                       <Link
                         href={enlace.href}
-                        className="text-sm text-slate-700 transition-colors hover:text-municipal-700"
+                        className="text-sm text-white/85 transition-colors hover:text-white hover:underline hover:underline-offset-4"
                       >
                         {enlace.texto}
                       </Link>
@@ -94,13 +115,13 @@ export function PiePublico() {
             lo que las funciones de IA pueden hacer de verdad —una foto puede
             quedar recompuesta y una descripción asistida—, así que si se toca
             alguna de las dos funciones, hay que revisar esto. */}
-        <div className="flex gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200/80 sm:p-5">
+        <div className="flex gap-3 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 sm:p-5">
           <IconoInfo
-            className="mt-0.5 size-4 shrink-0 text-municipal-500"
+            className="mt-0.5 size-4 shrink-0 text-celeste-300"
             aria-hidden="true"
           />
-          <p className="text-xs leading-relaxed text-slate-600">
-            <strong className="font-semibold text-slate-900">
+          <p className="text-xs leading-relaxed text-white/70">
+            <strong className="font-semibold text-white">
               Antes de comprar:
             </strong>{" "}
             las fotos de los productos pueden estar mejoradas con inteligencia
@@ -121,13 +142,13 @@ export function PiePublico() {
             en el celular el texto ocupa tres renglones y, al llegar al final de
             la página, la burbuja le tapaba la punta. Como el texto va a la
             izquierda, en pantallas anchas no se nota. */}
-        <div className="mt-10 border-t border-slate-200 py-6 text-xs text-slate-500">
+        <div className="mt-10 border-t border-white/10 py-6 text-xs text-white/60">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-16">
             <span>© {anio} Municipalidad de San Miguel de Tucumán</span>
-            <span className="text-slate-300" aria-hidden="true">
+            <span className="text-white/30" aria-hidden="true">
               ·
             </span>
-            <BotonTerminos className="transition-colors hover:text-municipal-700">
+            <BotonTerminos className="transition-colors hover:text-white">
               Términos y condiciones
             </BotonTerminos>
           </p>
@@ -138,13 +159,6 @@ export function PiePublico() {
         <DialogoTerminos>
           <TerminosContenido />
         </DialogoTerminos>
-      </div>
-
-      {/* Franja institucional con los tres colores del isologo. */}
-      <div className="flex h-1.5" aria-hidden="true">
-        <div className="flex-1 bg-municipal-500" />
-        <div className="flex-1 bg-celeste-400" />
-        <div className="w-16 bg-acento-400" />
       </div>
     </footer>
   );
