@@ -216,8 +216,12 @@ describe("traducirRubro", () => {
 describe("traducirFeria", () => {
   it.each([
     ["Feria Emprendedores", "emprendedores"],
-    ["Vº Centenario", "v-centenario"],
-    ["V CENTENARIO", "v-centenario"],
+    // La Centenario pasó a ser la Feria Parque 9 de Julio (16/11/2026).
+    ["Vº Centenario", "parque-9-de-julio"],
+    ["V CENTENARIO", "parque-9-de-julio"],
+    ["v-centenario", "parque-9-de-julio"],
+    ["Feria Parque 9 de Julio", "parque-9-de-julio"],
+    ["Parque 9 de Julio", "parque-9-de-julio"],
     ["manantial sur", "manantial-sur"],
     ["Paseo Gastronómico", "gastronomico"],
     ["Feria Digital", "creadores-digitales"],

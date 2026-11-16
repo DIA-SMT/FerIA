@@ -25,6 +25,21 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./public/logo.png"],
   },
+  /**
+   * Direcciones de ferias que cambiaron de nombre, para que no se rompan los
+   * links viejos —compartidos, guardados o los que dio Migue en una charla—.
+   *
+   * La Feria Centenario pasó a ser la Feria Parque 9 de Julio el 16/11/2026.
+   */
+  async redirects() {
+    return [
+      {
+        source: "/ferias/v-centenario",
+        destination: "/ferias/parque-9-de-julio",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: hostSupabase
       ? [

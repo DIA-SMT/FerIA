@@ -324,13 +324,19 @@ export function traducirRubro(valor: unknown): RubroTraducido {
  * modela por edición a través de `Stand`, y el padrón no trae ni edición ni
  * número de puesto, así que no hay relación que armar. Es el dato que necesita
  * la Dirección para saber a quién convocar a cada feria.
+ *
+ * Una excepción: `parque-9-de-julio`. El padrón la llama «Centenario» o
+ * «V Centenario» —y su sitio, `v-centenario`—, pero esa feria ya no existe con
+ * ese nombre: desde el 16/11/2026 es la Feria Parque 9 de Julio, en el Parque
+ * 9 de Julio sobre Av. Soldati. Los alias de abajo traducen el nombre viejo,
+ * así una nueva importación no vuelve a crear la Centenario.
  */
 export const FERIAS_PADRON = [
   "gourmet",
   "artesanos",
   "emprendedores",
   "gastronomico",
-  "v-centenario",
+  "parque-9-de-julio",
   "manantial-sur",
   "creadores-digitales",
   "plaza-sur",
@@ -338,8 +344,11 @@ export const FERIAS_PADRON = [
 ] as const;
 
 const ALIAS_FERIA: Record<string, string> = {
-  CENTENARIO: "v-centenario",
-  "V CENTENARIO": "v-centenario",
+  CENTENARIO: "parque-9-de-julio",
+  "V CENTENARIO": "parque-9-de-julio",
+  "FERIA CENTENARIO": "parque-9-de-julio",
+  "9 DE JULIO": "parque-9-de-julio",
+  "FERIA PARQUE 9 DE JULIO": "parque-9-de-julio",
   MANANTIAL: "manantial-sur",
   "MANANTIAL SUR": "manantial-sur",
   GASTRONOMICOS: "gastronomico",
