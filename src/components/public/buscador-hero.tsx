@@ -57,7 +57,7 @@ export function BuscadorHero() {
           : "Buscar una feria, un producto o un emprendimiento"}
       </label>
 
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-lg shadow-slate-900/5 focus-within:border-municipal-400 focus-within:ring-2 focus-within:ring-municipal-500/20">
+      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-superficie p-2.5 shadow-lg shadow-slate-900/5 focus-within:border-municipal-400 focus-within:ring-2 focus-within:ring-municipal-500/20">
         <IconoBuscar className="ml-2 size-5 shrink-0 text-slate-400" />
         <input
           id="q-inicio"
@@ -74,7 +74,7 @@ export function BuscadorHero() {
         <button
           type="submit"
           aria-label={asistente ? "Preguntarle a Migue" : "Buscar"}
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-municipal-500 text-white transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600"
+          className="paleta-original flex size-11 shrink-0 items-center justify-center rounded-full bg-municipal-500 text-white transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600"
         >
           <IconoFlechaDerecha className="size-5" />
         </button>

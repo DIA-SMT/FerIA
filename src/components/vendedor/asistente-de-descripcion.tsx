@@ -258,7 +258,7 @@ export function AsistenteDeDescripcion({
               : "Tu descripción, con lo que contaste"}
           </p>
 
-          <p className="mt-2 whitespace-pre-line rounded border border-slate-200 bg-white p-3 text-sm text-slate-800">
+          <p className="mt-2 whitespace-pre-line rounded border border-slate-200 bg-superficie p-3 text-sm text-slate-800">
             {propuesta.texto}
           </p>
 
@@ -391,7 +391,7 @@ function Entrevista({
           onClick={onCancelar}
           disabled={escribiendo}
           aria-label="Cerrar las preguntas"
-          className="-m-1.5 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-slate-800 disabled:opacity-50"
+          className="-m-1.5 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-superficie hover:text-slate-800 disabled:opacity-50"
         >
           <IconoCerrar className="size-4" />
         </button>

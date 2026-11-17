@@ -43,7 +43,7 @@ export function AccesosDemo({
             <button
               type="button"
               onClick={() => onElegir(cuenta.email, cuenta.password)}
-              className="w-full rounded-md border border-amber-200 bg-white px-2.5 py-2 text-left transition-colors hover:border-amber-400 hover:bg-amber-100/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+              className="w-full rounded-md border border-amber-200 bg-superficie px-2.5 py-2 text-left transition-colors hover:border-amber-400 hover:bg-amber-100/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
             >
               <span className="block text-xs font-semibold text-slate-800">
                 {cuenta.etiqueta}

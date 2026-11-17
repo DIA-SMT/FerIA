@@ -28,7 +28,7 @@ export function TarjetaStand({
   return (
     <Link
       href={`/stands/${stand.slug}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[var(--shadow-tarjeta)] transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-[var(--shadow-tarjeta-hover)]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-superficie shadow-[var(--shadow-tarjeta)] transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-[var(--shadow-tarjeta-hover)]"
     >
       {/* Sin foto, el color y el ícono de su rubro: con casi mil fichas del
           padrón sin foto, una portada igual para todas hacía la grilla ilegible. */}
@@ -52,7 +52,7 @@ export function TarjetaStand({
             // `relative z-10` porque la portada es `position: relative` y, por
             // el orden de pintado de CSS, taparía la parte del avatar que queda
             // dentro de ella.
-            className="relative z-10 -mt-9 ring-2 ring-white"
+            className="relative z-10 -mt-9 ring-2 ring-superficie"
           />
           <div className="min-w-0 flex-1 pt-0.5">
             <h3 className="truncate font-semibold text-slate-900 transition-colors group-hover:text-municipal-700">

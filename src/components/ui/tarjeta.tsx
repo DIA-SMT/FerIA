@@ -11,7 +11,7 @@ export function Tarjeta({ className, children }: PropsTarjeta) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white shadow-sm",
+        "rounded-xl border border-slate-200 bg-superficie shadow-sm",
         className,
       )}
     >

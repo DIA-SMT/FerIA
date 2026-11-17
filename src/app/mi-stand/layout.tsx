@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { SelectorTema } from "@/components/ui/selector-tema";
 import { hayIAConfigurada } from "@/lib/ai";
 import { ESTADOS_VENDEDOR, TONO_ESTADO_VENDEDOR } from "@/lib/labels";
 import { hayPedidos } from "@/lib/marketplace";
@@ -52,7 +53,7 @@ export default async function LayoutMiStand({
 
   return (
     <div className="min-h-dvh bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-superficie">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <LogoMunicipal tamanio="sm" />
@@ -66,6 +67,7 @@ export default async function LayoutMiStand({
           </div>
 
           <div className="flex items-center gap-2">
+            <SelectorTema />
             {aprobado && (
               <Link
                 href={`/stands/${vendedor.slug}`}

@@ -110,7 +110,7 @@ export default async function PaginaPedido({
         href={enlace}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+        className="paleta-original mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
       >
         <IconoWhatsapp className="size-5" />
         Escribirle por WhatsApp
@@ -122,7 +122,7 @@ export default async function PaginaPedido({
         entrega: eso lo arreglás directamente con quien produce.
       </Alerta>
 
-      <section className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <section className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-superficie">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
           <h2 className="font-semibold text-slate-900">Qué pediste</h2>
           <Badge tono={TONO_ESTADO_PEDIDO[pedido.estado]} tamanio="sm">

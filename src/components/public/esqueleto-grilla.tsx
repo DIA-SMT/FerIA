@@ -26,7 +26,7 @@ export function EsqueletoGrilla() {
         {Array.from({ length: 6 }, (_, indice) => (
           <div
             key={indice}
-            className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+            className="overflow-hidden rounded-xl border border-slate-200 bg-superficie"
           >
             <div className="aspect-[16/10] w-full animate-pulse bg-slate-200" />
             <div className="space-y-3 p-4">

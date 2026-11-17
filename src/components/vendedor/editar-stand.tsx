@@ -41,7 +41,7 @@ type SeccionDelStand = "portada" | "logo" | "identidad" | "descripcion" | "conta
 
 /** El estilo de los lápices que van junto al texto. */
 const ESTILO_LAPIZ =
-  "inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-sm font-medium text-municipal-700 ring-1 ring-municipal-200 transition-colors hover:bg-municipal-50";
+  "inline-flex items-center gap-1.5 rounded-lg bg-superficie px-2.5 py-1.5 text-sm font-medium text-municipal-700 ring-1 ring-municipal-200 transition-colors hover:bg-municipal-50";
 
 function BotonLapiz({
   onClick,
@@ -187,7 +187,7 @@ export function EditarPortada({ actual }: { actual: string | null }) {
         <button
           type="button"
           onClick={abrir}
-          className="inline-flex items-center gap-2 rounded-lg bg-white/95 px-3 py-2 text-sm font-medium text-slate-800 shadow-md ring-1 ring-slate-900/10 backdrop-blur-sm transition-colors hover:bg-white"
+          className="inline-flex items-center gap-2 rounded-lg bg-superficie/95 px-3 py-2 text-sm font-medium text-slate-800 shadow-md ring-1 ring-slate-900/10 backdrop-blur-sm transition-colors hover:bg-superficie"
         >
           <IconoCamara className="size-4" />
           {actual ? "Cambiar portada" : "Agregar portada"}
@@ -222,7 +222,7 @@ export function EditarLogo({ actual }: { actual: string | null }) {
           type="button"
           onClick={abrir}
           aria-label={actual ? "Cambiar el logo" : "Agregar un logo"}
-          className="flex size-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-md ring-1 ring-slate-900/10 transition-colors hover:bg-slate-50 hover:text-municipal-700"
+          className="flex size-9 items-center justify-center rounded-full bg-superficie text-slate-700 shadow-md ring-1 ring-slate-900/10 transition-colors hover:bg-slate-50 hover:text-municipal-700"
         >
           <IconoCamara className="size-4" />
         </button>
@@ -381,7 +381,7 @@ export function EditarDescripcion({
         ) : (
           // Sin descripción, el hueco se ofrece a sí mismo: en el stand
           // público esa parte directamente no aparece.
-          <div className="rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center">
+          <div className="rounded-xl border-2 border-dashed border-slate-300 bg-superficie p-6 text-center">
             <p className="font-semibold text-slate-900">
               Contale a los vecinos qué hacés
             </p>

@@ -1,4 +1,11 @@
 @import "tailwindcss";
+/* El tema oscuro: los mismos nombres de color con otros valores. Va sin capa
+   para ganarle a las variables del `@theme`. Ver scripts/generar-tema-oscuro.mjs. */
+@import "./tema-oscuro.css";
+
+/* `dark:` responde a la clase `dark` en <html>, que pone el botón ☀/☾ (o la
+   preferencia del sistema, la primera vez), y no a la del sistema directo. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
    Identidad visual — Municipalidad de San Miguel de Tucumán
@@ -21,6 +28,11 @@
 
   /* Sólo para el globo de Migue. Ver el comentario en src/app/layout.tsx. */
   --font-globo: var(--fuente-globo), var(--fuente-institucional), sans-serif;
+
+  /* El fondo de las tarjetas y de la página: blanco de día, azul noche de
+     noche (ver tema-oscuro.css). Se usa en lugar de `bg-white`, que tiene que
+     seguir siendo blanco donde lo es de verdad —la letra de un botón azul—. */
+  --color-superficie: #ffffff;
 
   /* Azul institucional — primario */
   --color-municipal-50: #eff6ff;
@@ -75,7 +87,7 @@
   }
 
   body {
-    @apply bg-white text-slate-800 antialiased;
+    @apply bg-superficie text-slate-800 antialiased;
     font-family: var(--font-sans);
   }
 
@@ -123,13 +135,16 @@
 }
 
 @layer utilities {
-  /* Degradé institucional azul → celeste, para heros y encabezados. */
+  /* Degradé institucional azul → celeste, para heros y encabezados. Con los
+     colores escritos y no con las variables: es de marca y lleva letra
+     blanca encima, así que de noche tiene que quedar igual (las variables se
+     dan vuelta). */
   .degrade-institucional {
     background-image: linear-gradient(
       135deg,
-      var(--color-municipal-700) 0%,
-      var(--color-municipal-500) 45%,
-      var(--color-celeste-400) 100%
+      #0345a5 0%,
+      #0567f2 45%,
+      #33adff 100%
     );
   }
 
@@ -206,6 +221,29 @@
 
 body:has(dialog[open]) {
   overflow: hidden;
+}
+
+/* El velo de la feria en la pantalla de ingreso: casi blanco de día y azul
+   noche de noche, más tupido en el centro, donde va la tarjeta. */
+.velo-ingreso {
+  background:
+    radial-gradient(
+      ellipse 55% 60% at 50% 42%,
+      rgb(255 255 255 / 0.9),
+      rgb(255 255 255 / 0.66) 60%,
+      rgb(255 255 255 / 0.5) 100%
+    ),
+    linear-gradient(180deg, rgb(240 249 255 / 0.55), rgb(255 255 255 / 0.2));
+}
+:root.dark .velo-ingreso {
+  background:
+    radial-gradient(
+      ellipse 55% 60% at 50% 42%,
+      rgb(11 22 40 / 0.9),
+      rgb(11 22 40 / 0.74) 60%,
+      rgb(11 22 40 / 0.62) 100%
+    ),
+    linear-gradient(180deg, rgb(5 20 45 / 0.5), rgb(11 22 40 / 0.3));
 }
 
 /* El aviso flotante del resultado de guardar: baja un poco y aparece. */

@@ -50,7 +50,7 @@ export function TarjetaProducto({
   const muestraPrecio = marketplace.precios && producto.precio !== null;
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <article className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-superficie shadow-sm transition-shadow hover:shadow-md">
       <div className="relative">
         <CarruselDeFotos
           imagenes={producto.imagenes}
@@ -64,7 +64,7 @@ export function TarjetaProducto({
             toda la foto, así que sin esto se comía los clicks de las flechas y
             un producto agotado quedaba con cuatro fotos inalcanzables. */}
         {!quedan && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/70">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-superficie/70">
             <Badge tono="neutro">Sin stock</Badge>
           </div>
         )}

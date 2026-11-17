@@ -55,14 +55,7 @@ export function EscenaIngreso({
         sizes="100vw"
         className="-z-30 object-cover object-[center_40%]"
       />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-20"
-        style={{
-          background:
-            "radial-gradient(ellipse 55% 60% at 50% 42%, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.66) 60%, rgb(255 255 255 / 0.5) 100%), linear-gradient(180deg, rgb(240 249 255 / 0.55), rgb(255 255 255 / 0.2))",
-        }}
-      />
+      <div aria-hidden="true" className="velo-ingreso absolute inset-0 -z-20" />
 
       <div className="relative flex w-full max-w-5xl flex-col items-center xl:static xl:flex-row xl:justify-center">
         {conMigue && (
@@ -144,10 +137,10 @@ export function EscenaIngreso({
  */
 export function TarjetaIngreso({ children }: { children: ReactNode }) {
   return (
-    <section className="relative rounded-[28px] bg-white/95 px-5 pt-14 pb-6 text-center shadow-[0_24px_60px_rgb(5_31_71/0.16),0_2px_6px_rgb(5_31_71/0.06)] sm:px-10 sm:pt-16 sm:pb-8">
+    <section className="relative rounded-[28px] bg-superficie/95 px-5 pt-14 pb-6 text-center shadow-[0_24px_60px_rgb(5_31_71/0.16),0_2px_6px_rgb(5_31_71/0.06)] sm:px-10 sm:pt-16 sm:pb-8">
       <span
         aria-hidden="true"
-        className="absolute -top-9 left-1/2 flex size-[72px] -translate-x-1/2 items-center justify-center rounded-[22px] bg-white text-municipal-500 shadow-[0_10px_24px_rgb(5_31_71/0.12)]"
+        className="absolute -top-9 left-1/2 flex size-[72px] -translate-x-1/2 items-center justify-center rounded-[22px] bg-superficie text-municipal-500 shadow-[0_10px_24px_rgb(5_31_71/0.12)]"
       >
         <IconoUsuario className="size-9" />
       </span>

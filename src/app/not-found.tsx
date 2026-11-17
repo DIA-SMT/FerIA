@@ -6,7 +6,7 @@ import { LogoMunicipal } from "@/components/ui/logo-municipal";
 export default function NoEncontrado() {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-superficie">
         <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
           <LogoMunicipal />
         </div>

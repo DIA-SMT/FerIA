@@ -43,7 +43,7 @@ export function BotonAgregar({
             imagen: producto.imagen,
           })
         }
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-municipal-500 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600"
+        className="paleta-original inline-flex w-full items-center justify-center gap-2 rounded-lg bg-municipal-500 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600"
       >
         <IconoCarrito className="size-4" />
         Agregar

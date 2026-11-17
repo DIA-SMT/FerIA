@@ -59,7 +59,7 @@ export function GrillaStands({ stands, vendedores }: PropsGrilla) {
           Ocupado ({ocupados.length})
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded border border-dashed border-slate-300 bg-white" />
+          <span className="size-3 rounded border border-dashed border-slate-300 bg-superficie" />
           Libre ({stands.length - ocupados.length})
         </span>
       </div>
@@ -88,8 +88,8 @@ export function GrillaStands({ stands, vendedores }: PropsGrilla) {
                 className={cn(
                   "flex aspect-square w-full flex-col items-center justify-center rounded-lg border p-1 text-center transition-all",
                   ocupado
-                    ? "border-municipal-600 bg-municipal-500 text-white hover:bg-municipal-600"
-                    : "border-dashed border-slate-300 bg-white text-slate-400 hover:border-municipal-400 hover:text-municipal-600",
+                    ? "paleta-original border-municipal-600 bg-municipal-500 text-white hover:bg-municipal-600"
+                    : "border-dashed border-slate-300 bg-superficie text-slate-400 hover:border-municipal-400 hover:text-municipal-600",
                   activo && "ring-2 ring-acento-400 ring-offset-2",
                 )}
               >
@@ -206,7 +206,7 @@ function PanelAsignacion({
           <button
             type="button"
             onClick={alCerrar}
-            className="inline-flex h-8 items-center rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-white hover:text-slate-900"
+            className="inline-flex h-8 items-center rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-superficie hover:text-slate-900"
           >
             Cerrar
           </button>

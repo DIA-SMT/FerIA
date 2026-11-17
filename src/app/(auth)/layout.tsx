@@ -4,21 +4,25 @@ import type { ReactNode } from "react";
 import { AsistenteBurbuja } from "@/components/public/asistente-burbuja";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { SelectorTema } from "@/components/ui/selector-tema";
 import { hayIAConfigurada } from "@/lib/ai";
 
 export default function LayoutAuth({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-superficie">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <LogoMunicipal />
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-municipal-700"
-          >
-            <IconoFlechaIzquierda className="size-4" />
-            <span className="hidden sm:inline">Volver al</span> inicio
-          </Link>
+          <div className="flex items-center gap-3">
+            <SelectorTema />
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-municipal-700"
+            >
+              <IconoFlechaIzquierda className="size-4" />
+              <span className="hidden sm:inline">Volver al</span> inicio
+            </Link>
+          </div>
         </div>
       </header>
 

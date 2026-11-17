@@ -116,9 +116,36 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * Pone el tema antes de que se pinte nada, para que de noche la página no
+ * aparezca blanca un instante y después se oscurezca.
+ *
+ * Si el vecino eligió uno con el botón, queda guardado en `localStorage`; si
+ * no, se sigue el del teléfono o la computadora, también cuando lo cambia con
+ * la página abierta. Va en línea y sin dependencias porque tiene que correr
+ * antes que cualquier script de la página.
+ */
+const SCRIPT_TEMA = `(function(){try{
+var d=document.documentElement,m=window.matchMedia("(prefers-color-scheme: dark)");
+function elegido(){try{return localStorage.getItem("tema")}catch(e){return null}}
+function aplicar(){var t=elegido(),o=t?t==="oscuro":m.matches;
+d.classList.toggle("dark",o);d.style.colorScheme=o?"dark":"light";}
+aplicar();
+m.addEventListener("change",function(){if(!elegido())aplicar();});
+}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es-AR" className={`${inter.variable} ${baloo.variable}`}>
+    // El script de arriba cambia la clase de <html> antes de hidratar: sin
+    // esto React avisa que no coincide con lo que mandó el servidor.
+    <html
+      lang="es-AR"
+      className={`${inter.variable} ${baloo.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

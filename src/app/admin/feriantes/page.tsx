@@ -122,7 +122,7 @@ export default async function PaginaFeriantes({
                 "rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors",
                 activo
                   ? "bg-municipal-500 text-white ring-municipal-500"
-                  : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
+                  : "bg-superficie text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
               )}
             >
               {filtro.etiqueta}

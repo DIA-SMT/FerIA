@@ -164,7 +164,7 @@ export default async function PaginaInicio() {
                   // ancho mínimo es el texto entero. Sin esto la tarjeta medía
                   // 491 px dentro de una columna de 343 y la portada entera
                   // desbordaba a lo ancho en el teléfono.
-                  className="group flex min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-md"
+                  className="group flex min-w-0 flex-col rounded-xl border border-slate-200 bg-superficie p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-md"
                 >
                   <span className="flex min-w-0 gap-3">
                     {/*
@@ -208,7 +208,7 @@ export default async function PaginaInicio() {
                   <span className="mt-3 flex min-w-0 items-start gap-2.5">
                     <span
                       className={cn(
-                        "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-white",
+                        "paleta-original mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-white",
                         COLOR_CATEGORIA[edicion.feria.categoria],
                       )}
                       aria-hidden="true"
@@ -275,7 +275,7 @@ export default async function PaginaInicio() {
           {feriasDestacadas.length === 0 ? (
             <EstadoVacio
               icono={IconoTienda}
-              className="mt-8 bg-white"
+              className="mt-8 bg-superficie"
               titulo="Por ahora no hay ferias programadas"
               descripcion="Cuando la municipalidad publique las próximas fechas, van a aparecer acá."
             />
@@ -316,7 +316,7 @@ export default async function PaginaInicio() {
                     <Link
                       key={fila.rubro}
                       href={`/stands?rubro=${fila.rubro}`}
-                      className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                      className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-superficie p-4 shadow-sm transition-shadow hover:shadow-md"
                     >
                       <span
                         className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-municipal-50 text-municipal-600"

@@ -39,7 +39,7 @@ export function TarjetaFeria({
   return (
     <Link
       href={`/ferias/${feria.slug}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[var(--shadow-tarjeta)] transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-[var(--shadow-tarjeta-hover)]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-superficie shadow-[var(--shadow-tarjeta)] transition-all hover:-translate-y-0.5 hover:border-celeste-300 hover:shadow-[var(--shadow-tarjeta-hover)]"
     >
       <div className="relative">
         <ImagenPortada
@@ -51,11 +51,11 @@ export function TarjetaFeria({
           className="aspect-[16/10] w-full"
         />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-          <Badge tono="celeste" tamanio="sm" className="bg-white/95">
+          <Badge tono="celeste" tamanio="sm" className="bg-superficie/95">
             {CATEGORIAS_FERIA[feria.categoria]}
           </Badge>
           {enCurso && (
-            <Badge tono="verde" tamanio="sm" conPunto className="bg-white/95">
+            <Badge tono="verde" tamanio="sm" conPunto className="bg-superficie/95">
               {ESTADOS_EDICION.EN_CURSO}
             </Badge>
           )}

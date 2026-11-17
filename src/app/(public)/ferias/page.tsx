@@ -70,7 +70,7 @@ async function ContenidoFerias({
         Contraste medido contra blanco, peor píxel de la zona de texto:
         9,1:1 a 1440 px, 8,8:1 a 1024 px y 10,5:1 a 375 px. AAA pide 7:1.
       */}
-      <section className="relative isolate overflow-hidden bg-municipal-950">
+      <section className="paleta-original relative isolate overflow-hidden bg-municipal-950">
         <Image
           src="/ferias-encabezado-dia.webp"
           alt=""
@@ -120,7 +120,7 @@ async function ContenidoFerias({
               "rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors",
               !categoria
                 ? "bg-municipal-500 text-white ring-municipal-500"
-                : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
+                : "bg-superficie text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
             )}
           >
             Todas
@@ -136,7 +136,7 @@ async function ContenidoFerias({
                   "rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors",
                   activa
                     ? "bg-municipal-500 text-white ring-municipal-500"
-                    : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
+                    : "bg-superficie text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
                 )}
               >
                 {opcion.etiqueta}

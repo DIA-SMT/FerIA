@@ -52,12 +52,12 @@ export function TarjetaProductoPropio({
         />
         <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
           {producto.destacado && (
-            <Badge tono="amarillo" tamanio="sm" className="bg-white/95">
+            <Badge tono="amarillo" tamanio="sm" className="bg-superficie/95">
               Destacado
             </Badge>
           )}
           {!producto.disponible && (
-            <Badge tono="neutro" tamanio="sm" className="bg-white/95">
+            <Badge tono="neutro" tamanio="sm" className="bg-superficie/95">
               Sin stock
             </Badge>
           )}

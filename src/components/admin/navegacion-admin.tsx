@@ -90,7 +90,7 @@ function Enlaces({ items }: { items: ItemNavegacion[] }) {
                 className={cn(
                   "rounded-full px-2 py-0.5 text-xs font-semibold",
                   activo
-                    ? "bg-white/20 text-white"
+                    ? "bg-superficie/20 text-white"
                     : "bg-acento-400 text-slate-900",
                 )}
               >
@@ -142,7 +142,7 @@ export function MenuAdminMovil({ entradas }: { entradas: EntradaMenu[] }) {
       <div
         id="menu-admin"
         hidden={!abierto}
-        className="absolute inset-x-0 top-full z-40 border-b border-slate-200 bg-white p-3 shadow-lg"
+        className="absolute inset-x-0 top-full z-40 border-b border-slate-200 bg-superficie p-3 shadow-lg"
       >
         <Enlaces items={construirItems(entradas)} />
       </div>

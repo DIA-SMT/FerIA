@@ -147,10 +147,14 @@ function AdornoFerias() {
 */
 export function HeroInicio() {
   return (
-    <section className="relative isolate overflow-hidden bg-white">
+    <section className="relative isolate overflow-hidden bg-superficie">
       {/* La foto trae su propio desvanecido hacia la izquierda, donde va el
           texto; `object-right` la ancla para que ese degradado caiga siempre
           en el mismo lugar aunque cambie el ancho de la pantalla. */}
+      {/* De noche, la feria de noche: las dos fotos están siempre y el tema
+          sólo decide cuál se ve, así cambiar de tema no tiene que esperar una
+          descarga. La nocturna se pide sin prioridad: de día casi nadie la
+          llega a necesitar. */}
       <div className="absolute inset-0" aria-hidden="true">
         <Image
           src="/hero-feria-dia.webp"
@@ -159,7 +163,14 @@ export function HeroInicio() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-right"
+          className="object-cover object-right transition-opacity duration-500 dark:opacity-0"
+        />
+        <Image
+          src="/hero-feria-nocturna.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover object-right opacity-0 transition-opacity duration-500 dark:opacity-100"
         />
       </div>
 
@@ -178,14 +189,14 @@ export function HeroInicio() {
         —abajo— y la foto queda visible en todo el resto del hero.
       */}
       <div
-        className="absolute inset-0 bg-white/20 lg:bg-white/10"
+        className="absolute inset-0 bg-superficie/20 lg:bg-superficie/10"
         aria-hidden="true"
       />
 
       {/* Base blanca que engancha con la sección de abajo: sin esto la foto
           termina en una línea recta justo donde la vista sigue bajando. */}
       <div
-        className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white to-transparent"
+        className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-superficie to-transparent"
         aria-hidden="true"
       />
 
@@ -202,7 +213,7 @@ export function HeroInicio() {
             El `ring` blanco no es adorno: sin él, el borde del panel sobre una
             zona clara de la foto desaparece y el bloque parece flotar.
           */}
-          <div className="rounded-3xl bg-white/85 p-6 shadow-xl ring-1 ring-white/70 backdrop-blur-md sm:p-8 lg:col-span-6">
+          <div className="rounded-3xl bg-superficie/85 p-6 shadow-xl ring-1 ring-white/70 backdrop-blur-md sm:p-8 lg:col-span-6">
             {/*
               «Ferias de la ciudad de San Miguel de Tucumán», a pedido de la
               Dirección. Antes decía «Ferias Tucumanas».
@@ -281,7 +292,7 @@ export function HeroInicio() {
                 Migue. Sin la cola, una caja blanca al lado de un personaje es
                 una caja blanca al lado de un personaje.
               */}
-              <div className="absolute top-0 -left-12 z-10 w-[13.5rem] -rotate-3 rounded-[2.25rem] rounded-br-xl bg-white px-6 py-5 text-center shadow-xl">
+              <div className="absolute top-0 -left-12 z-10 w-[13.5rem] -rotate-3 rounded-[2.25rem] rounded-br-xl bg-superficie px-6 py-5 text-center shadow-xl">
                 {/* `font-globo` existe sólo para esto: el nombre de Migue
                     escrito con la institucional se leía como texto de sistema
                     metido dentro de un dibujo. Ver src/app/layout.tsx. */}
@@ -292,7 +303,7 @@ export function HeroInicio() {
                   te acompaña en las ferias
                 </p>
                 <span
-                  className="absolute right-10 -bottom-2 size-6 rotate-45 rounded-[0.35rem] bg-white"
+                  className="absolute right-10 -bottom-2 size-6 rotate-45 rounded-[0.35rem] bg-superficie"
                   aria-hidden="true"
                 />
               </div>
@@ -327,7 +338,7 @@ export function HeroInicio() {
             <Link
               key={acceso.titulo}
               href={acceso.href}
-              className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md"
+              className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-superficie/95 p-4 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md"
             >
               <span
                 className={`flex size-11 shrink-0 items-center justify-center rounded-lg ${acceso.color}`}

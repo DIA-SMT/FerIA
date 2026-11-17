@@ -54,7 +54,7 @@ export function MenuMovil({ enlaces, acciones }: PropsMenuMovil) {
         id="menu-movil"
         hidden={!abierto}
         className={cn(
-          "absolute inset-x-0 top-full z-40 border-b border-slate-200 bg-white shadow-lg",
+          "absolute inset-x-0 top-full z-40 border-b border-slate-200 bg-superficie shadow-lg",
         )}
       >
         <nav className="flex flex-col p-3">

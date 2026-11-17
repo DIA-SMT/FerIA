@@ -20,8 +20,8 @@ interface PropsPaginacion {
 const BOTON =
   "inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-medium ring-1 transition-colors sm:h-9 sm:min-w-9 sm:px-2.5";
 const NORMAL =
-  "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900";
-const APAGADO = "bg-white text-slate-300 ring-slate-100";
+  "bg-superficie text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900";
+const APAGADO = "bg-superficie text-slate-300 ring-slate-100";
 
 /**
  * Anterior, números y siguiente, con links comunes.

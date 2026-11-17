@@ -10,7 +10,7 @@ interface PropsFiltrosCanon {
 }
 
 const ESTILO_SELECT =
-  "h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm " +
+  "h-10 w-full rounded-lg border border-slate-300 bg-superficie px-3 text-sm text-slate-900 shadow-sm " +
   "focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none sm:w-64";
 
 /** Filtros del listado de canon. Navegan al cambiar, sin botón de envío. */

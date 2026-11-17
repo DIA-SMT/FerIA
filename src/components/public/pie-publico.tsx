@@ -41,7 +41,7 @@ export function PiePublico() {
   const anio = new Date().getFullYear();
 
   return (
-    <footer className="mt-20 bg-municipal-950 text-white">
+    <footer className="paleta-original mt-20 bg-municipal-950 text-white">
       {/* Franja institucional con los tres colores del isologo. */}
       <div className="flex h-1.5" aria-hidden="true">
         <div className="flex-1 bg-municipal-500" />
@@ -115,7 +115,7 @@ export function PiePublico() {
             lo que las funciones de IA pueden hacer de verdad —una foto puede
             quedar recompuesta y una descripción asistida—, así que si se toca
             alguna de las dos funciones, hay que revisar esto. */}
-        <div className="flex gap-3 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 sm:p-5">
+        <div className="flex gap-3 rounded-2xl bg-superficie/5 p-4 ring-1 ring-white/10 sm:p-5">
           <IconoInfo
             className="mt-0.5 size-4 shrink-0 text-celeste-300"
             aria-hidden="true"

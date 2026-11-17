@@ -33,7 +33,7 @@ const PRODUCTOS_EN_LA_LISTA = 8;
 export function LineaDeInteres({ resumen }: { resumen: ResumenDeInteres }) {
   if (resumen.diasQueFaltan > 0) {
     return (
-      <p className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+      <p className="rounded-xl bg-superficie px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
         <span className="font-medium text-slate-900">
           Estamos contando cuánto miran tu vidriera.
         </span>{" "}
@@ -50,7 +50,7 @@ export function LineaDeInteres({ resumen }: { resumen: ResumenDeInteres }) {
     resumen.productos.reduce((total, producto) => total + producto.consultas, 0);
 
   return (
-    <details className="group rounded-xl bg-white text-sm ring-1 ring-slate-200">
+    <details className="group rounded-xl bg-superficie text-sm ring-1 ring-slate-200">
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 text-slate-600 [&::-webkit-details-marker]:hidden">
         <span>
           <span className="font-medium text-slate-900">

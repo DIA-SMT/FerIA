@@ -86,7 +86,7 @@ export function FormularioPedido({
           Tu pedido
         </h2>
 
-        <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+        <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-superficie">
           {carrito.items.map((item) => (
             <li
               key={item.productoId}

@@ -215,7 +215,7 @@ export function AsistenteBurbuja({
         aria-label={
           abierto ? "Cerrar a Migue" : "Abrir a Migue, el asistente de ferias"
         }
-        className="fixed right-4 bottom-4 z-50 flex size-14 items-center justify-center overflow-hidden rounded-full bg-municipal-500 text-white shadow-lg transition-all hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600 active:scale-95"
+        className="paleta-original fixed right-4 bottom-4 z-50 flex size-14 items-center justify-center overflow-hidden rounded-full bg-municipal-500 text-white shadow-lg transition-all hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-municipal-600 active:scale-95"
       >
         {/* Cerrada muestra la cara y abierta la cruz. La cara es lo que hace
             que alguien la toque: un ícono de chat genérico, en un sitio
@@ -237,13 +237,13 @@ export function AsistenteBurbuja({
         <section
           role="dialog"
           aria-label="Migue, el asistente de ferias"
-          className="animar-aparecer fixed right-4 bottom-21 z-50 flex h-[min(32rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+          className="animar-aparecer fixed right-4 bottom-21 z-50 flex h-[min(32rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-superficie shadow-xl"
         >
           {/* La cara va acá y no sólo en la portada: es lo que convierte una
               ventana de chat anónima en alguien con quien se habla. El recorte
               redondo toma la cabeza, que es la parte reconocible del dibujo. */}
           <header className="flex items-center gap-3 border-b border-slate-200 bg-municipal-500 px-4 py-3">
-            <span className="size-10 shrink-0 overflow-hidden rounded-full bg-white/15 ring-1 ring-white/30">
+            <span className="size-10 shrink-0 overflow-hidden rounded-full bg-superficie/15 ring-1 ring-white/30">
               <Image
                 src={MIGUE_CARA}
                 alt=""
@@ -312,13 +312,13 @@ export function AsistenteBurbuja({
                 maxLength={500}
                 placeholder="Ej. ¿quién vende mates?"
                 aria-label="Tu consulta para el asistente"
-                className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none"
+                className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-superficie px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={pendiente || borrador.trim().length < 2}
                 aria-label="Enviar la consulta"
-                className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-municipal-500 text-white transition-colors hover:bg-municipal-600 disabled:pointer-events-none disabled:opacity-50"
+                className="paleta-original flex size-10 shrink-0 items-center justify-center rounded-lg bg-municipal-500 text-white transition-colors hover:bg-municipal-600 disabled:pointer-events-none disabled:opacity-50"
               >
                 <IconoEnviar className="size-4.5" />
               </button>

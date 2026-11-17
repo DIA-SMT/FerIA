@@ -61,7 +61,7 @@ export function Avatar({
         height={px}
         className={cn(
           caja,
-          "shrink-0 rounded-full border border-slate-200 bg-white object-cover",
+          "shrink-0 rounded-full border border-slate-200 bg-superficie object-cover",
           className,
         )}
       />
@@ -73,7 +73,7 @@ export function Avatar({
       aria-hidden="true"
       className={cn(
         caja,
-        "flex shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-semibold text-municipal-700",
+        "flex shrink-0 items-center justify-center rounded-full border border-slate-200 bg-superficie font-semibold text-municipal-700",
         className,
       )}
     >

@@ -57,7 +57,7 @@ export function ListaCarritos() {
       {grupos.map((carrito) => (
         <section
           key={carrito.slug}
-          className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+          className="overflow-hidden rounded-xl border border-slate-200 bg-superficie shadow-sm"
           aria-labelledby={`stand-${carrito.slug}`}
         >
           <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">

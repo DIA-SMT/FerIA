@@ -26,7 +26,7 @@ export function EstadoVacio({
         className,
       )}
     >
-      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
+      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-superficie ring-1 ring-slate-200">
         <Icono className="size-6 text-slate-400" />
       </div>
       <p className="text-sm font-semibold text-slate-900">{titulo}</p>

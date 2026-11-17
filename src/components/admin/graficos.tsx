@@ -52,7 +52,7 @@ export function TarjetaMetrica({
   const estilos = TONOS_METRICA[tono];
 
   return (
-    <div className={cn("rounded-xl border bg-white p-4 shadow-sm", estilos.caja)}>
+    <div className={cn("rounded-xl border bg-superficie p-4 shadow-sm", estilos.caja)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-slate-500">{etiqueta}</p>

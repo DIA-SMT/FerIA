@@ -34,7 +34,7 @@ export function BotonCidituc({
       <a
         href="/auth/cidituc/ingresar"
         className={cn(
-          "inline-flex w-full items-center justify-center gap-2 bg-municipal-500 text-white transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2",
+          "paleta-original inline-flex w-full items-center justify-center gap-2 bg-municipal-500 text-white transition-colors hover:bg-municipal-600 focus-visible:outline-2 focus-visible:outline-offset-2",
           grande
             ? "h-14 rounded-xl px-6 text-base font-bold shadow-lg shadow-municipal-500/30 focus-visible:outline-acento-400"
             : "rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm focus-visible:outline-municipal-600",

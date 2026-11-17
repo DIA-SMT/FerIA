@@ -56,7 +56,7 @@ export function DialogoTerminos({ children }: { children: ReactNode }) {
       onClick={(evento) => {
         if (evento.target === referencia.current) referencia.current?.close();
       }}
-      className="dialogo-modal m-auto w-[min(100%-2rem,44rem)] rounded-2xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-950/50"
+      className="dialogo-modal m-auto w-[min(100%-2rem,44rem)] rounded-2xl border border-slate-200 bg-superficie p-0 shadow-xl backdrop:bg-black/50"
     >
       <div className="flex max-h-[85dvh] flex-col">
         <header className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">

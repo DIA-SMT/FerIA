@@ -222,7 +222,7 @@ export function SelectorDeFoto({
           vista previa local es lo único que hay para mostrar. */}
       {preparando && archivo && (
         <div className="flex items-center gap-3 border-t border-slate-200 pt-4">
-          <div className="size-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div className="size-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-superficie">
             {previa && (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
@@ -281,7 +281,7 @@ export function SelectorDeFoto({
             ).map(([clave, rotulo, variante]) => (
               <div
                 key={clave}
-                className="rounded-lg border-2 border-slate-200 bg-white p-2"
+                className="rounded-lg border-2 border-slate-200 bg-superficie p-2"
               >
                 <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
                   {rotulo}

@@ -48,7 +48,7 @@ export function FiltrosDirectorio({ valores, ferias }: PropsFiltros) {
   const hayFiltros = Boolean(valores.q || valores.rubro || valores.feria);
 
   const estiloSelect =
-    "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm " +
+    "h-11 w-full rounded-lg border border-slate-300 bg-superficie px-3 text-sm text-slate-900 shadow-sm " +
     "focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none sm:w-auto";
 
   return (
@@ -63,7 +63,7 @@ export function FiltrosDirectorio({ valores, ferias }: PropsFiltros) {
             onChange={(evento) => setBusqueda(evento.target.value)}
             placeholder="Buscar por emprendimiento o producto…"
             aria-label="Buscar emprendedores"
-            className="h-11 w-full rounded-lg border border-slate-300 bg-white pr-3 pl-9 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none"
+            className="h-11 w-full rounded-lg border border-slate-300 bg-superficie pr-3 pl-9 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none"
           />
         </div>
 

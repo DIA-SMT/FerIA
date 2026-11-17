@@ -182,14 +182,14 @@ export default async function PaginaFeria({
         />
         {feria.imagen && (
           <div
-            className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent"
+            className="paleta-original absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent"
             aria-hidden="true"
           />
         )}
 
         <div className="absolute inset-x-0 bottom-0">
           <div className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
-            <Badge tono="celeste" className="bg-white/95">
+            <Badge tono="celeste" className="bg-superficie/95">
               {CATEGORIAS_FERIA[feria.categoria]}
             </Badge>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-white drop-shadow-sm sm:text-4xl">
@@ -246,7 +246,7 @@ export default async function PaginaFeria({
                     return (
                       <li
                         key={edicion.id}
-                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                        className="rounded-xl border border-slate-200 bg-superficie p-5 shadow-sm"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
@@ -345,7 +345,7 @@ export default async function PaginaFeria({
 
           {/* ----------------------------- Barra lateral ---------------------- */}
           <aside className="lg:col-span-1">
-            <div className="sticky top-24 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="sticky top-24 space-y-4 rounded-xl border border-slate-200 bg-superficie p-5 shadow-sm">
               <div>
                 <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <IconoUbicacion className="size-4 text-municipal-500" />

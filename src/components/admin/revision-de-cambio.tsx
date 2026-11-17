@@ -279,7 +279,7 @@ export function RevisionDeCambio({
       : TITULOS[cambio.seccion];
 
   return (
-    <article className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+    <article className="space-y-4 rounded-xl border border-slate-200 bg-superficie p-4 sm:p-5">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-slate-900">{titulo}</h3>
         <div className="flex items-center gap-2">

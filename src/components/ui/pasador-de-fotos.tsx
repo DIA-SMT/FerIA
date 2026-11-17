@@ -89,7 +89,7 @@ export function PasadorDeFotos({
           están las flechas, y el lector de pantalla lo saca del «foto 2 de 4».*/}
       <div
         aria-hidden="true"
-        className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/85 px-2 py-1.5 shadow-sm"
+        className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-superficie/85 px-2 py-1.5 shadow-sm"
       >
         {imagenes.map((ruta, posicion) => (
           <span
@@ -126,8 +126,8 @@ function BotonFlecha({
       }
       className={cn(
         "absolute top-1/2 flex size-8 -translate-y-1/2 items-center justify-center",
-        "rounded-full bg-white/90 text-slate-700 shadow-sm transition-colors",
-        "hover:bg-white hover:text-slate-900",
+        "rounded-full bg-superficie/90 text-slate-700 shadow-sm transition-colors",
+        "hover:bg-superficie hover:text-slate-900",
         "focus-visible:ring-2 focus-visible:ring-municipal-500 focus-visible:outline-none",
         className,
       )}

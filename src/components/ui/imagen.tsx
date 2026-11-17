@@ -91,7 +91,7 @@ export function ImagenPortada({
     <div
       className={cn(
         "relative overflow-hidden",
-        contiene ? "bg-white" : "bg-slate-100",
+        contiene ? "bg-superficie" : "bg-slate-100",
         className,
       )}
     >

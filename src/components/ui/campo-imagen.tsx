@@ -79,7 +79,7 @@ export function CampoImagen({
               alt={`Vista previa de ${etiqueta.toLowerCase()}`}
               className="size-full rounded-lg border border-municipal-300 object-cover"
             />
-            <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
               Sin guardar
             </span>
           </>

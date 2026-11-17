@@ -5,6 +5,7 @@ import { IndicadorCarrito } from "@/components/carrito/indicador-carrito";
 import { MenuMovil } from "@/components/public/menu-movil";
 import { estilosBoton } from "@/components/ui/boton";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { SelectorTema } from "@/components/ui/selector-tema";
 import { hayPedidos } from "@/lib/marketplace";
 import { obtenerSesion } from "@/lib/session";
 
@@ -44,7 +45,7 @@ export async function EncabezadoPublico() {
   );
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-superficie/95 backdrop-blur">
       <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <LogoMunicipal />
 
@@ -64,6 +65,7 @@ export async function EncabezadoPublico() {
             algo: es el único control del encabezado que cambia solo, y
             esconderlo detrás de un menú hace que nadie se entere. */}
         <div className="flex items-center gap-1">
+          <SelectorTema />
           {hayPedidos() && <IndicadorCarrito />}
           <div className="hidden md:block">{acciones}</div>
           <MenuMovil enlaces={ENLACES} acciones={acciones} />

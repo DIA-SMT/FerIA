@@ -184,12 +184,12 @@ export function FormularioProducto({
                           )
                         }
                         aria-label={`Quitar la foto ${indice + 1}`}
-                        className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+                        className="paleta-original absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
                       >
                         <IconoCerrar className="size-3.5" />
                       </button>
                       {indice === 0 && (
-                        <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                        <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                           Portada
                         </span>
                       )}
@@ -212,11 +212,11 @@ export function FormularioProducto({
                         type="button"
                         onClick={() => quitarNueva(variante.ruta)}
                         aria-label={`Quitar ${variante.titulo}`}
-                        className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+                        className="paleta-original absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
                       >
                         <IconoCerrar className="size-3.5" />
                       </button>
-                      <span className="absolute bottom-1 left-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                      <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                         {conservadas.length === 0 && indice === 0
                           ? "Portada"
                           : variante.titulo}

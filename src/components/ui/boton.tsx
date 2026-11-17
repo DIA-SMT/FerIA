@@ -21,19 +21,19 @@ const BASE =
 const VARIANTES: Record<VarianteBoton, string> = {
   // Azul institucional con texto blanco: 4.9:1 de contraste.
   primario:
-    "bg-municipal-500 text-white shadow-sm hover:bg-municipal-600 active:bg-municipal-700 focus-visible:outline-municipal-600",
+    "paleta-original bg-municipal-500 text-white shadow-sm hover:bg-municipal-600 active:bg-municipal-700 focus-visible:outline-municipal-600",
   // El celeste va como fondo claro con texto oscuro; en saturado no contrasta.
   secundario:
     "bg-celeste-100 text-celeste-900 hover:bg-celeste-200 active:bg-celeste-300 focus-visible:outline-celeste-600",
   contorno:
-    "border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-municipal-600",
+    "border border-slate-300 bg-superficie text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-municipal-600",
   fantasma:
     "text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-municipal-600",
   // Amarillo siempre con texto oscuro: 12:1 de contraste.
   acento:
-    "bg-acento-400 text-slate-900 shadow-sm hover:bg-acento-300 active:bg-acento-500 focus-visible:outline-acento-700",
+    "paleta-original bg-acento-400 text-slate-900 shadow-sm hover:bg-acento-300 active:bg-acento-500 focus-visible:outline-acento-700",
   peligro:
-    "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 focus-visible:outline-red-700",
+    "paleta-original bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 focus-visible:outline-red-700",
   /*
     Translúcido, para ir encima de una foto: hoy lo usa el hero.
 
@@ -44,7 +44,7 @@ const VARIANTES: Record<VarianteBoton, string> = {
     ve; acá el contorno va blanco.
   */
   vidrio:
-    "border border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 active:bg-white/25 focus-visible:outline-white",
+    "border border-white/30 bg-superficie/10 text-white backdrop-blur-sm hover:bg-superficie/20 active:bg-superficie/25 focus-visible:outline-white",
 };
 
 const TAMANIOS: Record<TamanioBoton, string> = {

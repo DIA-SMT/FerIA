@@ -47,8 +47,8 @@ export function FiltrosRevisiones({
     cn(
       "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition-colors",
       activa
-        ? "bg-municipal-600 text-white ring-municipal-600"
-        : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50",
+        ? "paleta-original bg-municipal-600 text-white ring-municipal-600"
+        : "bg-superficie text-slate-700 ring-slate-200 hover:bg-slate-50",
     );
 
   return (
@@ -61,7 +61,7 @@ export function FiltrosRevisiones({
           id="filtro-feria"
           value={feria}
           onChange={(evento) => router.push(enlace(tipo, evento.target.value))}
-          className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none"
+          className="h-10 rounded-lg border border-slate-300 bg-superficie px-3 text-sm text-slate-900 shadow-sm focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none"
         >
           <option value="">Todas las ferias</option>
           {ferias.map((opcion) => (

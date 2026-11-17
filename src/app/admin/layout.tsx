@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/navegacion-admin";
 import { IconoEnlaceExterno, IconoSalir } from "@/components/ui/iconos";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
+import { SelectorTema } from "@/components/ui/selector-tema";
 import { hayIAConfigurada } from "@/lib/ai";
 import { prisma } from "@/lib/db";
 import { SOLICITUD_PENDIENTE } from "@/lib/feriantes";
@@ -75,7 +76,7 @@ export default async function LayoutAdmin({
 
   return (
     <div className="min-h-dvh bg-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-superficie">
         <div className="relative flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <MenuAdminMovil entradas={entradas} />
@@ -86,6 +87,7 @@ export default async function LayoutAdmin({
           </div>
 
           <div className="flex items-center gap-2">
+            <SelectorTema />
             <Link
               href="/"
               target="_blank"
@@ -113,7 +115,7 @@ export default async function LayoutAdmin({
       </header>
 
       <div className="mx-auto flex max-w-[100rem]">
-        <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-slate-200 bg-white lg:block">
+        <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-slate-200 bg-superficie lg:block">
           <BarraLateralAdmin entradas={entradas} />
         </aside>
 

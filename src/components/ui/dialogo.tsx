@@ -70,7 +70,7 @@ export function Dialogo({
         if (evento.target === referencia.current) onCerrar();
       }}
       className={cn(
-        "dialogo-modal m-auto w-[min(100%-2rem,36rem)] rounded-2xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-950/50",
+        "dialogo-modal m-auto w-[min(100%-2rem,36rem)] rounded-2xl border border-slate-200 bg-superficie p-0 shadow-xl backdrop:bg-black/50",
         className,
       )}
     >
