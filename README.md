@@ -745,43 +745,24 @@ chicas — la mayoría de los vecinos entra desde el celular.
 
 ### Las fotos del área pública
 
-Son dos, las dos **imágenes generadas**, y cada una lleva su velo porque el
-texto blanco va encima:
+Todas son **imágenes generadas**.
 
-| Archivo | Dónde | Velo |
-| ------- | ----- | ---- |
-| `hero-feria-nocturna.webp` | Hero de inicio | Horizontal: denso a la izquierda, se abre a la derecha |
-| `ferias-encabezado-dia.webp` | Encabezado de `/ferias` | Vertical: denso abajo, se abre hacia arriba |
+**El hero de inicio («Ruta de ferias»)** sale de un kit de diseño y vive entero
+en `public/ferias-hero/`: los dos fondos (día y noche), los tres Migue (uno por
+tamaño de pantalla), el globo, los íconos de los accesos, los pines, la ruta,
+los banderines y el destello. El componente es
+`src/components/public/hero-ruta.tsx`, y su comentario de arriba cuenta qué se
+cambió del kit y por qué. Los dos fondos son **la misma escena** con otra luz
+—la de noche se hizo a partir de la de día—, así que cambiar de tema no mueve
+nada. Si se reemplazan, tienen que seguir siendo un par así.
 
-Los velos van en sentidos distintos a propósito. La nocturna es oscura y el
-texto ocupa la mitad izquierda, así que conviene oscurecer ese lado y dejar ver
-los puestos del otro. La diurna es luminosa y lo que la hace linda es la luz
-entre los árboles, así que se oscurece sólo el pie, donde va el título.
-
-En las dos, **abajo de `lg` el velo es parejo**: en pantallas chicas el texto
-ocupa casi todo el ancho y todo el alto de la banda, y un degradé dejaría
-palabras sobre las zonas claras de la foto.
-
-Contraste medido sobre la imagen ya compuesta con el velo, en el peor píxel de
-la zona de texto (AAA pide 7:1):
-
-| | 1440 px | 1024 px | 375 px |
-| --- | --- | --- | --- |
-| Hero de inicio | 13,4:1 | 8,6:1 | 10,4:1 |
-| Encabezado de `/ferias` | 9,1:1 | 8,8:1 | 10,5:1 |
-
-#### El recorte de la nocturna
-
-`public/hero-feria-nocturna.webp` está recortada del original, y **el recorte no
-es estético: es necesario.** El cuadro completo tiene, en su tercio izquierdo, un
-puesto de carteles de madera cuyo texto salió mal generado ("BRHUONDAR" donde
-debería decir Bienvenidos, y varios que son garabatos imitando letras). A tamaño
-hero se lee. La imagen del repositorio arranca pasada esa zona; si alguna vez se
-reemplaza por el original completo, el problema vuelve.
-
-La diurna no necesitó recorte por ese motivo: se revisó cuadro por cuadro y no
-tiene texto mal generado. Sólo está acotada a una banda ancha para no cargar
-píxeles que el encabezado nunca muestra.
+**El encabezado de `/ferias`** es `ferias-encabezado-dia.webp`, con un velo
+vertical: denso abajo, donde va el título, y abierto hacia arriba para dejar
+ver la luz entre los árboles. Abajo de `lg` el velo es parejo, porque el texto
+ocupa casi toda la banda. Contraste medido en el peor píxel de la zona de
+texto: 9,1:1 a 1440 px, 8,8:1 a 1024 px y 10,5:1 a 375 px (AAA pide 7:1). La
+imagen no tiene texto mal generado —se revisó cuadro por cuadro— y está acotada
+a una banda ancha para no cargar píxeles que el encabezado nunca muestra.
 
 El área pública es más cálida y visual (fotos, tarjetas, degradés); el panel
 municipal es más denso y funcional (tablas, filtros, barra lateral).

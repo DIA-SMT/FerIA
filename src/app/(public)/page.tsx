@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { HeroInicio } from "@/components/public/hero-inicio";
+import { HeroRuta } from "@/components/public/hero-ruta";
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
 import { BotonLink } from "@/components/ui/boton";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
@@ -120,7 +120,7 @@ export default async function PaginaInicio() {
 
   return (
     <>
-      <HeroInicio />
+      <HeroRuta />
 
       {/* -------------------------- Ferias de la semana --------------------- */}
       {agenda.length > 0 && (

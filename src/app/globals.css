@@ -246,6 +246,73 @@ body:has(dialog[open]) {
     linear-gradient(180deg, rgb(5 20 45 / 0.5), rgb(11 22 40 / 0.3));
 }
 
+/* El velo del hero «Ruta de ferias», el `.tint` del kit: una franja apenas
+   más clara (de noche, más oscura) en el centro, donde va el texto. En tablet
+   y celular el texto va sobre la foto entera, así que el velo es de arriba
+   abajo y más tupido.
+
+   Encima del velo del kit va una mancha suave detrás del título y la bajada:
+   sin ella, la bajada caía sobre los banderines del puesto y no se leía. */
+.velo-ruta {
+  background:
+    radial-gradient(
+      ellipse 31% 30% at 63% 27%,
+      rgb(245 250 255 / 0.32),
+      rgb(245 250 255 / 0) 100%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(233 245 255 / 0.1) 32%,
+      rgb(245 250 255 / 0.24) 49%,
+      rgb(231 244 251 / 0.16) 69%,
+      transparent 100%
+    );
+}
+:root.dark .velo-ruta {
+  background:
+    radial-gradient(
+      ellipse 31% 30% at 63% 27%,
+      rgb(7 21 47 / 0.6),
+      rgb(7 21 47 / 0) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.04) 0%,
+      rgb(0 20 50 / 0.16) 34%,
+      rgb(0 25 64 / 0.22) 55%,
+      rgb(0 4 30 / 0.12) 70%,
+      rgb(0 0 0 / 0.03) 100%
+    );
+}
+@media (max-width: 1279px) {
+  .velo-ruta {
+    background: linear-gradient(
+      rgb(245 250 255 / 0.8) 0%,
+      rgb(238 247 255 / 0.9) 45%,
+      rgb(227 243 253 / 0.4) 85%
+    );
+  }
+  :root.dark .velo-ruta {
+    background: linear-gradient(
+      rgb(6 34 77 / 0.73) 0%,
+      rgb(8 34 75 / 0.73) 45%,
+      rgb(8 34 75 / 0.47) 85%
+    );
+  }
+}
+
+/* Los pines de la ruta flotan apenas, cada uno a su tiempo. */
+.pin-ruta {
+  animation: pin-flota 3.2s ease-in-out infinite both;
+}
+
+@keyframes pin-flota {
+  50% {
+    transform: translateY(-7%);
+  }
+}
+
 /* El aviso flotante del resultado de guardar: baja un poco y aparece. */
 .animar-aviso {
   animation: aviso-entra 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;

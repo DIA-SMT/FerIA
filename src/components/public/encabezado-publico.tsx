@@ -49,7 +49,7 @@ export async function EncabezadoPublico() {
       <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <LogoMunicipal />
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {ENLACES.map((enlace) => (
             <Link
               key={enlace.href}
@@ -67,7 +67,7 @@ export async function EncabezadoPublico() {
         <div className="flex items-center gap-1">
           <SelectorTema />
           {hayPedidos() && <IndicadorCarrito />}
-          <div className="hidden md:block">{acciones}</div>
+          <div className="hidden lg:block">{acciones}</div>
           <MenuMovil enlaces={ENLACES} acciones={acciones} />
         </div>
       </div>

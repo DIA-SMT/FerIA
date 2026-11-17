@@ -41,6 +41,9 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // 75 es el de siempre; 90 lo usan las fotos grandes del hero, donde la
+    // compresión se nota.
+    qualities: [75, 90],
     remotePatterns: hostSupabase
       ? [
           {

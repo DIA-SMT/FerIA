@@ -34,7 +34,7 @@ export function MenuMovil({ enlaces, acciones }: PropsMenuMovil) {
   }, [abierto]);
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         type="button"
         onClick={() => setAbierto((valor) => !valor)}
