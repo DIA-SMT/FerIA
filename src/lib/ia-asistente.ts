@@ -49,9 +49,13 @@ export interface TurnoAsistente {
  *
  * Migue está en todas las pantallas, y la misma pregunta pide otra respuesta
  * según dónde se haga: «¿cómo agrego algo?» en el panel del feriante es un
- * producto, y en la administración es una feria. El área sólo suma una guía de
- * uso de esa pantalla al prompt: no da acceso a ningún dato que el sitio
- * público no muestre, así que no importa que la diga el cliente.
+ * producto, y en la administración es una feria. Acá el área sólo suma una
+ * guía de uso de esa pantalla al prompt, sin ningún dato que el sitio público
+ * no muestre, así que no importa que la diga el cliente.
+ *
+ * En el panel de administración Migue además consulta los datos del panel,
+ * pero eso es otro camino (`ia-asistente-admin.ts`) y no lo abre el área: lo
+ * abre una sesión de administrador verificada en el servidor.
  */
 export type AreaAsistente = "publico" | "feriante" | "administracion";
 
@@ -62,7 +66,7 @@ export const AREAS_ASISTENTE: readonly AreaAsistente[] = [
 ];
 
 /** A quién le habla y, en los paneles, cómo se usa esa pantalla. */
-function guiaDelArea(area: AreaAsistente): string {
+export function guiaDelArea(area: AreaAsistente): string {
   if (area === "feriante") {
     const pestanias = [
       "«Mis ferias» (/mi-stand/ferias): en qué ferias presenciales está habilitado, el botón para pedir estar en otra y los stands que le asignaron en las próximas ediciones",
@@ -94,7 +98,7 @@ CÓMO SE USA EL PANEL DE ADMINISTRACIÓN (lo único que existe; no inventes pant
 - «Ferias y ediciones» (/admin/ferias): crear y editar ferias (nombre, descripción, portada, ubicación y si está activa) y sus ediciones, con fechas y horarios.
 - «Postulaciones» (/admin/postulaciones): las altas de feriantes nuevos y los pedidos para sumarse a una feria, para aprobarlos o rechazarlos.
 - «Revisiones» (/admin/revisiones): todo lo que los feriantes cambiaron o agregaron en su stand (portada, logo, nombre y rubro, descripción, contacto y productos), con lo que se ve hoy al lado de lo propuesto. Nada se publica hasta que se aprueba; para rechazar hay que escribir el motivo, que lo lee el feriante.
-- «Feriantes» (/admin/feriantes): el listado completo, con filtros, incluido el padrón importado de Feria Digital.${
+- «Feriantes» (/admin/feriantes): el listado completo, con un buscador por nombre del emprendimiento o de quien lo lleva y filtros por feria y por estado, incluido el padrón importado de Feria Digital. Cada nombre abre su ficha, con todos sus datos: contacto y documento, ferias, stands, cambios en revisión y productos.${
       hayCanon() ? "\n- «Canon y permisos» (/admin/canon): los pagos de canon de cada feriante." : ""
     }`;
   }

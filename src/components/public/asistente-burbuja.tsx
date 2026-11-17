@@ -61,8 +61,29 @@ const SALUDOS: Record<AreaAsistente, TurnoAsistente> = {
   administracion: {
     rol: "asistente",
     texto:
-      "¡Hola! Te ayudo con el panel: ferias y ediciones, postulaciones y feriantes. También puedo buscarte feriantes o productos. ¿Qué necesitás?",
+      "¡Hola! Preguntame lo que necesites del panel: en qué feria está un feriante, cuántas revisiones o postulaciones hay pendientes, quiénes están habilitados en cada feria o cuándo es la próxima edición. También te explico cómo se usa el panel.",
   },
+};
+
+/** Un ejemplo de pregunta, según la pantalla. */
+const EJEMPLOS: Record<AreaAsistente, string> = {
+  publico: "Ej. ¿quién vende mates?",
+  feriante: "Ej. ¿cómo cargo un producto?",
+  administracion: "Ej. ¿cuántas revisiones hay pendientes?",
+};
+
+/**
+ * La advertencia de abajo. En el panel Migue contesta con los datos de la
+ * base, pero quien redacta es igual un modelo: antes de decidir algo sobre un
+ * feriante, se mira su ficha.
+ */
+const ADVERTENCIAS: Record<AreaAsistente, string> = {
+  publico:
+    "Respuestas generadas con inteligencia artificial: pueden contener errores. Verificá en la página de cada stand.",
+  feriante:
+    "Respuestas generadas con inteligencia artificial: pueden contener errores. Verificá en la página de cada stand.",
+  administracion:
+    "Responde con los datos del panel, pero lo redacta una inteligencia artificial: antes de decidir, verificá en la ficha. Las consultas quedan registradas con tu usuario.",
 };
 
 /** Convierte [texto](/ruta) en enlaces internos; el resto queda plano. */
@@ -310,7 +331,7 @@ export function AsistenteBurbuja({
                 value={borrador}
                 onChange={(evento) => setBorrador(evento.target.value)}
                 maxLength={500}
-                placeholder="Ej. ¿quién vende mates?"
+                placeholder={EJEMPLOS[area]}
                 aria-label="Tu consulta para el asistente"
                 className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-superficie px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-municipal-500 focus:ring-2 focus:ring-municipal-500/30 focus:outline-none"
               />
@@ -325,8 +346,7 @@ export function AsistenteBurbuja({
             </form>
 
             <p className="mt-2 text-[11px] leading-snug text-slate-400">
-              Respuestas generadas con inteligencia artificial: pueden contener
-              errores. Verificá en la página de cada stand.
+              {ADVERTENCIAS[area]}
             </p>
           </div>
         </section>

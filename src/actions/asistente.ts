@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { prisma } from "@/lib/db";
 import { esControlDeFlujoDeNext } from "@/lib/errores";
+import { responderConsultaAdmin } from "@/lib/ia-asistente-admin";
 import {
   AREAS_ASISTENTE,
   ErrorDeAsistente,
@@ -11,6 +12,7 @@ import {
   type AreaAsistente,
   type TurnoAsistente,
 } from "@/lib/ia-asistente";
+import { obtenerSesion, type SesionApp } from "@/lib/session";
 
 /**
  * La acción pública del asistente.
@@ -43,31 +45,43 @@ const VENTANA_MS = 10 * 60 * 1000;
 const MAXIMO_EN_VENTANA = 10;
 const consultasPorIp = new Map<string, number[]>();
 
-function superaElLimite(ip: string): boolean {
+function superaElLimite(
+  ip: string,
+  registro: Map<string, number[]> = consultasPorIp,
+  maximo: number = MAXIMO_EN_VENTANA,
+): boolean {
   const ahora = Date.now();
-  const recientes = (consultasPorIp.get(ip) ?? []).filter(
+  const recientes = (registro.get(ip) ?? []).filter(
     (momento) => ahora - momento < VENTANA_MS,
   );
 
-  if (recientes.length >= MAXIMO_EN_VENTANA) {
-    consultasPorIp.set(ip, recientes);
+  if (recientes.length >= maximo) {
+    registro.set(ip, recientes);
     return true;
   }
 
   recientes.push(ahora);
-  consultasPorIp.set(ip, recientes);
+  registro.set(ip, recientes);
 
   // Que el mapa no crezca sin techo con IPs que nunca vuelven.
-  if (consultasPorIp.size > 5000) {
-    for (const [clave, momentos] of consultasPorIp) {
+  if (registro.size > 5000) {
+    for (const [clave, momentos] of registro) {
       if (momentos.every((momento) => ahora - momento >= VENTANA_MS)) {
-        consultasPorIp.delete(clave);
+        registro.delete(clave);
       }
     }
   }
 
   return false;
 }
+
+/**
+ * En el panel, el límite es por persona y más holgado: son pocas cuentas, y
+ * una consulta lleva a otra («¿y en qué stand está?»). Cada pregunta puede
+ * costar dos o tres vueltas con el modelo, así que el tope sigue existiendo.
+ */
+const MAXIMO_ADMIN_EN_VENTANA = 40;
+const consultasPorAdmin = new Map<string, number[]>();
 
 /** El historial que manda el cliente es hostil hasta que se demuestre lo contrario. */
 function sanearHistorial(historial: unknown): TurnoAsistente[] {
@@ -83,10 +97,65 @@ function sanearHistorial(historial: unknown): TurnoAsistente[] {
         typeof (turno as { texto: unknown }).texto === "string",
     )
     .map((turno) => ({
-      rol: turno.rol === "asistente" ? ("asistente" as const) : ("usuario" as const),
+      rol:
+        turno.rol === "asistente"
+          ? ("asistente" as const)
+          : ("usuario" as const),
       texto: turno.texto.slice(0, MAXIMO_TEXTO_TURNO),
     }))
     .slice(-MAXIMO_TURNOS);
+}
+
+/**
+ * El camino del panel: con las consultas de administración y con constancia
+ * de quién preguntó. No pasa por el registro anónimo del público, que es para
+ * saber qué busca la gente.
+ */
+async function responderComoAdmin(
+  sesion: SesionApp,
+  historial: TurnoAsistente[],
+  pregunta: string,
+): Promise<RespuestaAsistente> {
+  if (superaElLimite(sesion.id, consultasPorAdmin, MAXIMO_ADMIN_EN_VENTANA)) {
+    return {
+      ok: false,
+      texto:
+        "Hiciste muchas consultas seguidas. Esperá unos minutos y probá de nuevo.",
+    };
+  }
+
+  let herramientas: string[] = [];
+  let fallo = false;
+  try {
+    const respuesta = await responderConsultaAdmin(
+      sanearHistorial(historial),
+      pregunta,
+    );
+    herramientas = respuesta.herramientas;
+    return { ok: true, texto: respuesta.texto };
+  } catch (error) {
+    fallo = true;
+    throw error;
+  } finally {
+    // Si falla el registro, la respuesta sale igual.
+    try {
+      const haceUnAnio = new Date();
+      haceUnAnio.setUTCFullYear(haceUnAnio.getUTCFullYear() - 1);
+      await prisma.$transaction([
+        prisma.consultaAdmin.create({
+          data: { usuarioId: sesion.id, pregunta, herramientas, fallo },
+        }),
+        prisma.consultaAdmin.deleteMany({
+          where: { creadoEn: { lt: haceUnAnio } },
+        }),
+      ]);
+    } catch (error) {
+      console.error(
+        "[asistente-admin] no se pudo registrar la consulta",
+        error,
+      );
+    }
+  }
 }
 
 export async function preguntarAlAsistente(
@@ -96,7 +165,9 @@ export async function preguntarAlAsistente(
 ): Promise<RespuestaAsistente> {
   try {
     // Viene del cliente: lo que no sea un área conocida se trata como público.
-    const areaValida: AreaAsistente = AREAS_ASISTENTE.includes(area as AreaAsistente)
+    let areaValida: AreaAsistente = AREAS_ASISTENTE.includes(
+      area as AreaAsistente,
+    )
       ? (area as AreaAsistente)
       : "publico";
 
@@ -110,6 +181,17 @@ export async function preguntarAlAsistente(
         ok: false,
         texto: `La consulta es muy larga: hasta ${MAXIMO_PREGUNTA} caracteres.`,
       };
+    }
+
+    // El área la dice el navegador, y no alcanza: Migue consulta los datos del
+    // panel sólo si el servidor verifica que la sesión es de un administrador.
+    // Cualquier otra que diga «administracion» recibe al Migue público.
+    if (areaValida === "administracion") {
+      const sesion = await obtenerSesion();
+      if (sesion?.rol === "ADMIN") {
+        return await responderComoAdmin(sesion, historial, texto);
+      }
+      areaValida = "publico";
     }
 
     // `X-Real-IP` primero: nginx la pisa con la IP real de la conexión. El
@@ -151,9 +233,13 @@ export async function preguntarAlAsistente(
       console.error("[asistente] no se pudo registrar la consulta", error);
     }
 
-    const respuesta = await responderConsulta(sanearHistorial(historial), texto, {
-      area: areaValida,
-    });
+    const respuesta = await responderConsulta(
+      sanearHistorial(historial),
+      texto,
+      {
+        area: areaValida,
+      },
+    );
     return { ok: true, texto: respuesta };
   } catch (error) {
     if (esControlDeFlujoDeNext(error)) throw error;

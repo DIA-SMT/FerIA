@@ -202,6 +202,8 @@ model Usuario {
 
   /// Los cambios de stands que revisó, si es de la administración.
   cambiosRevisados CambioDelStand[]
+  /// Lo que preguntó a Migue desde el panel de administración.
+  consultasAdmin ConsultaAdmin[]
 
   @@index([rol])
   @@map("usuarios")
@@ -498,6 +500,36 @@ model PagoCanon {
 /// enlazar dos preguntas de la misma persona. Sólo el texto y cuándo. Está
 /// declarado en los términos (sección de datos personales); si alguna vez se
 /// agrega un campo acá, hay que actualizar los términos antes.
+/// Lo que el personal le pregunta a Migue en el panel de administración.
+///
+/// A diferencia de `ConsultaAsistente` —el registro anónimo del sitio
+/// público—, éste dice quién preguntó: es personal municipal consultando datos
+/// de feriantes, y tiene que quedar constancia. Va en su propia tabla para no
+/// mezclarse con las estadísticas de lo que busca la gente. Se conserva doce
+/// meses: cada alta borra lo vencido, como el registro público.
+model ConsultaAdmin {
+  id String @id @default(cuid())
+
+  /// Nulo si la cuenta se borró después: la constancia queda igual.
+  usuarioId String?  @db.Uuid
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  pregunta String @db.VarChar(500)
+
+  /// Las consultas que hizo Migue para responder, en orden. Vacío si contestó
+  /// sin consultar nada (una duda de cómo se usa el panel) o si falló.
+  herramientas String[] @default([])
+
+  /// Si no pudo responder.
+  fallo Boolean @default(false)
+
+  creadoEn DateTime @default(now())
+
+  @@index([creadoEn])
+  @@index([usuarioId])
+  @@map("consultas_admin")
+}
+
 model ConsultaAsistente {
   id String @id @default(cuid())
 
