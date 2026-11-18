@@ -22,7 +22,7 @@ import sharp from "sharp";
  *
  * Lo que sí hacemos, con `sharp` (Apache-2.0, ya presente por Next.js):
  * corregir orientación, encuadrar cuadrado, levantar la exposición sólo si hace
- * falta, y —cuando el fondo es parejo— blanquearlo desde los bordes.
+ * falta, y —cuando el fondo es parejo y claro— blanquearlo desde los bordes.
  */
 
 /** Lado del cuadrado de salida. La tarjeta pública usa `aspect-square`. */
@@ -92,12 +92,36 @@ async function gananciaDeExposicion(imagen: sharp.Sharp): Promise<number> {
 }
 
 /**
- * Blanquea el fondo cuando es parejo, avanzando desde los bordes hacia adentro.
+ * Qué tan claro tiene que ser el fondo para blanquearlo (luminancia 0–255).
+ *
+ * Blanquear tiene sentido sobre una mesa o una tela clara: el blanco es «lo
+ * mismo, más limpio». Sobre un fondo oscuro —madera con luz de cocina, una
+ * pared en sombra— ya no es limpiar sino reemplazar media foto, y sale mal: la
+ * mediana de los bordes lo da por «parejo», la inundación pinta lo oscuro que
+ * toca el borde y donde el grano o una sombra cruzan la tolerancia quedan
+ * manchones blancos sueltos, con el producto flotando entre ellos.
+ */
+const LUZ_MINIMA_FONDO = 150;
+
+/**
+ * Cuánto borde puede tener la zona blanqueada en proporción a su tamaño.
+ *
+ * Un fondo liso se blanquea en una sola pieza, y su borde es el contorno del
+ * producto: en una foto de celular, menos del 1 % de los píxeles pintados. Si
+ * la zona está llena de agujeros —textura, grano, una tela con dibujo—, el
+ * borde se dispara y el resultado sería blanco salteado: ahí no se toca.
+ */
+const FRAGMENTACION_MAXIMA = 0.04;
+
+/**
+ * Blanquea el fondo cuando es parejo y claro, avanzando desde los bordes hacia
+ * adentro.
  *
  * Es una inundación por color, no una segmentación: si el producto está sobre
- * una mesa o una tela lisa funciona; si el fondo es un patio con plantas, no
- * encuentra región pareja y **no toca nada**. Falla dejando la foto como
- * estaba, nunca comiéndose el producto — que es el modo de falla que importa.
+ * una mesa o una tela lisa y clara funciona; si el fondo es un patio con
+ * plantas, oscuro o con textura, no encuentra región pareja y **no toca nada**.
+ * Falla dejando la foto como estaba, nunca comiéndose el producto ni
+ * manchándola — que es el modo de falla que importa.
  *
  * Devuelve `null` si no se pudo hacer con confianza.
  */
@@ -138,6 +162,10 @@ async function blanquearFondo(imagen: sharp.Sharp): Promise<Buffer | null> {
     mediana(muestras.map((m) => m[1])),
     mediana(muestras.map((m) => m[2])),
   ];
+
+  // Sólo fondos claros: ver `LUZ_MINIMA_FONDO`.
+  const luz = 0.299 * fondo[0] + 0.587 * fondo[1] + 0.114 * fondo[2];
+  if (luz < LUZ_MINIMA_FONDO) return null;
 
   // ¿Es parejo? Si más de un quinto de los bordes se aleja del color de
   // referencia, el fondo no es liso y no seguimos.
@@ -191,11 +219,28 @@ async function blanquearFondo(imagen: sharp.Sharp): Promise<Buffer | null> {
 
   // Si el fondo detectado se comió casi todo, algo salió mal: abortamos.
   // Y si cubrió muy poco, no vale la pena tocar la foto.
+  // De paso se cuenta el borde de la zona pintada: los píxeles pintados con
+  // algún vecino sin pintar (ver `FRAGMENTACION_MAXIMA`).
   let pintados = 0;
-  for (let i = 0; i < total; i++) if (visitado[i]) pintados++;
+  let borde = 0;
+  for (let idx = 0; idx < total; idx++) {
+    if (!visitado[idx]) continue;
+    pintados++;
+    const x = idx % ancho;
+    const y = (idx - x) / ancho;
+    if (
+      (x > 0 && !visitado[idx - 1]) ||
+      (x < ancho - 1 && !visitado[idx + 1]) ||
+      (y > 0 && !visitado[idx - ancho]) ||
+      (y < alto - 1 && !visitado[idx + ancho])
+    ) {
+      borde++;
+    }
+  }
 
   const proporcion = pintados / total;
   if (proporcion > 0.85 || proporcion < 0.05) return null;
+  if (borde / pintados > FRAGMENTACION_MAXIMA) return null;
 
   const salida = Buffer.from(data);
   for (let idx = 0; idx < total; idx++) {
