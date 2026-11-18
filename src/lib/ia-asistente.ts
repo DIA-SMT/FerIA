@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import { CATEGORIAS_FERIA, RUBROS } from "@/lib/labels";
 import { hayPedidos } from "@/lib/marketplace";
+import { REGLAS_COMUNES } from "@/lib/migue-reglas";
 import { hayCanon } from "@/lib/modulo-canon";
 
 /**
@@ -314,7 +315,7 @@ export function construirMensajes(
   return [
     {
       role: "system",
-      content: `${REGLAS}\n\nSos el asistente del sitio de Ferias Municipales de San Miguel de Tucumán. Ayudás a los vecinos a encontrar productos y feriantes, a saber cuándo y dónde son las ferias, y a quien quiere ser feriante le explicás cómo participar.\n\n${guiaDelArea(area)}\n\n${ESTILO}\n\nDATOS:\n${contexto}`,
+      content: `${REGLAS_COMUNES}\n\n${REGLAS}\n\nSos el asistente del sitio de Ferias Municipales de San Miguel de Tucumán. Ayudás a los vecinos a encontrar productos y feriantes, a saber cuándo y dónde son las ferias, y a quien quiere ser feriante le explicás cómo participar.\n\n${guiaDelArea(area)}\n\n${ESTILO}\n\nDATOS:\n${contexto}`,
     },
     ...historial.map((turno) => ({
       role: turno.rol === "usuario" ? ("user" as const) : ("assistant" as const),

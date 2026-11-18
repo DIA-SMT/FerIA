@@ -6,6 +6,12 @@ import { prisma } from "@/lib/db";
 import { esControlDeFlujoDeNext } from "@/lib/errores";
 import { responderConsultaAdmin } from "@/lib/ia-asistente-admin";
 import {
+  CONSULTA_DE_FINANZAS,
+  esDeFinanzas,
+  responderConsultaFeriante,
+  type FerianteDeLaSesion,
+} from "@/lib/ia-asistente-feriante";
+import {
   AREAS_ASISTENTE,
   ErrorDeAsistente,
   responderConsulta,
@@ -83,6 +89,27 @@ function superaElLimite(
 const MAXIMO_ADMIN_EN_VENTANA = 40;
 const consultasPorAdmin = new Map<string, number[]>();
 
+/** Lo mismo para cada feriante: armar una ficha de costos son varias vueltas. */
+const MAXIMO_FERIANTE_EN_VENTANA = 30;
+const consultasPorFeriante = new Map<string, number[]>();
+
+/** Guarda una pregunta en el registro anónimo y poda lo de más de un año. */
+async function registrarAnonima(pregunta: string): Promise<void> {
+  try {
+    const haceUnAnio = new Date();
+    haceUnAnio.setUTCFullYear(haceUnAnio.getUTCFullYear() - 1);
+
+    await prisma.$transaction([
+      prisma.consultaAsistente.create({ data: { pregunta } }),
+      prisma.consultaAsistente.deleteMany({
+        where: { creadoEn: { lt: haceUnAnio } },
+      }),
+    ]);
+  } catch (error) {
+    console.error("[asistente] no se pudo registrar la consulta", error);
+  }
+}
+
 /** El historial que manda el cliente es hostil hasta que se demuestre lo contrario. */
 function sanearHistorial(historial: unknown): TurnoAsistente[] {
   if (!Array.isArray(historial)) return [];
@@ -158,6 +185,45 @@ async function responderComoAdmin(
   }
 }
 
+/**
+ * El camino del feriante: con las consultas de su propio stand. Al registro
+ * anónimo va la pregunta, salvo que sea de finanzas.
+ */
+async function responderComoFeriante(
+  feriante: FerianteDeLaSesion,
+  usuarioId: string,
+  historial: TurnoAsistente[],
+  pregunta: string,
+): Promise<RespuestaAsistente> {
+  if (
+    superaElLimite(usuarioId, consultasPorFeriante, MAXIMO_FERIANTE_EN_VENTANA)
+  ) {
+    return {
+      ok: false,
+      texto:
+        "Hiciste muchas consultas seguidas. Esperá unos minutos y probá de nuevo.",
+    };
+  }
+
+  const anterior = sanearHistorial(historial);
+  let herramientas: string[] = [];
+  try {
+    const respuesta = await responderConsultaFeriante(
+      feriante,
+      anterior,
+      pregunta,
+    );
+    herramientas = respuesta.herramientas;
+    return { ok: true, texto: respuesta.texto };
+  } finally {
+    await registrarAnonima(
+      esDeFinanzas(pregunta, anterior, herramientas)
+        ? CONSULTA_DE_FINANZAS
+        : pregunta,
+    );
+  }
+}
+
 export async function preguntarAlAsistente(
   historial: TurnoAsistente[],
   pregunta: string,
@@ -194,6 +260,32 @@ export async function preguntarAlAsistente(
       areaValida = "publico";
     }
 
+    // Lo mismo con el feriante: con su sesión y su ficha, Migue consulta su
+    // stand. Sin eso, recibe al Migue público.
+    if (areaValida === "feriante") {
+      const sesion = await obtenerSesion();
+      const vendedor =
+        sesion?.rol === "VENDEDOR"
+          ? await prisma.vendedor.findUnique({
+              where: { usuarioId: sesion.id },
+              select: { id: true, emprendimiento: true },
+            })
+          : null;
+      if (sesion && vendedor) {
+        return await responderComoFeriante(
+          {
+            vendedorId: vendedor.id,
+            nombre: sesion.nombre,
+            emprendimiento: vendedor.emprendimiento,
+          },
+          sesion.id,
+          historial,
+          texto,
+        );
+      }
+      areaValida = "publico";
+    }
+
     // `X-Real-IP` primero: nginx la pisa con la IP real de la conexión. El
     // primer valor de `X-Forwarded-For`, en cambio, lo escribe el cliente
     // (nginx agrega la suya al final), así que mandando uno distinto en cada
@@ -219,19 +311,7 @@ export async function preguntarAlAsistente(
     // La poda hace verdadera la retención que prometen los términos («se
     // conservan por un plazo máximo de doce meses») sin depender de un cron:
     // cada alta borra lo vencido. A este volumen es un WHERE sobre un índice.
-    try {
-      const haceUnAnio = new Date();
-      haceUnAnio.setUTCFullYear(haceUnAnio.getUTCFullYear() - 1);
-
-      await prisma.$transaction([
-        prisma.consultaAsistente.create({ data: { pregunta: texto } }),
-        prisma.consultaAsistente.deleteMany({
-          where: { creadoEn: { lt: haceUnAnio } },
-        }),
-      ]);
-    } catch (error) {
-      console.error("[asistente] no se pudo registrar la consulta", error);
-    }
+    await registrarAnonima(texto);
 
     const respuesta = await responderConsulta(
       sanearHistorial(historial),

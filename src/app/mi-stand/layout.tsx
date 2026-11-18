@@ -15,6 +15,7 @@ import { hayIAConfigurada } from "@/lib/ai";
 import { ESTADOS_VENDEDOR, TONO_ESTADO_VENDEDOR } from "@/lib/labels";
 import { hayPedidos } from "@/lib/marketplace";
 import { hayCanon } from "@/lib/modulo-canon";
+import { nombreDePila } from "@/lib/nombre-de-pila";
 import { obtenerVendedorActual } from "@/lib/session";
 
 export const metadata = {
@@ -30,7 +31,7 @@ export default async function LayoutMiStand({
 }: {
   children: ReactNode;
 }) {
-  const { vendedor } = await obtenerVendedorActual();
+  const { sesion, vendedor } = await obtenerVendedorActual();
   const aprobado = vendedor.estado === "APROBADO";
 
   // Las secciones de vidriera sólo tienen sentido una vez aprobada la solicitud.
@@ -49,6 +50,9 @@ export default async function LayoutMiStand({
           ...(hayCanon() ? [{ href: "/mi-stand/canon", texto: "Canon" }] : []),
         ]
       : []),
+    // Sin esperar la aprobación: la cuenta de cuánto cobrar sirve antes de
+    // vender acá, y es lo único del panel que no depende de la Dirección.
+    { href: "/mi-stand/costos", texto: "Precios y costos" },
   ];
 
   return (
@@ -102,7 +106,12 @@ export default async function LayoutMiStand({
         {children}
       </main>
 
-      {hayIAConfigurada() && <AsistenteBurbuja area="feriante" />}
+      {hayIAConfigurada() && (
+        <AsistenteBurbuja
+          area="feriante"
+          nombre={nombreDePila(sesion.nombre)}
+        />
+      )}
     </div>
   );
 }

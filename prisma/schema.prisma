@@ -203,7 +203,7 @@ model Usuario {
   /// Los cambios de stands que revisó, si es de la administración.
   cambiosRevisados CambioDelStand[]
   /// Lo que preguntó a Migue desde el panel de administración.
-  consultasAdmin ConsultaAdmin[]
+  consultasAdmin   ConsultaAdmin[]
 
   @@index([rol])
   @@map("usuarios")
@@ -284,13 +284,15 @@ model Vendedor {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  productos     Producto[]
-  stands        Stand[]
-  pagos         PagoCanon[]
-  pedidos       Pedido[]
-  postulaciones Postulacion[]
-  interes       InteresStand[]
-  cambios       CambioDelStand[]
+  productos      Producto[]
+  stands         Stand[]
+  pagos          PagoCanon[]
+  pedidos        Pedido[]
+  postulaciones  Postulacion[]
+  interes        InteresStand[]
+  cambios        CambioDelStand[]
+  /// Sus fichas de costos: privadas, sólo las ve él.
+  fichasDeCostos FichaDeCostos[]
 
   // Idempotencia de la importación. Postgres admite varios NULL en un índice
   // único, así que las fichas propias (idExterno null) no chocan entre sí.
@@ -453,9 +455,10 @@ model Producto {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  items   ItemPedido[]
-  interes InteresProducto[]
-  cambios CambioDelStand[]
+  items          ItemPedido[]
+  interes        InteresProducto[]
+  cambios        CambioDelStand[]
+  fichasDeCostos FichaDeCostos[]
 
   @@index([vendedorId])
   @@index([disponible])
@@ -766,4 +769,35 @@ model CambioDelStand {
   @@index([vendedorId])
   @@index([productoId])
   @@map("cambios_del_stand")
+}
+
+// ---------------------------- Precios y costos -------------------------------
+// La cuenta de cuánto le cuesta al feriante hacer un producto y a cuánto
+// venderlo. La arma con Migue o en «Precios y costos» de Mi stand; la cuenta
+// en sí la hace `src/lib/costos.ts`. Es del feriante y de nadie más: ni la
+// Dirección la ve, ni el precio que sale se publica en ningún lado.
+
+model FichaDeCostos {
+  id         String   @id @default(cuid())
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  /// El producto del catálogo, si es uno. Puede ser algo que todavía no cargó:
+  /// la ficha se arma antes de decidir si vale la pena venderlo.
+  productoId String?
+  producto   Producto? @relation(fields: [productoId], references: [id], onDelete: SetNull)
+
+  nombre String @db.VarChar(120)
+
+  /// Lo que cargó, tal cual: `DatosDeCostos` de `src/lib/costos.ts`. El
+  /// resultado no se guarda: se calcula cada vez, así una corrección de la
+  /// cuenta llega también a las fichas viejas.
+  datos Json
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([vendedorId])
+  @@index([productoId])
+  @@map("fichas_de_costos")
 }

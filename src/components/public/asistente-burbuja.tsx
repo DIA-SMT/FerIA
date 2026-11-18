@@ -56,7 +56,7 @@ const SALUDOS: Record<AreaAsistente, TurnoAsistente> = {
   feriante: {
     rol: "asistente",
     texto:
-      "¡Hola! Te ayudo con tu panel: cómo armar tu vidriera, cargar productos o sumarte a una feria. También te cuento cuándo y dónde son las ferias. ¿Qué necesitás?",
+      "¡Hola! Soy Migue. Te ayudo con tu stand —cómo va tu solicitud, tus ferias, tus productos— y a ponerle precio a lo que hacés: armamos juntos cuánto te cuesta y cuánto conviene cobrarlo. ¿En qué te doy una mano?",
   },
   administracion: {
     rol: "asistente",
@@ -68,7 +68,7 @@ const SALUDOS: Record<AreaAsistente, TurnoAsistente> = {
 /** Un ejemplo de pregunta, según la pantalla. */
 const EJEMPLOS: Record<AreaAsistente, string> = {
   publico: "Ej. ¿quién vende mates?",
-  feriante: "Ej. ¿cómo cargo un producto?",
+  feriante: "Ej. ¿cuánto le pongo a mis alfajores?",
   administracion: "Ej. ¿cuántas revisiones hay pendientes?",
 };
 
@@ -81,7 +81,7 @@ const ADVERTENCIAS: Record<AreaAsistente, string> = {
   publico:
     "Respuestas generadas con inteligencia artificial: pueden contener errores. Verificá en la página de cada stand.",
   feriante:
-    "Respuestas generadas con inteligencia artificial: pueden contener errores. Verificá en la página de cada stand.",
+    "Respuestas generadas con inteligencia artificial: pueden contener errores. Las cuentas de precios son orientativas.",
   administracion:
     "Responde con los datos del panel, pero lo redacta una inteligencia artificial: antes de decidir, verificá en la ficha. Las consultas quedan registradas con tu usuario.",
 };
@@ -115,14 +115,22 @@ function TextoConEnlaces({ texto }: { texto: string }) {
 
 export function AsistenteBurbuja({
   area = "publico",
+  nombre,
 }: {
+  /** El nombre de pila de quien entró, para saludarlo. Sólo en los paneles. */
+  nombre?: string;
   /**
    * Desde qué parte del sitio se pregunta. Cambia el saludo y suma al prompt
    * la guía de uso de ese panel; los datos del sitio son los mismos.
    */
   area?: AreaAsistente;
 }) {
-  const saludo = SALUDOS[area];
+  const saludo: TurnoAsistente = nombre
+    ? {
+        rol: "asistente",
+        texto: SALUDOS[area].texto.replace("¡Hola!", `¡Hola, ${nombre}!`),
+      }
+    : SALUDOS[area];
   // El estado de apertura vive en el contexto y no acá porque el buscador de
   // la portada también la abre. `useAsistente` puede devolver `null` sólo si
   // alguien monta la burbuja fuera del proveedor; el layout público siempre la

@@ -28,11 +28,8 @@ import {
   buscarFeriantesAdmin,
   fichaFerianteAdmin,
 } from "@/lib/consultas-admin";
-import {
-  HERRAMIENTAS,
-  ejecutarHerramienta,
-  limpiarEnlaces,
-} from "@/lib/ia-asistente-admin";
+import { HERRAMIENTAS, ejecutarHerramienta } from "@/lib/ia-asistente-admin";
+import { limpiarEnlaces } from "@/lib/ia-herramientas";
 
 /** Una ficha con todo lo privado cargado, para ver que no se filtra. */
 const PRIVADO = {
@@ -144,11 +141,12 @@ describe("limpiarEnlaces", () => {
     "/admin/feriantes/v1",
     "/admin/revisiones?feria=gourmet",
   ]);
+  const fijas = new Set(["/admin/postulaciones"]);
 
   it("deja los que trajo una consulta y las secciones fijas", () => {
     const texto =
       "[Doña Rosita](/admin/feriantes/v1), [Revisiones](/admin/revisiones?feria=gourmet) y [Postulaciones](/admin/postulaciones).";
-    expect(limpiarEnlaces(texto, traidas)).toBe(texto);
+    expect(limpiarEnlaces(texto, traidas, fijas)).toBe(texto);
   });
 
   it("saca los inventados y deja el texto", () => {
@@ -156,6 +154,7 @@ describe("limpiarEnlaces", () => {
       limpiarEnlaces(
         "Está en la [Feria de Artesanos](/admin/ferias/inventado).",
         traidas,
+        fijas,
       ),
     ).toBe("Está en la Feria de Artesanos.");
   });
