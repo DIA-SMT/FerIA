@@ -1,0 +1,70 @@
+import { describe, expect, it } from "vitest";
+
+import { REGLAS_COMUNES, sinSaludoRepetido } from "@/lib/migue-reglas";
+
+describe("sin saludar dos veces", () => {
+  it("las reglas comunes le dicen que el chat ya saludó", () => {
+    expect(REGLAS_COMUNES).toContain("no empieces tus respuestas con «¡Hola!»");
+  });
+
+  it("saca el «¡Hola!» del principio si la persona no saludó", () => {
+    expect(
+      sinSaludoRepetido(
+        "¡Hola! Si buscás empanadas, te recomiendo a [Empanadas Doña Rosa](/stands/empanadas-donia-rosa).",
+        "¿Dónde consigo empanadas?",
+      ),
+    ).toBe(
+      "Si buscás empanadas, te recomiendo a [Empanadas Doña Rosa](/stands/empanadas-donia-rosa).",
+    );
+  });
+
+  it("también con el nombre y con coma", () => {
+    expect(
+      sinSaludoRepetido(
+        "¡Hola, Marta! Tu stand está aprobado.",
+        "¿cómo va mi stand?",
+      ),
+    ).toBe("Tu stand está aprobado.");
+    expect(
+      sinSaludoRepetido(
+        "Hola Marta, tu stand está aprobado.",
+        "¿cómo va mi stand?",
+      ),
+    ).toBe("Tu stand está aprobado.");
+    expect(sinSaludoRepetido("Hola, ¿qué feria te interesa?", "ferias")).toBe(
+      "¿Qué feria te interesa?",
+    );
+    expect(
+      sinSaludoRepetido("Buen día. Hay 3 revisiones pendientes.", "pendientes"),
+    ).toBe("Hay 3 revisiones pendientes.");
+  });
+
+  it("si la persona saludó, el saludo queda", () => {
+    expect(
+      sinSaludoRepetido(
+        "¡Hola, Marta! Tu stand está aprobado.",
+        "Hola, ¿cómo va mi stand?",
+      ),
+    ).toBe("¡Hola, Marta! Tu stand está aprobado.");
+    expect(
+      sinSaludoRepetido(
+        "¡Buenas! Sí, hay feria el sábado.",
+        "buenas, ¿hay feria el sábado?",
+      ),
+    ).toBe("¡Buenas! Sí, hay feria el sábado.");
+  });
+
+  it("no toca lo que no es un saludo", () => {
+    for (const texto of [
+      "Buenas noticias: tu producto ya está publicado.",
+      "Holanda no es una feria de acá.",
+      "Tu stand está aprobado.",
+    ]) {
+      expect(sinSaludoRepetido(texto, "¿y mi producto?")).toBe(texto);
+    }
+  });
+
+  it("si la respuesta es sólo el saludo, no la deja vacía", () => {
+    expect(sinSaludoRepetido("¡Hola!", "?")).toBe("¡Hola!");
+  });
+});

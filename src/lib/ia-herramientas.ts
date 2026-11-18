@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { z } from "zod";
 
 import { obtenerClienteIA } from "@/lib/ai";
+import { sinSaludoRepetido } from "@/lib/migue-reglas";
 import {
   ErrorDeAsistente,
   MODELO_ASISTENTE_POR_DEFECTO,
@@ -208,7 +209,10 @@ export async function responderConHerramientas({
         texto = `${corte > 0 ? texto.slice(0, corte).trimEnd() : texto}\n…`;
       }
       return {
-        texto: limpiarEnlaces(texto, rutas, rutasFijas),
+        texto: sinSaludoRepetido(
+          limpiarEnlaces(texto, rutas, rutasFijas),
+          pregunta,
+        ),
         herramientas: usadas,
       };
     }

@@ -6,7 +6,7 @@ import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/form
 import { resumenHorario } from "@/lib/horarios";
 import { CATEGORIAS_FERIA, RUBROS } from "@/lib/labels";
 import { hayPedidos } from "@/lib/marketplace";
-import { REGLAS_COMUNES } from "@/lib/migue-reglas";
+import { REGLAS_COMUNES, sinSaludoRepetido } from "@/lib/migue-reglas";
 import { hayCanon } from "@/lib/modulo-canon";
 
 /**
@@ -370,5 +370,5 @@ export async function responderConsulta(
     throw new ErrorDeAsistente("El asistente no devolvió ninguna respuesta.");
   }
 
-  return texto;
+  return sinSaludoRepetido(texto, pregunta);
 }
