@@ -9,6 +9,7 @@ import {
   formatearFecha,
   hoyEnZona,
 } from "@/lib/format";
+import { resumenHorario } from "@/lib/horarios";
 import {
   CATEGORIAS_FERIA,
   ESTADOS_EDICION,
@@ -679,7 +680,12 @@ export async function feriasAdmin(argumentos: { feria?: string }) {
           where: { fechaFin: { gte: hoy } },
           orderBy: { fechaInicio: "asc" },
           take: 1,
-          select: { fechaInicio: true, fechaFin: true, estado: true },
+          select: {
+            fechaInicio: true,
+            fechaFin: true,
+            estado: true,
+            lugar: true,
+          },
         },
         _count: {
           select: {
@@ -710,6 +716,8 @@ export async function feriasAdmin(argumentos: { feria?: string }) {
               desde: fecha(feria.ediciones[0].fechaInicio),
               hasta: fecha(feria.ediciones[0].fechaFin),
               estado: ESTADOS_EDICION[feria.ediciones[0].estado],
+              // Sólo si esa fecha es en otro lado que `direccion`.
+              lugar: feria.ediciones[0].lugar?.trim() || null,
             }
           : null,
         enlace: `/admin/ferias/${feria.id}`,
@@ -738,7 +746,11 @@ export async function feriasAdmin(argumentos: { feria?: string }) {
           nombre: true,
           fechaInicio: true,
           fechaFin: true,
+          diasSemana: true,
+          horaApertura: true,
+          horaCierre: true,
           horario: true,
+          lugar: true,
           estado: true,
           cantidadStands: true,
           _count: {
@@ -781,7 +793,8 @@ export async function feriasAdmin(argumentos: { feria?: string }) {
       nombre: edicion.nombre,
       desde: fecha(edicion.fechaInicio),
       hasta: fecha(edicion.fechaFin),
-      horario: edicion.horario,
+      horario: resumenHorario(edicion),
+      lugar: edicion.lugar?.trim() || null,
       estado: ESTADOS_EDICION[edicion.estado],
       stands: edicion.cantidadStands,
       standsAsignados: edicion._count.stands,

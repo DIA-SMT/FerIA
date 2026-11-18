@@ -15,6 +15,7 @@ import {
   IconoMas,
   IconoReloj,
   IconoTacho,
+  IconoUbicacion,
 } from "@/components/ui/iconos";
 import {
   Tarjeta,
@@ -43,6 +44,7 @@ import {
   formatearMoneda,
   formatearRangoFechas,
 } from "@/lib/format";
+import { resumenHorario } from "@/lib/horarios";
 import { hayCanon } from "@/lib/modulo-canon";
 import { ESTADOS_EDICION, RUBROS, TONO_ESTADO_EDICION } from "@/lib/labels";
 
@@ -145,10 +147,18 @@ export default async function PaginaEdicion({
               <IconoCalendario className="size-4 text-slate-400" />
               {formatearRangoFechas(edicion.fechaInicio, edicion.fechaFin)}
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <IconoReloj className="size-4 text-slate-400" />
-              {edicion.horario}
-            </span>
+            {resumenHorario(edicion) && (
+              <span className="inline-flex items-center gap-1.5">
+                <IconoReloj className="size-4 text-slate-400" />
+                {resumenHorario(edicion)}
+              </span>
+            )}
+            {edicion.lugar && (
+              <span className="inline-flex items-center gap-1.5">
+                <IconoUbicacion className="size-4 text-slate-400" />
+                {edicion.lugar}
+              </span>
+            )}
             <Badge
               tono={TONO_ESTADO_EDICION[edicion.estado]}
               tamanio="sm"

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/tarjeta";
 import { prisma } from "@/lib/db";
 import { formatearMoneda, formatearRangoFechas } from "@/lib/format";
+import { resumenHorario } from "@/lib/horarios";
 import { linkGoogleMaps, linkGoogleMapsPorDireccion } from "@/lib/geo";
 import { hayCanon } from "@/lib/modulo-canon";
 import {
@@ -149,9 +150,15 @@ export default async function PaginaDetalleFeria({
                           {formatearRangoFechas(
                             edicion.fechaInicio,
                             edicion.fechaFin,
-                          )}{" "}
-                          · {edicion.horario}
+                          )}
+                          {resumenHorario(edicion) &&
+                            ` · ${resumenHorario(edicion)}`}
                         </p>
+                        {edicion.lugar && (
+                          <p className="mt-0.5 text-sm text-slate-500">
+                            En {edicion.lugar}
+                          </p>
+                        )}
                         {mostrarCanon && (
                           <p className="mt-0.5 text-xs text-slate-500">
                             Canon: {formatearMoneda(edicion.montoCanon)}

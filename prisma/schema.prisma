@@ -372,6 +372,13 @@ model EdicionFeria {
   /// vez de recargar las ferias existentes de golpe.
   horario String?
 
+  /// Dónde se hace esta edición, cuando no es el lugar de siempre de la feria.
+  ///
+  /// Las ferias municipales rotan: el mismo fin de semana la de Artesanos puede
+  /// estar el domingo en Plaza Independencia y el sábado en el Parque El
+  /// Provincial. Vacío quiere decir «en `Feria.direccion`», que es lo habitual.
+  lugar String?
+
   estado         EstadoEdicion @default(BORRADOR)
   cantidadStands Int           @default(0)
 

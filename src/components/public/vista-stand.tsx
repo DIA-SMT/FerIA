@@ -22,6 +22,7 @@ import { ICONOS_RUBRO } from "@/components/ui/iconos-por-clave";
 import { ImagenPortada } from "@/components/ui/imagen";
 import { cn } from "@/lib/cn";
 import { formatearRangoFechas } from "@/lib/format";
+import { lugarDeEdicion } from "@/lib/horarios";
 import { RUBROS } from "@/lib/labels";
 import {
   linkFacebook,
@@ -56,6 +57,8 @@ export interface ParticipacionVistaStand {
   edicion: {
     fechaInicio: Date;
     fechaFin: Date;
+    /** Ver `EdicionFeria.lugar`: si está, es ahí y no en la dirección de la feria. */
+    lugar?: string | null;
     feria: { nombre: string; slug: string; direccion: string };
   };
 }
@@ -287,7 +290,10 @@ export function VistaStand({
                           </p>
                           <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-600">
                             <IconoUbicacion className="size-4 shrink-0 text-slate-400" />
-                            {stand.edicion.feria.direccion}
+                            {lugarDeEdicion(
+                              stand.edicion,
+                              stand.edicion.feria,
+                            ) || "Lugar a confirmar"}
                           </p>
                         </div>
                         <Badge tono="amarillo">Stand {stand.numero}</Badge>

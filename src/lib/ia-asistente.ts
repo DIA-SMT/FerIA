@@ -3,6 +3,7 @@ import { hayIngresoCidituc } from "@/lib/cidituc";
 import { edicionesVigentes, etapaDeEdicion } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
 import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
+import { resumenHorario } from "@/lib/horarios";
 import { CATEGORIAS_FERIA, RUBROS } from "@/lib/labels";
 import { hayPedidos } from "@/lib/marketplace";
 import { REGLAS_COMUNES } from "@/lib/migue-reglas";
@@ -201,7 +202,11 @@ export async function contextoDelSitio(): Promise<string> {
             nombre: true,
             fechaInicio: true,
             fechaFin: true,
+            diasSemana: true,
+            horaApertura: true,
+            horaCierre: true,
             horario: true,
+            lugar: true,
           },
         },
       },
@@ -242,7 +247,12 @@ export async function contextoDelSitio(): Promise<string> {
                 // que recién empieza la semana que viene —y mandar a alguien a
                 // una plaza vacía— o no decir nada de la que está puesta hoy.
                 `${etapaDeEdicion(edicion, hoy) === "EN_CURSO" ? " [EN CURSO AHORA]" : ""}` +
-                ` — ${edicion.horario}`,
+                ` — ${resumenHorario(edicion) ?? "horario a confirmar"}` +
+                // Si esta fecha es en otro lado, va acá: la de Artesanos puede
+                // estar el sábado en un parque y el domingo en una plaza.
+                (edicion.lugar?.trim()
+                  ? ` — en ${edicion.lugar.trim()} (no en el lugar de siempre)`
+                  : ""),
             )
             .join("\n");
 

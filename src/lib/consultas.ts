@@ -2,6 +2,7 @@ import type { EstadoEdicion, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 import { hoyEnZona } from "@/lib/format";
+import { lugarDeEdicion } from "@/lib/horarios";
 import { paginar } from "@/lib/paginacion";
 
 /**
@@ -120,6 +121,7 @@ export async function feriasConProximaEdicion(filtros?: {
           id: true,
           fechaInicio: true,
           fechaFin: true,
+          lugar: true,
           _count: {
             select: { stands: { where: { vendedorId: { not: null } } } },
           },
@@ -137,7 +139,8 @@ export async function feriasConProximaEdicion(filtros?: {
       nombre: feria.nombre,
       descripcion: feria.descripcion,
       categoria: feria.categoria,
-      direccion: feria.direccion,
+      // Si la próxima edición es en otro lado, la tarjeta dice ése.
+      direccion: edicion ? lugarDeEdicion(edicion, feria) : feria.direccion,
       imagen: feria.imagen,
       proximaEdicion: edicion
         ? {

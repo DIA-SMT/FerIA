@@ -28,6 +28,7 @@ import { formatearNumero, hoyEnZona } from "@/lib/format";
 import {
   agendaDeLaSemana,
   etiquetaDeFecha,
+  lugarDeEdicion,
   resumenHorario,
   semanaDe,
 } from "@/lib/horarios";
@@ -88,6 +89,7 @@ export default async function PaginaInicio() {
         horaApertura: true,
         horaCierre: true,
         horario: true,
+        lugar: true,
         feria: {
           select: {
             nombre: true,
@@ -237,7 +239,8 @@ export default async function PaginaInicio() {
                       <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
                         <IconoUbicacion className="size-3.5 shrink-0 text-municipal-500" />
                         <span className="truncate">
-                          {edicion.feria.direccion}
+                          {lugarDeEdicion(edicion, edicion.feria) ||
+                            "Lugar a confirmar"}
                         </span>
                       </span>
                     </span>

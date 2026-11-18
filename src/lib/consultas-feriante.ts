@@ -19,6 +19,7 @@ import {
   formatearRangoFechas,
   hoyEnZona,
 } from "@/lib/format";
+import { lugarDeEdicion, resumenHorario } from "@/lib/horarios";
 import { obtenerInteresDelStand } from "@/lib/interes";
 import {
   CATEGORIAS_FERIA,
@@ -102,7 +103,11 @@ export async function miStand(vendedorId: string) {
               nombre: true,
               fechaInicio: true,
               fechaFin: true,
+              diasSemana: true,
+              horaApertura: true,
+              horaCierre: true,
               horario: true,
+              lugar: true,
               feria: { select: { nombre: true, direccion: true } },
             },
           },
@@ -164,8 +169,8 @@ export async function miStand(vendedorId: string) {
         stand.edicion.fechaInicio,
         stand.edicion.fechaFin,
       ),
-      horario: stand.edicion.horario,
-      lugar: stand.edicion.feria.direccion || null,
+      horario: resumenHorario(stand.edicion),
+      lugar: lugarDeEdicion(stand.edicion, stand.edicion.feria) || null,
       numeroDeStand: stand.numero,
     })),
     cambiosEsperandoRevision: cambios
@@ -274,7 +279,15 @@ export async function feriasPublicas() {
         where: { ...EDICIONES_PUBLICAS, fechaFin: { gte: hoy } },
         orderBy: { fechaInicio: "asc" },
         take: 3,
-        select: { fechaInicio: true, fechaFin: true, horario: true },
+        select: {
+          fechaInicio: true,
+          fechaFin: true,
+          diasSemana: true,
+          horaApertura: true,
+          horaCierre: true,
+          horario: true,
+          lugar: true,
+        },
       },
     },
   });
@@ -292,7 +305,9 @@ export async function feriasPublicas() {
                 edicion.fechaInicio,
                 edicion.fechaFin,
               ),
-              horario: edicion.horario,
+              horario: resumenHorario(edicion),
+              // Sólo si esa fecha es en otro lado que `lugar` (el de siempre).
+              lugarDeEstaFecha: edicion.lugar?.trim() || undefined,
               enCursoAhora: etapaDeEdicion(edicion, hoy) === "EN_CURSO",
             })),
       pagina: `/ferias/${feria.slug}`,

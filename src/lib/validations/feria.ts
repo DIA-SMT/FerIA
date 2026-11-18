@@ -2,6 +2,7 @@ import { CategoriaFeria, DiaSemana, EstadoEdicion } from "@prisma/client";
 import { z } from "zod";
 
 import { LIMITES_TUCUMAN } from "@/lib/geo";
+import { horarioPosible } from "@/lib/horarios";
 import {
   casilla,
   coordenadaOpcional,
@@ -69,6 +70,8 @@ export const edicionSchema = z
     horaCierre: horaOpcional("La hora de cierre"),
     /** Pasó a opcional: ahora es la aclaración, no el dato principal. */
     horario: textoOpcional(160, "La aclaración de horario"),
+    /** Vacío = en la dirección de siempre de la feria. Ver `EdicionFeria.lugar`. */
+    lugar: textoOpcional(160, "El lugar de esta edición"),
     estado: z.nativeEnum(EstadoEdicion, {
       errorMap: () => ({ message: "Elegí un estado." }),
     }),
@@ -90,14 +93,17 @@ export const edicionSchema = z
     },
   )
   // Una feria que cierra antes de abrir es un error de tipeo, y se nota recién
-  // cuando alguien va a las ocho y encuentra el parque vacío.
+  // cuando alguien va a las ocho y encuentra el parque vacío. La excepción es
+  // la que sigue después de la medianoche —casi todas cierran a las 00—: ver
+  // `horarioPosible`.
   .refine(
     (datos) =>
       datos.horaApertura === null ||
       datos.horaCierre === null ||
-      datos.horaCierre > datos.horaApertura,
+      horarioPosible(datos.horaApertura, datos.horaCierre),
     {
-      message: "La hora de cierre tiene que ser posterior a la de apertura.",
+      message:
+        "La hora de cierre tiene que ser posterior a la de apertura (si cierra a medianoche, poné 00:00).",
       path: ["horaCierre"],
     },
   )

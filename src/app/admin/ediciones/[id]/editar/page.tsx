@@ -51,6 +51,7 @@ export default async function PaginaEditarEdicion({
           fechaInicio: aValorInputFecha(edicion.fechaInicio),
           fechaFin: aValorInputFecha(edicion.fechaFin),
           horario: edicion.horario,
+          lugar: edicion.lugar,
           diasSemana: edicion.diasSemana,
           horaApertura: edicion.horaApertura,
           horaCierre: edicion.horaCierre,

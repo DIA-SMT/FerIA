@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/tarjeta";
 import { MisFerias } from "@/components/vendedor/mis-ferias";
 import { formatearRangoFechas } from "@/lib/format";
-import { resumenHorario } from "@/lib/horarios";
+import { lugarDeEdicion, resumenHorario } from "@/lib/horarios";
 import { feriasDelFeriante, proximasAsignaciones } from "@/lib/mis-ferias";
 import { requerirVendedorAprobado } from "@/lib/session";
 
@@ -99,7 +99,8 @@ export default async function PaginaMisFerias() {
                       </p>
                       <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-600">
                         <IconoUbicacion className="size-4 shrink-0 text-slate-400" />
-                        {stand.edicion.feria.direccion}
+                        {lugarDeEdicion(stand.edicion, stand.edicion.feria) ||
+                          "Lugar a confirmar"}
                       </p>
                     </div>
                     <Badge tono="amarillo">Stand {stand.numero}</Badge>

@@ -128,9 +128,40 @@ export function etiquetaDeFecha(fecha: Date): {
   };
 }
 
-/** "8:00" a partir de "08:00". El cero a la izquierda es ruido al leer. */
+/**
+ * "8:00" a partir de "08:00": el cero a la izquierda es ruido al leer. La
+ * medianoche queda "00:00", que es como se la anuncia («de 18 a 00 hs»); "0:00"
+ * parece un error.
+ */
 export function formatearHora(hora: string): string {
-  return hora.replace(/^0/, "");
+  return hora.startsWith("00:") ? hora : hora.replace(/^0/, "");
+}
+
+/** Hasta qué hora se acepta que una feria siga abierta después de la medianoche. */
+const ULTIMO_CIERRE_DE_MADRUGADA = "06:00";
+
+/**
+ * ¿Tiene sentido este par de horas?
+ *
+ * Lo normal es cerrar después de abrir. Pero casi todas las ferias de la
+ * ciudad cierran a las 00, que como texto es *menor* que "18:00": se acepta un
+ * cierre más temprano que la apertura sólo si es de madrugada, es decir, del
+ * día siguiente. Abrir y cerrar a la misma hora sigue siendo un error.
+ */
+export function horarioPosible(apertura: string, cierre: string): boolean {
+  if (cierre > apertura) return true;
+  return cierre < apertura && cierre <= ULTIMO_CIERRE_DE_MADRUGADA;
+}
+
+/**
+ * Dónde se hace una edición: su lugar propio si lo tiene, si no el de la feria.
+ * Ver `EdicionFeria.lugar`.
+ */
+export function lugarDeEdicion(
+  edicion: { lugar?: string | null },
+  feria: { direccion: string },
+): string {
+  return edicion.lugar?.trim() || feria.direccion;
 }
 
 /** "8:00 a 14:00", o `null` si falta alguna de las dos. */
@@ -152,16 +183,29 @@ const NOMBRES_CORTOS: Record<DiaSemana, string> = {
   DOMINGO: "Dom",
 };
 
-/** "Lun, Mié y Sáb". Los siete días se dicen con palabras, no con una lista. */
-export function formatearDias(dias: DiaSemana[]): string | null {
+/**
+ * "Lun, Mié y Sáb". Los siete días se dicen con palabras, no con una lista.
+ *
+ * `desde` es el día en que arranca la cuenta (el lunes, si no se dice): un fin
+ * de semana largo de sábado a lunes se lee "Sáb y Lun", no "Lun y Sáb".
+ */
+export function formatearDias(
+  dias: DiaSemana[],
+  desde: DiaSemana = "LUNES",
+): string | null {
   if (dias.length === 0) return null;
   if (dias.length === 7) return "Todos los días";
 
   // Se ordenan por el orden de la semana y no por el que vino de la base: un
   // arreglo cargado como [DOMINGO, SABADO] tiene que leerse "Sáb y Dom".
-  const enOrden = DIAS_EN_ORDEN.filter((dia) => dias.includes(dia)).map(
-    (dia) => NOMBRES_CORTOS[dia],
-  );
+  const inicio = DIAS_EN_ORDEN.indexOf(desde);
+  const semana = [
+    ...DIAS_EN_ORDEN.slice(inicio),
+    ...DIAS_EN_ORDEN.slice(0, inicio),
+  ];
+  const enOrden = semana
+    .filter((dia) => dias.includes(dia))
+    .map((dia) => NOMBRES_CORTOS[dia]);
 
   if (enOrden.length === 1) return enOrden[0] as string;
   return `${enOrden.slice(0, -1).join(", ")} y ${enOrden.at(-1)}`;
@@ -175,7 +219,15 @@ export function formatearDias(dias: DiaSemana[]): string | null {
  * edición sin ninguno de los dos no inventa nada y devuelve `null`.
  */
 export function resumenHorario(edicion: EdicionConHorario): string | null {
-  const dias = formatearDias(edicion.diasSemana);
+  // En una edición de menos de una semana los días se cuentan desde el
+  // primero: del sábado 21 al lunes 23 es "Sáb y Lun". En las largas, la
+  // semana de siempre.
+  const corta =
+    edicion.fechaFin.getTime() - edicion.fechaInicio.getTime() < 6 * UN_DIA;
+  const dias = formatearDias(
+    edicion.diasSemana,
+    corta ? diaDeFecha(edicion.fechaInicio) : "LUNES",
+  );
   const horas = formatearRangoHorario(edicion.horaApertura, edicion.horaCierre);
 
   if (dias && horas) return `${dias} · ${horas}`;

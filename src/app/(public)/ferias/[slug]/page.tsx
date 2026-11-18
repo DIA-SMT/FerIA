@@ -32,6 +32,7 @@ import {
   truncar,
 } from "@/lib/format";
 import { linkGoogleMaps, linkGoogleMapsPorDireccion } from "@/lib/geo";
+import { lugarDeEdicion, resumenHorario } from "@/lib/horarios";
 import { CATEGORIAS_FERIA, type TonoBadge } from "@/lib/labels";
 
 /**
@@ -164,9 +165,16 @@ export default async function PaginaFeria({
   // manda a cualquier lado. Las ferias del padrón se crearon con la dirección
   // vacía donde la base del municipio no la traía, y el formulario del panel
   // obliga a cargarla en cuanto alguien edita la feria.
-  const mapa =
-    linkGoogleMaps(feria.latitud, feria.longitud) ??
-    (feria.direccion ? linkGoogleMapsPorDireccion(feria.direccion) : null);
+  //
+  // Si la próxima edición se hace en otro lado (`EdicionFeria.lugar`), «Dónde
+  // es» dice ése: es adonde tiene que ir el vecino. Las coordenadas son del
+  // lugar de siempre, así que en ese caso el mapa busca por la dirección.
+  const lugarPropio = proxima?.lugar?.trim() || null;
+  const donde = proxima ? lugarDeEdicion(proxima, feria) : feria.direccion;
+  const mapa = lugarPropio
+    ? linkGoogleMapsPorDireccion(lugarPropio)
+    : (linkGoogleMaps(feria.latitud, feria.longitud) ??
+      (feria.direccion ? linkGoogleMapsPorDireccion(feria.direccion) : null));
 
   return (
     <div>
@@ -242,6 +250,12 @@ export default async function PaginaFeria({
                       (stand) => stand.vendedorId !== null,
                     ).length;
                     const etapa = etapaDeEdicion(edicion, hoy);
+                    const horario = resumenHorario(edicion);
+                    // La aclaración va aparte sólo si los días y horas ya
+                    // ocupan la línea principal; si no, ya es esa línea.
+                    const aclaracion =
+                      horario !== edicion.horario ? edicion.horario : null;
+                    const lugar = edicion.lugar?.trim() || null;
 
                     return (
                       <li
@@ -271,20 +285,38 @@ export default async function PaginaFeria({
                         </div>
 
                         <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-                          <div className="flex items-center gap-2">
-                            <dt className="sr-only">Horario</dt>
-                            <IconoReloj className="size-4 shrink-0 text-slate-400" />
-                            <dd>{edicion.horario}</dd>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <dt className="sr-only">Stands</dt>
-                            <IconoGrilla className="size-4 shrink-0 text-slate-400" />
-                            <dd>
-                              {ocupados} de {edicion.stands.length} stands
-                              ocupados
-                            </dd>
-                          </div>
+                          {horario && (
+                            <div className="flex items-center gap-2">
+                              <dt className="sr-only">Horario</dt>
+                              <IconoReloj className="size-4 shrink-0 text-slate-400" />
+                              <dd>{horario}</dd>
+                            </div>
+                          )}
+                          {lugar && (
+                            <div className="flex items-center gap-2">
+                              <dt className="sr-only">Lugar</dt>
+                              <IconoUbicacion className="size-4 shrink-0 text-slate-400" />
+                              <dd>{lugar}</dd>
+                            </div>
+                          )}
+                          {/* Sin stands numerados no hay nada que contar:
+                              «0 de 0 ocupados» es ruido. */}
+                          {edicion.stands.length > 0 && (
+                            <div className="flex items-center gap-2">
+                              <dt className="sr-only">Stands</dt>
+                              <IconoGrilla className="size-4 shrink-0 text-slate-400" />
+                              <dd>
+                                {ocupados} de {edicion.stands.length} stands
+                                ocupados
+                              </dd>
+                            </div>
+                          )}
                         </dl>
+                        {aclaracion && (
+                          <p className="mt-2 text-sm text-slate-500">
+                            {aclaracion}
+                          </p>
+                        )}
                       </li>
                     );
                   })}
@@ -352,7 +384,7 @@ export default async function PaginaFeria({
                   Dónde es
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  {feria.direccion || "Lugar a confirmar"}
+                  {donde || "Lugar a confirmar"}
                 </p>
                 <p className="text-sm text-slate-500">
                   San Miguel de Tucumán, Tucumán
@@ -386,7 +418,9 @@ export default async function PaginaFeria({
                   <p className="mt-2 text-sm font-medium text-slate-900">
                     {formatearRangoFechas(proxima.fechaInicio, proxima.fechaFin)}
                   </p>
-                  <p className="text-sm text-slate-600">{proxima.horario}</p>
+                  <p className="text-sm text-slate-600">
+                    {resumenHorario(proxima)}
+                  </p>
                 </div>
               )}
 

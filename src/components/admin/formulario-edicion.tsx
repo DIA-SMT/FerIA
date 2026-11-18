@@ -25,6 +25,7 @@ export interface ValoresEdicion {
   fechaInicio: string;
   fechaFin: string;
   horario: string | null;
+  lugar: string | null;
   diasSemana: DiaSemana[];
   horaApertura: string | null;
   horaCierre: string | null;
@@ -178,6 +179,7 @@ export function FormularioEdicion({
             <Campo
               htmlFor="horaCierre"
               etiqueta="Cierra a las"
+              ayuda="Si cierra a medianoche, poné 00:00."
               errores={errores?.horaCierre}
             >
               <Entrada
@@ -200,6 +202,20 @@ export function FormularioEdicion({
               defaultValue={edicion?.horario ?? ""}
               placeholder="Ej. Se suspende por lluvia"
               errores={errores?.horario}
+            />
+          </Campo>
+
+          <Campo
+            htmlFor="lugar"
+            etiqueta="Lugar de esta edición"
+            ayuda="Sólo si no es el de siempre de la feria. Vacío, se muestra la dirección de la feria."
+            errores={errores?.lugar}
+          >
+            <Entrada
+              name="lugar"
+              defaultValue={edicion?.lugar ?? ""}
+              placeholder="Ej. Plaza Independencia, 24 de Septiembre al 400"
+              errores={errores?.lugar}
             />
           </Campo>
         </TarjetaCuerpo>

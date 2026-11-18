@@ -5,6 +5,8 @@ import {
   diaDeFecha,
   formatearDias,
   formatearRangoHorario,
+  horarioPosible,
+  lugarDeEdicion,
   resumenHorario,
   semanaDe,
 } from "@/lib/horarios";
@@ -152,5 +154,71 @@ describe("resumenHorario", () => {
 
   it("sin nada no inventa un horario", () => {
     expect(resumenHorario(edicion())).toBeNull();
+  });
+});
+
+describe("ferias que cierran a medianoche", () => {
+  it("la medianoche se escribe 00:00, como en los anuncios", () => {
+    expect(formatearRangoHorario("18:00", "00:00")).toBe("18:00 a 00:00");
+    expect(formatearRangoHorario("16:30", "00:00")).toBe("16:30 a 00:00");
+  });
+
+  it("acepta cerrar a las 00 o de madrugada", () => {
+    expect(horarioPosible("18:00", "00:00")).toBe(true);
+    expect(horarioPosible("20:00", "02:00")).toBe(true);
+    expect(horarioPosible("17:00", "23:00")).toBe(true);
+  });
+
+  it("sigue rechazando lo que es un error de tipeo", () => {
+    expect(horarioPosible("18:00", "18:00")).toBe(false);
+    expect(horarioPosible("18:00", "17:00")).toBe(false);
+    expect(horarioPosible("18:00", "07:00")).toBe(false);
+  });
+});
+
+describe("lugarDeEdicion", () => {
+  const feria = { direccion: "Parque Avellaneda" };
+
+  it("sin lugar propio, es el de la feria", () => {
+    expect(lugarDeEdicion({ lugar: null }, feria)).toBe("Parque Avellaneda");
+    expect(lugarDeEdicion({ lugar: "  " }, feria)).toBe("Parque Avellaneda");
+    expect(lugarDeEdicion({}, feria)).toBe("Parque Avellaneda");
+  });
+
+  it("con lugar propio, es ése", () => {
+    expect(
+      lugarDeEdicion(
+        { lugar: " Plaza Independencia, 24 de Septiembre al 300 " },
+        feria,
+      ),
+    ).toBe("Plaza Independencia, 24 de Septiembre al 300");
+  });
+});
+
+describe("los días de un fin de semana largo", () => {
+  it("se cuentan desde el primer día de la edición", () => {
+    const finde = edicion({
+      fechaInicio: dia("2026-11-21"),
+      fechaFin: dia("2026-11-23"),
+      diasSemana: ["LUNES", "SABADO"],
+      horaApertura: "18:00",
+      horaCierre: "00:00",
+    });
+    expect(resumenHorario(finde)).toBe("Sáb y Lun · 18:00 a 00:00");
+    expect(
+      resumenHorario({ ...finde, diasSemana: ["SABADO", "DOMINGO", "LUNES"] }),
+    ).toBe("Sáb, Dom y Lun · 18:00 a 00:00");
+  });
+
+  it("en una edición larga, la semana de siempre", () => {
+    expect(
+      resumenHorario(
+        edicion({
+          fechaInicio: dia("2026-11-21"),
+          fechaFin: dia("2026-12-20"),
+          diasSemana: ["LUNES", "SABADO"],
+        }),
+      ),
+    ).toBe("Lun y Sáb");
   });
 });
