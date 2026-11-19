@@ -154,7 +154,9 @@ export function SeccionRubros({
             <h3 className="text-xl font-extrabold tracking-tight text-slate-900">
               ¿Buscás algo en particular?
             </h3>
-            <p className="mt-2 max-w-60 text-[0.95rem] leading-relaxed text-slate-700">
+            {/* El margen derecho es el lugar de Migue: entre 1024 y 1280 px la
+                caja es angosta y, sin esto, él tapaba el final del texto. */}
+            <p className="mt-2 pr-24 text-[0.95rem] leading-relaxed text-slate-700">
               Preguntale a Migue y te dice en qué feria y en qué stand lo
               conseguís.
             </p>
