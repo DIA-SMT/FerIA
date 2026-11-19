@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 
 import { EsqueletoGrilla } from "@/components/public/esqueleto-grilla";
+import { EncabezadoFerias } from "@/components/public/encabezado-ferias";
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
-import { Badge } from "@/components/ui/badge";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { IconoTienda } from "@/components/ui/iconos";
-import { cn } from "@/lib/cn";
 import { feriasConProximaEdicion, ordenarPorRelevancia } from "@/lib/consultas";
 import { aOpciones, CATEGORIAS_FERIA } from "@/lib/labels";
 import type { CategoriaFeria } from "@prisma/client";
@@ -49,10 +47,16 @@ async function ContenidoFerias({
       ? (params.categoria as CategoriaFeria)
       : undefined;
 
-  const ferias = await feriasConProximaEdicion(
-    categoria ? { categoria: { equals: categoria } } : undefined,
+  // Se traen todas y se filtra acá: son una decena, y así una sola consulta
+  // dice también qué categorías tienen ferias, para no ofrecer un filtro que
+  // lleva a una página vacía.
+  const todas = await feriasConProximaEdicion();
+  const categorias = aOpciones(CATEGORIAS_FERIA)
+    .map((opcion) => opcion.valor as CategoriaFeria)
+    .filter((valor) => todas.some((feria) => feria.categoria === valor));
+  const ordenadas = ordenarPorRelevancia(
+    categoria ? todas.filter((feria) => feria.categoria === categoria) : todas,
   );
-  const ordenadas = ordenarPorRelevancia(ferias);
 
   const enCurso = ordenadas.filter(
     (feria) => feria.proximaEdicion?.estado === "EN_CURSO",
@@ -60,95 +64,17 @@ async function ContenidoFerias({
 
   return (
     <div>
-      {/*
-        Encabezado con foto. El velo va de abajo hacia arriba, al revés que el
-        del hero de inicio: esta imagen es de día y lo que la hace linda es la
-        luz entre los árboles, así que se oscurece sólo el pie, donde va el
-        texto. Abajo de `lg` el texto ocupa casi todo el alto de la banda y el
-        degradé no alcanza, así que ahí el velo es parejo.
+      <EncabezadoFerias
+        categorias={categorias}
+        activa={categoria}
+        enCurso={enCurso}
+      />
 
-        Contraste medido contra blanco, peor píxel de la zona de texto:
-        9,1:1 a 1440 px, 8,8:1 a 1024 px y 10,5:1 a 375 px. AAA pide 7:1.
-      */}
-      <section className="paleta-original relative isolate overflow-hidden bg-municipal-950">
-        <Image
-          src="/ferias-encabezado-dia.webp"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div
-          className="absolute inset-0 bg-municipal-950/85 lg:hidden"
-          aria-hidden="true"
-        />
-        <div
-          className="absolute inset-0 hidden lg:block lg:bg-gradient-to-t lg:from-municipal-950/95 lg:via-municipal-950/80 lg:to-municipal-950/40"
-          aria-hidden="true"
-        />
-
-        <header className="relative mx-auto flex min-h-72 max-w-7xl flex-col justify-end px-4 py-10 sm:px-6 lg:min-h-80 lg:px-8">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Ferias municipales
-          </h1>
-          <p className="mt-2 max-w-2xl text-white/90">
-            Ferias itinerantes que la municipalidad organiza en plazas y parques
-            de la ciudad. Entrá a cada una para ver las fechas, el horario y qué
-            feriantes participan.
-          </p>
-          {enCurso > 0 && (
-            <Badge tono="verde" conPunto className="mt-4 self-start">
-              {enCurso === 1
-                ? "1 feria en curso ahora mismo"
-                : `${enCurso} ferias en curso ahora mismo`}
-            </Badge>
-          )}
-        </header>
-      </section>
-
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        {/* Filtro por categoría */}
-        <nav
-          aria-label="Filtrar por categoría"
-          className="flex flex-wrap gap-2"
-        >
-          <Link
-            href="/ferias"
-            aria-current={!categoria ? "page" : undefined}
-            className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors",
-              !categoria
-                ? "bg-municipal-500 text-white ring-municipal-500"
-                : "bg-superficie text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
-            )}
-          >
-            Todas
-          </Link>
-          {aOpciones(CATEGORIAS_FERIA).map((opcion) => {
-            const activa = categoria === opcion.valor;
-            return (
-              <Link
-                key={opcion.valor}
-                href={`/ferias?categoria=${opcion.valor}`}
-                aria-current={activa ? "page" : undefined}
-                className={cn(
-                  "rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors",
-                  activa
-                    ? "bg-municipal-500 text-white ring-municipal-500"
-                    : "bg-superficie text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900",
-                )}
-              >
-                {opcion.etiqueta}
-              </Link>
-            );
-          })}
-        </nav>
-
+      <div className="mx-auto max-w-7xl px-4 pt-8 pb-10 sm:px-6 lg:px-8">
         {ordenadas.length === 0 ? (
           <EstadoVacio
             icono={IconoTienda}
-            className="mt-10"
+            className="mt-2"
             titulo={
               categoria
                 ? "No hay ferias en esa categoría"
@@ -171,7 +97,7 @@ async function ContenidoFerias({
             }
           />
         ) : (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {ordenadas.map((feria, indice) => (
               <TarjetaFeria
                 key={feria.slug}

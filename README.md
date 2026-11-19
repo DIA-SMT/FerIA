@@ -756,13 +756,13 @@ cambió del kit y por qué. Los dos fondos son **la misma escena** con otra luz
 —la de noche se hizo a partir de la de día—, así que cambiar de tema no mueve
 nada. Si se reemplazan, tienen que seguir siendo un par así.
 
-**El encabezado de `/ferias`** es `ferias-encabezado-dia.webp`, con un velo
-vertical: denso abajo, donde va el título, y abierto hacia arriba para dejar
-ver la luz entre los árboles. Abajo de `lg` el velo es parejo, porque el texto
-ocupa casi toda la banda. Contraste medido en el peor píxel de la zona de
-texto: 9,1:1 a 1440 px, 8,8:1 a 1024 px y 10,5:1 a 375 px (AAA pide 7:1). La
-imagen no tiene texto mal generado —se revisó cuadro por cuadro— y está acotada
-a una banda ancha para no cargar píxeles que el encabezado nunca muestra.
+**El encabezado de `/ferias`** (`src/components/public/encabezado-ferias.tsx`)
+usa los mismos dos fondos del hero de inicio, con un velo claro de día y azul
+noche de noche: parejo en el celular y, desde `lg`, más denso del lado del
+texto. Lleva la ruta con sus pines y `migue-mapa.webp`, un Migue con un mapa
+de la ciudad generado con el modelo de imágenes a partir de una de sus poses
+originales. Los filtros por categoría van adentro de la misma banda y sólo
+muestran las categorías que tienen alguna feria.
 
 El área pública es más cálida y visual (fotos, tarjetas, degradés); el panel
 municipal es más denso y funcional (tablas, filtros, barra lateral).

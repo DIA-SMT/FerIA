@@ -85,7 +85,7 @@ const PINES = [
 ];
 
 /** La ruta punteada con sus pines. Decorativa. */
-function Ruta({ className }: { className?: string }) {
+export function Ruta({ className }: { className?: string }) {
   return (
     <div className={cn("pointer-events-none", className)} aria-hidden="true">
       {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -5,7 +5,10 @@ import { SeccionFeriante } from "@/components/public/seccion-feriante";
 import { SeccionRubros } from "@/components/public/seccion-rubros";
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
-import { ICONOS_CATEGORIA } from "@/components/ui/iconos-por-clave";
+import {
+  COLOR_CATEGORIA,
+  ICONOS_CATEGORIA,
+} from "@/components/ui/iconos-por-clave";
 import {
   IconoChevronDerecha,
   IconoReloj,
@@ -29,27 +32,6 @@ import {
   resumenHorario,
   semanaDe,
 } from "@/lib/horarios";
-import type { CategoriaFeria } from "@prisma/client";
-
-/**
- * El color del círculo de cada categoría, en la agenda de la semana.
- *
- * Van saturados con el glifo en blanco. Medido: el más flojo es
- * `emerald-600` 3,8:1 y `orange-600` 3,6:1, sobre el piso de 3:1 que la WCAG
- * pide para un objeto gráfico (1.4.11) —no son texto—; el resto pasa incluso
- * el 4,5:1 de texto normal. `amber-600` quedó afuera: da 3,19:1 y raspa.
- *
- * Es local a propósito: hoy lo usa una sola sección, y mudarlo a `labels.ts`
- * mezclaría clases de Tailwind con las etiquetas, que hoy son texto puro.
- */
-const COLOR_CATEGORIA: Record<CategoriaFeria, string> = {
-  ARTESANIAS: "bg-orange-600",
-  EMPRENDEDORES: "bg-municipal-500",
-  GASTRONOMIA: "bg-rose-600",
-  PRODUCTOS_REGIONALES: "bg-emerald-600",
-  LIBROS_Y_ARTE: "bg-violet-600",
-  MIXTA: "bg-slate-500",
-};
 
 export const metadata = {
   title: "Ferias Municipales — San Miguel de Tucumán",

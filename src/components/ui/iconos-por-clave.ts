@@ -62,3 +62,25 @@ export const ICONOS_CATEGORIA: Record<CategoriaFeria, ComponenteIcono> = {
   LIBROS_Y_ARTE: IconoLibro,
   MIXTA: IconoGrilla,
 };
+
+/**
+ * El color del círculo de cada categoría de feria: en la agenda de la portada
+ * y en los filtros de `/ferias`.
+ *
+ * Van saturados con el glifo en blanco. Medido: el más flojo es
+ * `emerald-600` 3,8:1 y `orange-600` 3,6:1, sobre el piso de 3:1 que la WCAG
+ * pide para un objeto gráfico (1.4.11) —no son texto—; el resto pasa incluso
+ * el 4,5:1 de texto normal. `amber-600` quedó afuera: da 3,19:1 y raspa.
+ *
+ * Va acá, junto al ícono que pinta, y no en `labels.ts`: ese archivo es texto
+ * puro y no tiene por qué cargar clases de Tailwind. El que lo use tiene que
+ * ponerle `paleta-original` al círculo, o de noche el color se da vuelta.
+ */
+export const COLOR_CATEGORIA: Record<CategoriaFeria, string> = {
+  ARTESANIAS: "bg-orange-600",
+  EMPRENDEDORES: "bg-municipal-500",
+  GASTRONOMIA: "bg-rose-600",
+  PRODUCTOS_REGIONALES: "bg-emerald-600",
+  LIBROS_Y_ARTE: "bg-violet-600",
+  MIXTA: "bg-slate-500",
+};
