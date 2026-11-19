@@ -1,15 +1,12 @@
 import Link from "next/link";
 
 import { HeroRuta } from "@/components/public/hero-ruta";
+import { SeccionFeriante } from "@/components/public/seccion-feriante";
+import { SeccionRubros } from "@/components/public/seccion-rubros";
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
-import { BotonLink } from "@/components/ui/boton";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
+import { ICONOS_CATEGORIA } from "@/components/ui/iconos-por-clave";
 import {
-  ICONOS_CATEGORIA,
-  ICONOS_RUBRO,
-} from "@/components/ui/iconos-por-clave";
-import {
-  IconoChat,
   IconoChevronDerecha,
   IconoReloj,
   IconoTienda,
@@ -24,7 +21,7 @@ import {
   ordenarPorRelevancia,
 } from "@/lib/consultas";
 import { prisma } from "@/lib/db";
-import { formatearNumero, hoyEnZona } from "@/lib/format";
+import { hoyEnZona } from "@/lib/format";
 import {
   agendaDeLaSemana,
   etiquetaDeFecha,
@@ -32,7 +29,6 @@ import {
   resumenHorario,
   semanaDe,
 } from "@/lib/horarios";
-import { RUBROS } from "@/lib/labels";
 import type { CategoriaFeria } from "@prisma/client";
 
 /**
@@ -298,144 +294,11 @@ export default async function PaginaInicio() {
 
       {/* --------------------------- Qué vas a encontrar -------------------- */}
       {porRubro.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-3 lg:gap-10">
-            <div className="lg:col-span-2">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                Qué vas a encontrar
-              </h2>
-              <p className="mt-1 text-slate-600">
-                Productos locales, frescos y con identidad tucumana.
-              </p>
-
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                {porRubro.map((fila) => {
-                  // Un ícono por rubro: antes las cuatro tarjetas mostraban el
-                  // mismo marbete, o sea que el ícono ocupaba lugar sin decir
-                  // cuál era cuál.
-                  const IconoRubro = ICONOS_RUBRO[fila.rubro];
-
-                  return (
-                    <Link
-                      key={fila.rubro}
-                      href={`/stands?rubro=${fila.rubro}`}
-                      className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-superficie p-4 shadow-sm transition-shadow hover:shadow-md"
-                    >
-                      <span
-                        className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-municipal-50 text-municipal-600"
-                        aria-hidden="true"
-                      >
-                        <IconoRubro className="size-5" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-semibold text-slate-900 group-hover:text-municipal-700">
-                          {RUBROS[fila.rubro]}
-                        </span>
-                        <span className="block text-sm text-slate-600">
-                          {formatearNumero(fila._count)}{" "}
-                          {fila._count === 1
-                            ? "emprendimiento"
-                            : "emprendimientos"}
-                        </span>
-                      </span>
-                      <IconoChevronDerecha className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/*
-              Migue sólo si la IA está configurada. Sin `OPENROUTER_API_KEY` la
-              burbuja del asistente ni se monta —ver el layout público—, así que
-              invitar a hablar con él sería mandar a la gente a un botón que no
-              existe.
-            */}
-            {hayIAConfigurada() && (
-              <aside className="mt-10 flex flex-col justify-center rounded-2xl border border-municipal-100 bg-municipal-50 p-6 lg:mt-0">
-                <span
-                  className="flex size-11 items-center justify-center rounded-lg bg-municipal-500 text-white"
-                  aria-hidden="true"
-                >
-                  <IconoChat className="size-5" />
-                </span>
-                <h3 className="mt-4 text-lg font-bold text-slate-900">
-                  ¿Buscás algo en particular?
-                </h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  Migue te ayuda a encontrarlo y te dice en qué feria y en qué
-                  stand lo podés conseguir. Está abajo a la derecha, en todas
-                  las páginas.
-                </p>
-              </aside>
-            )}
-          </div>
-        </section>
+        <SeccionRubros rubros={porRubro} conMigue={hayIAConfigurada()} />
       )}
 
       {/* --------------------------- Ser feriante --------------------------- */}
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-2xl border border-municipal-100 bg-municipal-50">
-          <div className="grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-2">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                ¿Tenés un emprendimiento y querés participar?
-              </h2>
-              {/* Pedido de la Dirección: dejar claro que anotarse no asegura un
-                  lugar, porque la gente creía que presentaba los datos y ya
-                  tenía puesto. El cómo y el porqué del cupo están en el paso
-                  3; acá va sólo la advertencia, para no decirlo dos veces. */}
-              <p className="mt-3 text-slate-600">
-                Registrarte es el primer paso, pero no te asegura un lugar en
-                una feria.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <BotonLink href="/registro" tamanio="lg">
-                  Registrarme como feriante
-                </BotonLink>
-                <BotonLink href="/ingresar" variante="contorno" tamanio="lg">
-                  Ya tengo cuenta
-                </BotonLink>
-              </div>
-            </div>
-
-            <ol className="space-y-4">
-              {[
-                {
-                  titulo: "Registrás tu emprendimiento",
-                  texto:
-                    "Entrás con tu cuenta de CiDiTuc y completás los datos de tu emprendimiento.",
-                },
-                {
-                  titulo:
-                    "La Dirección de Relaciones Institucionales revisa tu solicitud",
-                  texto:
-                    "Verifica que cumpla con el reglamento de ferias vigente. Si se aprueba, se habilita tu stand online para que cargues tus productos.",
-                },
-                {
-                  titulo: "Esperás un lugar en una feria",
-                  texto:
-                    "Tu solicitud queda en lista de espera hasta que haya cupo. Los lugares se asignan según lo que se necesite en cada rubro y tipo de producto.",
-                },
-              ].map((paso, indice) => (
-                <li key={paso.titulo} className="flex gap-4">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-municipal-500 text-sm font-semibold text-white">
-                    {indice + 1}
-                  </span>
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      {paso.titulo}
-                    </p>
-                    <p className="mt-0.5 text-sm text-slate-600">
-                      {paso.texto}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
+      <SeccionFeriante />
     </>
   );
 }

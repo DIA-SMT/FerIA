@@ -39,8 +39,15 @@ import { fileURLToPath } from "node:url";
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Las familias que el sitio usa (ver `grep` en el commit que agregó esto). */
-const FAMILIAS_TAILWIND = ["red", "emerald", "amber", "rose", "violet", "orange"];
+/**
+ * Las familias que el sitio usa (ver `grep` en el commit que agregó esto). Las
+ * de la segunda línea son las de las tarjetas de rubro de la portada, una por
+ * rubro (ver `TONOS_RUBRO` en `src/app/(public)/page.tsx`).
+ */
+const FAMILIAS_TAILWIND = [
+  "red", "emerald", "amber", "rose", "violet", "orange",
+  "teal", "indigo", "fuchsia", "pink", "stone",
+];
 const FAMILIAS_PROPIAS = ["municipal", "celeste", "acento"];
 const TONOS = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"];
 
