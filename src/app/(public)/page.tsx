@@ -141,7 +141,10 @@ export default async function PaginaInicio() {
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Cuatro por fila recién desde 1280 px: entre 1024 y 1280 cada
+              tarjeta medía unos 230 px y el nombre y el horario se partían
+              en tres renglones. */}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {agenda.map(({ fecha, edicion }) => {
               const etiqueta = etiquetaDeFecha(fecha);
               const horario = resumenHorario(edicion);
@@ -198,7 +201,7 @@ export default async function PaginaInicio() {
                       src={edicion.feria.imagen}
                       alt=""
                       icono={IconoTienda}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
                       className="aspect-[16/10] min-w-0 flex-1 rounded-lg"
                     />
                   </span>

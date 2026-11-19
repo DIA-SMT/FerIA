@@ -86,8 +86,13 @@ export function SeccionRubros({
 }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-      <div className="lg:grid lg:grid-cols-3 lg:gap-10">
-        <div className="lg:col-span-2">
+      {/* Rubros y Migue lado a lado sólo desde 1280 px. Entre 1024 y 1280 la
+          columna de los rubros quedaba de unos 600 px, cada tarjeta de 300, y
+          al lado del sticker no entraban ni «Joyería y bijouterie» ni «228
+          emprendimientos» en un renglón. Ahí va como en la tablet: los rubros
+          a lo ancho y Migue abajo. */}
+      <div className="xl:grid xl:grid-cols-3 xl:gap-10">
+        <div className="xl:col-span-2">
           <h2 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-slate-900">
             Qué vas a encontrar
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -150,12 +155,13 @@ export function SeccionRubros({
         </div>
 
         {conMigue && (
-          <aside className="relative mt-12 min-h-76 overflow-hidden rounded-3xl border-[1.5px] border-municipal-100 bg-municipal-50 px-6 pt-7 pb-8 lg:mt-0">
+          <aside className="relative mt-12 min-h-76 overflow-hidden rounded-3xl border-[1.5px] border-municipal-100 bg-municipal-50 px-6 pt-7 pb-8 xl:mt-0">
             <h3 className="text-xl font-extrabold tracking-tight text-slate-900">
               ¿Buscás algo en particular?
             </h3>
-            {/* El margen derecho es el lugar de Migue: entre 1024 y 1280 px la
-                caja es angosta y, sin esto, él tapaba el final del texto. */}
+            {/* El margen derecho es el lugar de Migue: en una caja angosta
+                (el celular, o la columna de la derecha en la compu) él tapaba
+                el final del texto. */}
             <p className="mt-2 pr-24 text-[0.95rem] leading-relaxed text-slate-700">
               Preguntale a Migue y te dice en qué feria y en qué stand lo
               conseguís.

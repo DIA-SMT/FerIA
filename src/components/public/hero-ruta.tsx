@@ -275,8 +275,12 @@ export function HeroRuta() {
           </div>
         </div>
 
-        {/* Tablet y celular: la ruta, y Migue a la derecha mostrándola. */}
-        <div className="relative z-10 mt-2 h-64 sm:h-80 xl:hidden">
+        {/* Tablet y celular: la ruta, y Migue a la derecha mostrándola.
+            Migue entra entero en esta caja (`h-full`) y no la pasa: el
+            texto y el buscador van arriba en el flujo, con su propio
+            `z-20`, así que si asomaba por encima de la caja el buscador le
+            tapaba la cabeza en el celular. */}
+        <div className="relative z-10 mt-2 h-72 sm:h-80 xl:hidden">
           <Ruta className="absolute top-[38%] left-[4%] h-[30%] w-[58%] sm:w-[56%] md:w-[46%]" />
           {/* Tablet */}
           <Image
@@ -294,7 +298,7 @@ export function HeroRuta() {
             width={743}
             height={1351}
             sizes="(max-width: 767px) 180px, 1px"
-            className="pointer-events-none absolute right-[3%] bottom-0 h-[112%] w-auto max-w-none drop-shadow-[0_13px_16px_rgb(10_21_69/0.16)] md:hidden"
+            className="pointer-events-none absolute right-[3%] bottom-0 h-full w-auto max-w-none drop-shadow-[0_13px_16px_rgb(10_21_69/0.16)] md:hidden"
           />
         </div>
 
