@@ -25,6 +25,12 @@ const KIT = "/ferias-hero";
  * borde de la banda taparía el final de la fila de filtros, que ahí se desliza
  * de costado. Desde `lg` ese bloque pasa a `static` y Migue se apoya en el
  * borde de abajo de la banda, a la derecha, donde los filtros no llegan.
+ *
+ * Por eso el bloque tiene un alto mínimo un poco mayor que Migue en cada
+ * ancho (`min-h-46` para `h-44`, `sm:min-h-58` para `sm:h-56`, y desde `lg`
+ * los 15rem del bloque más los filtros para `lg:h-72`). El alto del texto no
+ * alcanza: sin el cartel de «en curso» el bloque medía 150 px, Migue 176, y
+ * la banda —que recorta lo que sale— le cortaba la cabeza en el celular.
  */
 export function EncabezadoFerias({
   categorias,
@@ -68,7 +74,7 @@ export function EncabezadoFerias({
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Ruta className="absolute top-[24%] right-[15rem] hidden h-24 w-[25rem] xl:block" />
 
-        <div className="relative pt-9 pb-6 sm:pt-12 lg:static lg:min-h-60 lg:pt-14 lg:pb-7">
+        <div className="relative min-h-46 pt-9 pb-6 sm:min-h-58 sm:pt-12 lg:static lg:min-h-60 lg:pt-14 lg:pb-7">
           <div className="max-w-xl pr-24 sm:pr-40 lg:pr-0">
             <h1 className="relative inline-block font-globo text-[2.1rem] leading-[1.02] font-extrabold tracking-[-0.03em] text-[#081B45] sm:text-5xl dark:text-white">
               Ferias municipales
