@@ -21,7 +21,14 @@ export type ModoRedaccion = "mejorar" | "entrevista";
  * Desde qué pantalla se pide: el perfil de un feriante aprobado o la encuesta
  * del alta, donde todavía no hay ficha. Cambia qué se exige para entrar.
  */
-export type PuertaRedaccion = "perfil" | "alta";
+export type PuertaRedaccion = "perfil" | "alta" | "panel";
+
+/**
+ * Qué se describe. El emprendimiento lleva un tono sobrio, como habla quien
+ * produce. El producto y la propuesta de Modo Feria, uno vendedor, con
+ * emojis: son la vidriera de algo puntual que se quiere vender.
+ */
+export type ObjetoRedaccion = "emprendimiento" | "producto" | "propuesta";
 
 /** Lo que el formulario tiene en pantalla cuando se pide ayuda. */
 export interface PedidoRedaccion {
@@ -29,6 +36,12 @@ export interface PedidoRedaccion {
   emprendimiento: string;
   rubro: string;
   descripcion: string;
+  /** Sin indicar, el emprendimiento. */
+  objeto?: ObjetoRedaccion;
+  /** El nombre del producto o el título de la propuesta. */
+  titulo?: string;
+  /** En una propuesta, qué es: «Caja», «Food truck o puesto». */
+  detalle?: string;
 }
 
 /** Una pregunta de la entrevista y lo que contestó la persona. */
@@ -75,9 +88,23 @@ export const MAXIMO_PREGUNTAS = 5;
  */
 export const MINIMO_PARA_MEJORAR = 120;
 
+/**
+ * En un producto alcanza con menos: «Taza de cerámica de 300 ml, apta
+ * microondas» ya dice lo que hay que decir. «Apretao de JyQ», no: ahí conviene
+ * preguntar qué lleva antes de que la IA lo adivine.
+ */
+export const MINIMO_PARA_MEJORAR_PRODUCTO = 40;
+
 /** Con cuánto texto alcanza para mejorar en vez de preguntar. */
-export function alcanzaParaMejorar(descripcion: string | null): boolean {
-  return (descripcion?.trim().length ?? 0) >= MINIMO_PARA_MEJORAR;
+export function alcanzaParaMejorar(
+  descripcion: string | null,
+  objeto: ObjetoRedaccion = "emprendimiento",
+): boolean {
+  const minimo =
+    objeto === "emprendimiento"
+      ? MINIMO_PARA_MEJORAR
+      : MINIMO_PARA_MEJORAR_PRODUCTO;
+  return (descripcion?.trim().length ?? 0) >= minimo;
 }
 
 /** Las respuestas con algo escrito; las salteadas no cuentan. */

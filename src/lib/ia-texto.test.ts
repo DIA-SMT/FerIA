@@ -115,3 +115,47 @@ describe("qué hacer con lo escrito", () => {
     ).toEqual([{ pregunta: "¿Uno?", respuesta: "sí" }]);
   });
 });
+
+describe("el tono según lo que se describe", () => {
+  const producto = {
+    nombre: "Sánguches El Tucu",
+    categoria: "Gastronomía",
+    objeto: "producto" as const,
+    titulo: "Apretado de jamón y queso",
+    descripcion: "Apretado de jamón y queso con pan casero, grande.",
+  };
+
+  it("un producto sale vendedor, con emojis y sin inventar", () => {
+    const prompt = construirPrompt({ modo: "mejorar" }, producto);
+    expect(prompt).toContain("Producto: Apretado de jamón y queso");
+    expect(prompt).toContain("emojis");
+    expect(prompt).toContain("NO inventes");
+    expect(prompt).not.toContain("NO uses emojis");
+  });
+
+  it("el emprendimiento sigue sobrio", () => {
+    const prompt = construirPrompt(
+      { modo: "mejorar" },
+      { nombre: "Sánguches El Tucu", categoria: "Gastronomía", descripcion: "x" },
+    );
+    expect(prompt).toContain("NO uses emojis");
+  });
+
+  it("una propuesta de Modo Feria le habla a empresas y dice qué es", () => {
+    const prompt = construirPromptPreguntas({
+      ...producto,
+      objeto: "propuesta",
+      titulo: "Caja dulce",
+      detalle: "Caja",
+    });
+    expect(prompt).toContain("empresas e instituciones");
+    expect(prompt).toContain("Qué es: Caja");
+  });
+
+  it("en un producto alcanza con menos texto para mejorar", () => {
+    const corto = "Taza de cerámica de 300 ml, apta microondas.";
+    expect(alcanzaParaMejorar(corto, "producto")).toBe(true);
+    expect(alcanzaParaMejorar(corto)).toBe(false);
+    expect(alcanzaParaMejorar("Apretao de JyQ", "producto")).toBe(false);
+  });
+});

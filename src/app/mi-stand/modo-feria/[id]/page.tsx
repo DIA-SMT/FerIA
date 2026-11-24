@@ -9,6 +9,7 @@ import { FormularioPropuesta } from "@/components/admin/formulario-propuesta";
 import { EstadoDeRevision } from "@/components/vendedor/estado-de-revision";
 import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import { IconoFlechaIzquierda, IconoTacho } from "@/components/ui/iconos";
+import { hayIAConfigurada } from "@/lib/ai";
 import { prisma } from "@/lib/db";
 import { cambiosAbiertos, propuestaDelDueno } from "@/lib/revision";
 import { requerirVendedorAprobado } from "@/lib/session";
@@ -87,6 +88,7 @@ export default async function PaginaEditarPropuestaPropia({
       </header>
 
       <FormularioPropuesta
+        conIA={hayIAConfigurada()}
         accion={actualizarPropuestaPropia}
         propuesta={vista}
         volver="/mi-stand/modo-feria"

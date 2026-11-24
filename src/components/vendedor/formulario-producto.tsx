@@ -9,6 +9,7 @@ import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { estilosBoton } from "@/components/ui/boton";
 import { BotonEnvio } from "@/components/ui/boton-envio";
 import { AreaTexto, Campo, Casilla, Entrada } from "@/components/ui/campo";
+import { AsistenteDeDescripcion } from "@/components/vendedor/asistente-de-descripcion";
 import { SelectorDeFoto } from "@/components/vendedor/selector-de-foto";
 import { IconoCerrar } from "@/components/ui/iconos";
 import { Tarjeta, TarjetaCuerpo, TarjetaPie } from "@/components/ui/tarjeta";
@@ -238,20 +239,35 @@ export function FormularioProducto({
           </Paso>
 
           <Paso numero={3}>
-            <Campo
-              htmlFor="descripcion"
-              etiqueta="Descripción"
-              ayuda="Materiales, medidas, tiempo de elaboración, variantes disponibles."
-              errores={errores?.descripcion}
-            >
-              <AreaTexto
-                name="descripcion"
-                rows={4}
-                value={descripcion}
-                onChange={(evento) => setDescripcion(evento.target.value)}
+            <div className="space-y-3">
+              <Campo
+                htmlFor="descripcion"
+                etiqueta="Descripción"
+                ayuda="Materiales, medidas, tiempo de elaboración, variantes disponibles."
                 errores={errores?.descripcion}
-              />
-            </Campo>
+              >
+                <AreaTexto
+                  name="descripcion"
+                  rows={4}
+                  value={descripcion}
+                  onChange={(evento) => setDescripcion(evento.target.value)}
+                  errores={errores?.descripcion}
+                />
+              </Campo>
+
+              {/* El texto que vende: con lo que escribió, o con tres preguntas
+                  si escribió poco. Pasa por la revisión igual que el resto. */}
+              {hayIA && (
+                <AsistenteDeDescripcion
+                  valor={descripcion}
+                  nombreEmprendimiento=""
+                  rubro=""
+                  objeto="producto"
+                  titulo={nombre}
+                  onAplicar={setDescripcion}
+                />
+              )}
+            </div>
           </Paso>
 
           <Paso numero={4}>

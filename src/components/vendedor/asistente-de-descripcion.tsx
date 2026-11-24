@@ -24,6 +24,7 @@ import {
   MAXIMO_RESPUESTA,
   respuestasContestadas,
   type ModoRedaccion,
+  type ObjetoRedaccion,
   type PuertaRedaccion,
   type RespuestaEntrevista,
 } from "@/lib/redaccion";
@@ -50,6 +51,9 @@ export function AsistenteDeDescripcion({
   rubro,
   onAplicar,
   puerta = "perfil",
+  objeto = "emprendimiento",
+  titulo = "",
+  detalle = "",
 }: {
   /** Lo que hay hoy en el campo. */
   valor: string;
@@ -63,6 +67,15 @@ export function AsistenteDeDescripcion({
    * sesión, porque todavía no hay ficha.
    */
   puerta?: PuertaRedaccion;
+  /**
+   * Qué se describe. Un producto o una propuesta de Modo Feria salen con tono
+   * vendedor y emojis; el emprendimiento, sobrio.
+   */
+  objeto?: ObjetoRedaccion;
+  /** El nombre del producto o el título de la propuesta. */
+  titulo?: string;
+  /** En una propuesta, qué es: «Caja», «Food truck o puesto». */
+  detalle?: string;
 }) {
   const [pendiente, iniciar] = useTransition();
   const [esperando, setEsperando] = useState<"preguntas" | "texto" | null>(null);
@@ -81,10 +94,15 @@ export function AsistenteDeDescripcion({
   // Texto que había antes de aplicar una sugerencia, para poder volver.
   const [previo, setPrevio] = useState<string | null>(null);
 
-  const vaAMejorar = alcanzaParaMejorar(valor);
+  const vaAMejorar = alcanzaParaMejorar(valor, objeto);
+  const deUnaCosa = objeto !== "emprendimiento";
   // Sin nombre ni rubro la IA no sabe de qué escribir. En el perfil siempre
-  // están; en la encuesta del alta, no hasta que la persona los completa.
-  const faltaContexto = !nombreEmprendimiento.trim() || !rubro;
+  // están; en la encuesta del alta, no hasta que la persona los completa. De un
+  // producto o una propuesta lo que hace falta es su nombre: el emprendimiento
+  // lo completa el servidor.
+  const faltaContexto = deUnaCosa
+    ? !titulo.trim()
+    : !nombreEmprendimiento.trim() || !rubro;
   const abierto = entrevista !== null || propuesta !== null;
 
   function pedido() {
@@ -93,6 +111,9 @@ export function AsistenteDeDescripcion({
       emprendimiento: nombreEmprendimiento,
       rubro,
       descripcion: valor,
+      objeto,
+      titulo,
+      detalle,
     };
   }
 
@@ -198,12 +219,18 @@ export function AsistenteDeDescripcion({
 
           {faltaContexto ? (
             <span className="text-xs text-slate-500">
-              Completá el nombre y el rubro, así la IA sabe de qué escribir.
+              {deUnaCosa
+                ? objeto === "producto"
+                  ? "Poné el nombre del producto, así la IA sabe de qué escribir."
+                  : "Poné el título, así la IA sabe de qué escribir."
+                : "Completá el nombre y el rubro, así la IA sabe de qué escribir."}
             </span>
           ) : (
             !vaAMejorar && (
               <span className="text-xs text-slate-500">
-                Te hacemos unas preguntas cortas y con eso armamos el texto.
+                {deUnaCosa
+                  ? "Te hacemos tres preguntas y armamos un texto que venda ✨"
+                  : "Te hacemos unas preguntas cortas y con eso armamos el texto."}
               </span>
             )
           )}
@@ -254,7 +281,9 @@ export function AsistenteDeDescripcion({
         <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
           <p className="text-sm font-medium text-slate-700">
             {propuesta.modo === "mejorar"
-              ? "Propuesta: lo mismo que escribiste, mejor redactado"
+              ? deUnaCosa
+                ? "Propuesta: lo que escribiste, con más gancho"
+                : "Propuesta: lo mismo que escribiste, mejor redactado"
               : "Tu descripción, con lo que contaste"}
           </p>
 

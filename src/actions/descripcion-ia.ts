@@ -25,7 +25,11 @@ import {
   type PedidoRedaccion,
   type RespuestaEntrevista,
 } from "@/lib/redaccion";
-import { requerirSesion, requerirVendedorAprobado } from "@/lib/session";
+import {
+  requerirAdmin,
+  requerirSesion,
+  requerirVendedorAprobado,
+} from "@/lib/session";
 
 /**
  * Redacción asistida de la descripción del emprendimiento.
@@ -37,9 +41,13 @@ import { requerirSesion, requerirVendedorAprobado } from "@/lib/session";
  * Con poco escrito, primero se le hacen unas preguntas (`prepararEntrevista`) y
  * el texto sale de lo que contesta. Con bastante escrito, se pule eso.
  *
- * Hay dos puertas, una por pantalla: el perfil del feriante aprobado y la
- * encuesta del alta, donde todavía no hay ficha. Las dos acciones las aceptan
- * y cada una exige lo suyo.
+ * Hay tres puertas: el panel del feriante aprobado (su stand, sus productos y
+ * sus propuestas de Modo Feria), la encuesta del alta, donde todavía no hay
+ * ficha, y el panel municipal, que carga propuestas de Modo Feria para quien no
+ * tiene cuenta. Las dos acciones las aceptan y cada una exige lo suyo.
+ *
+ * El emprendimiento se escribe sobrio; un producto o una propuesta, con tono
+ * vendedor y emojis (ver `src/lib/ia-texto.ts`).
  *
  * Los tipos están en `@/lib/redaccion` porque este módulo es `"use server"` y
  * sólo puede exportar funciones async.
@@ -91,10 +99,15 @@ export async function redactarDescripcion(
 
 /** Lo que llega del navegador no se cree: se recorta y se valida. */
 const PEDIDO = z.object({
-  puerta: z.enum(["perfil", "alta"]),
+  puerta: z.enum(["perfil", "alta", "panel"]),
   emprendimiento: z.string().max(500),
   rubro: z.string().max(50),
   descripcion: z.string().max(MAXIMO_DESCRIPCION * 2),
+  objeto: z
+    .enum(["emprendimiento", "producto", "propuesta"])
+    .default("emprendimiento"),
+  titulo: z.string().max(200).default(""),
+  detalle: z.string().max(100).default(""),
 });
 
 const RESPUESTAS = z
@@ -132,10 +145,22 @@ async function abrir(pedido: PedidoRedaccion): Promise<Entrada> {
   const lectura = PEDIDO.safeParse(pedido);
   if (!lectura.success) return PEDIDO_INVALIDO;
 
-  const { puerta, emprendimiento, rubro, descripcion } = lectura.data;
+  const { puerta, emprendimiento, rubro, descripcion, objeto, titulo, detalle } =
+    lectura.data;
   const nombreEnviado = emprendimiento.trim().slice(0, 120);
   const rubroEnviado = rubro in Rubro ? (rubro as Rubro) : null;
   const escrito = descripcion.slice(0, MAXIMO_DESCRIPCION);
+  // De un producto o una propuesta, el nombre: sin él la IA no sabe qué vende.
+  const deQue = { objeto, titulo: titulo.trim(), detalle: detalle.trim() };
+  if (objeto !== "emprendimiento" && !deQue.titulo) {
+    return {
+      ok: false,
+      mensaje:
+        objeto === "producto"
+          ? "Poné primero el nombre del producto, así la IA sabe de qué escribir."
+          : "Poné primero el título, así la IA sabe de qué escribir.",
+    };
+  }
 
   if (puerta === "perfil") {
     const { vendedor } = await requerirVendedorAprobado();
@@ -146,10 +171,30 @@ async function abrir(pedido: PedidoRedaccion): Promise<Entrada> {
         nombre: nombreEnviado || vendedor.emprendimiento,
         categoria: RUBROS[rubroEnviado ?? vendedor.rubro],
         descripcion: escrito,
+        ...deQue,
       },
     };
   }
 
+  // El panel municipal sólo carga propuestas de Modo Feria, y del feriante
+  // sabe lo que el formulario tiene en pantalla.
+  if (puerta === "panel") {
+    await requerirAdmin();
+    if (objeto !== "propuesta") return PEDIDO_INVALIDO;
+    return {
+      ok: true,
+      clave: null,
+      contexto: {
+        nombre: nombreEnviado || "un feriante de las ferias municipales",
+        categoria: rubroEnviado ? RUBROS[rubroEnviado] : "",
+        descripcion: escrito,
+        ...deQue,
+      },
+    };
+  }
+
+  // La encuesta del alta sólo escribe la descripción del emprendimiento.
+  if (objeto !== "emprendimiento") return PEDIDO_INVALIDO;
   const sesion = await requerirSesion();
   if (!nombreEnviado || !rubroEnviado) {
     return {
@@ -179,7 +224,7 @@ function elegirTarea(
   respuestas: RespuestaEntrevista[] | undefined,
 ): TareaRedaccion | { mensaje: string } {
   if (respuestas === undefined) {
-    return alcanzaParaMejorar(contexto.descripcion ?? "")
+    return alcanzaParaMejorar(contexto.descripcion ?? "", contexto.objeto)
       ? { modo: "mejorar" }
       : { mensaje: "Hay muy poco escrito para mejorarlo. Probá con las preguntas." };
   }

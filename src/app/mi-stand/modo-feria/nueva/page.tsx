@@ -3,6 +3,7 @@ import Link from "next/link";
 import { crearPropuestaPropia } from "@/actions/sello-propio";
 import { FormularioPropuesta } from "@/components/admin/formulario-propuesta";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
+import { hayIAConfigurada } from "@/lib/ai";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Nueva propuesta de Modo Feria" };
@@ -26,6 +27,7 @@ export default async function PaginaNuevaPropuestaPropia() {
       </header>
 
       <FormularioPropuesta
+        conIA={hayIAConfigurada()}
         accion={crearPropuestaPropia}
         volver="/mi-stand/modo-feria"
       />

@@ -4,6 +4,7 @@ import {
 } from "@/actions/sello-propio";
 import { EncabezadoPagina } from "@/components/admin/encabezado-pagina";
 import { FormularioPropuesta } from "@/components/admin/formulario-propuesta";
+import { hayIAConfigurada } from "@/lib/ai";
 
 export const metadata = { title: "Nueva propuesta" };
 
@@ -18,6 +19,7 @@ export default function PaginaNuevaPropuesta() {
         ]}
       />
       <FormularioPropuesta
+        conIA={hayIAConfigurada()}
         accion={crearPropuestaSelloPropio}
         buscarFeriantes={buscarFeriantesElegibles}
         volver="/admin/modo-feria"

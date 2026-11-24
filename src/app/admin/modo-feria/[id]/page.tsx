@@ -10,6 +10,7 @@ import { EncabezadoPagina } from "@/components/admin/encabezado-pagina";
 import { FormularioPropuesta } from "@/components/admin/formulario-propuesta";
 import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import { IconoTacho } from "@/components/ui/iconos";
+import { hayIAConfigurada } from "@/lib/ai";
 import { prisma } from "@/lib/db";
 import { titularDe } from "@/lib/titular";
 
@@ -84,6 +85,7 @@ export default async function PaginaEditarPropuesta({
         </p>
       )}
       <FormularioPropuesta
+        conIA={hayIAConfigurada()}
         accion={actualizarPropuestaSelloPropio}
         buscarFeriantes={buscarFeriantesElegibles}
         volver="/admin/modo-feria"

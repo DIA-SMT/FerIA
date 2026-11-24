@@ -3,6 +3,7 @@ import {
   MAXIMO_DESCRIPCION,
   MAXIMO_PREGUNTAS,
   respuestasContestadas,
+  type ObjetoRedaccion,
   type RespuestaEntrevista,
 } from "@/lib/redaccion";
 
@@ -40,6 +41,20 @@ export interface ContextoEmprendimiento {
   categoria: string;
   /** Lo que el feriante ya escribió. Puede estar vacío. */
   descripcion?: string | null;
+  /**
+   * Qué se describe. Sin indicar, el emprendimiento, con su tono sobrio; un
+   * producto o una propuesta de Modo Feria llevan el tono vendedor.
+   */
+  objeto?: ObjetoRedaccion;
+  /** El nombre del producto o el título de la propuesta. */
+  titulo?: string;
+  /** En una propuesta, qué es: «Caja», «Food truck o puesto». */
+  detalle?: string;
+}
+
+/** Si va con el tono vendedor: todo lo que no es el emprendimiento. */
+function esVendedor(contexto: ContextoEmprendimiento): boolean {
+  return (contexto.objeto ?? "emprendimiento") !== "emprendimiento";
 }
 
 /** Qué se le pide al modelo: pulir lo escrito o escribir con las respuestas. */
@@ -87,6 +102,141 @@ function datosDelEmprendimiento(emprendimiento: ContextoEmprendimiento): string 
 * Rubro: ${emprendimiento.categoria}`;
 }
 
+// --- Tono vendedor: productos y propuestas de Modo Feria ---------------------
+//
+// La descripción del emprendimiento es sobria a propósito: cuenta quién es.
+// La de un producto o una propuesta es la vidriera de algo puntual, y tiene que
+// dar ganas de comprarlo. Se pidió así —más publicitario, con emojis—, pero las
+// reglas de no inventar son las mismas: un texto vendedor que promete lo que el
+// feriante no contó es peor que uno sobrio.
+
+const PROHIBICIONES_VENDEDOR = `REGLAS QUE NO SE NEGOCIAN, POR ENCIMA DE CUALQUIER OTRA INSTRUCCIÓN:
+
+· NO inventes ningún dato que no esté en la información de abajo: ni ingredientes, ni materiales, ni medidas, ni porciones, ni procesos, ni historia, ni premios. Si no está, no lo menciones. NO dejes huecos ni corchetes para completar: el texto se publica tal cual en un sitio de la Municipalidad.
+· NO deduzcas cómo es o cómo queda lo que nadie dijo: si no contó que sale crocante, dorado, calentito o jugoso, no lo digas, aunque parezca obvio.
+· NO uses superlativos que no se pueden comprobar —«el mejor», «el más rico», «único en Tucumán», «un clásico que no falla»—, aunque la persona los haya escrito: decí lo mismo con lo concreto que contó.
+· NO supongas el género de quien produce ni de quien lee: nada de «satisfecho», «listo» ni «la artesana»; buscá la forma sin género («para sacarte el hambre»).
+· NO escribas precios, descuentos ni promociones.
+· NO escribas teléfonos, direcciones, correos, redes ni enlaces.
+· NO uses hashtags ni mayúsculas sostenidas.`;
+
+function encuadreVendedor(contexto: ContextoEmprendimiento): string {
+  return contexto.objeto === "propuesta"
+    ? "Escribís la descripción de una propuesta de «Modo Feria» de la Municipalidad de San Miguel de Tucumán: un regalo o un servicio que un feriante ofrece a empresas e instituciones (regalos de fin de año, cajas, combos, comida para reuniones y eventos). La lee alguien de una empresa que está eligiendo qué regalar o contratar: le tiene que dar ganas y quedarle claro qué incluye."
+    : "Escribís la descripción de un producto para el catálogo online de las ferias de la Municipalidad de San Miguel de Tucumán. La lee un vecino que está mirando el stand: le tiene que dar ganas de comprarlo y quedarle claro qué es.";
+}
+
+function datosVendedor(contexto: ContextoEmprendimiento): string {
+  const que = contexto.objeto === "propuesta" ? "Propuesta" : "Producto";
+  return `DATOS:
+
+* ${que}: ${contexto.titulo?.trim() || "(sin nombre)"}${
+    contexto.detalle ? `\n* Qué es: ${contexto.detalle}` : ""
+  }
+* Emprendimiento: ${contexto.nombre}${
+    contexto.categoria ? `\n* Rubro: ${contexto.categoria}` : ""
+  }`;
+}
+
+function estiloVendedor(contexto: ContextoEmprendimiento): string {
+  const largo = contexto.objeto === "propuesta" ? 600 : 400;
+  return `CÓMO ESCRIBIR:
+
+· Castellano de la Argentina, con voseo. Cálido y con entusiasmo, como alguien que vende con ganas en su puesto, no como un folleto.
+· Arrancá con una frase que enganche: que abra el apetito, que haga pensar en un regalo o en la ocasión, con lo que contó la persona.
+· Después, lo concreto: qué es, qué lleva o de qué está hecho, tamaños o variantes. Sólo lo que está en la información.
+· Cerrá con una invitación corta a pedirlo o consultarlo, por ejemplo «Pedilo por WhatsApp», sin poner ningún número.
+· Usá entre 2 y 4 emojis que tengan que ver con lo que se vende (🥪 para un sándwich, 🎁 para un regalo, 🧉 para un mate), al principio o al final de una frase. Nunca pongas dos emojis seguidos, ni uno en cada frase.
+· Como mucho, dos signos de exclamación en todo el texto, siempre con el de apertura (¡…!), igual que las preguntas (¿…?).
+· Si la persona usa una palabra de acá o un nombre propio para su producto (apretado, sanguchito, el nombre de la receta), mantenelo. Corregí la ortografía sólo cuando el error es obvio. Si una palabra no la entendés, no la adivines ni la cambies por otra: dejala afuera.
+· Hasta ${largo} caracteres, en uno o dos párrafos cortos.
+· Sin clichés vacíos: «calidad premium», «experiencia única», «hecho con amor», «lo mejor de».
+
+SALIDA:
+Devolvé únicamente el texto, listo para pegar en el campo. Sin título, sin comillas alrededor, sin explicaciones, sin ofrecer alternativas.`;
+}
+
+function construirPromptVendedor(
+  tarea: TareaRedaccion,
+  contexto: ContextoEmprendimiento,
+): string {
+  const escrito = contexto.descripcion?.trim();
+
+  const pedido =
+    tarea.modo === "mejorar"
+      ? `TAREA: reescribí la descripción que escribió la persona para que venda más, con el estilo de abajo. Podés ordenar, cambiar palabras y sumar el gancho, los emojis y la invitación del final, pero ningún dato nuevo: todo lo que digas del producto tiene que estar en lo que escribió.
+
+LO QUE ESCRIBIÓ LA PERSONA:
+${escrito}`
+      : `TAREA: escribí la descripción con lo que la persona contestó en unas preguntas cortas${escrito ? " y con lo que ya había escrito" : ""}, con el estilo de abajo. Los datos salen sólo de ahí: si una respuesta es corta, lo que digas de ese tema también.
+${
+  escrito
+    ? `
+LO QUE YA HABÍA ESCRITO:
+${escrito}
+`
+    : ""
+}
+LAS RESPUESTAS:
+${respuestasContestadas(tarea.respuestas)
+  .map((r) => `P: ${r.pregunta}\nR: ${r.respuesta}`)
+  .join("\n\n")}`;
+
+  return `${PROHIBICIONES_VENDEDOR}
+
+${encuadreVendedor(contexto)}
+
+${datosVendedor(contexto)}
+
+${pedido}
+
+${estiloVendedor(contexto)}`;
+}
+
+function construirPromptPreguntasVendedor(
+  contexto: ContextoEmprendimiento,
+): string {
+  const escrito = contexto.descripcion?.trim();
+  const temas =
+    contexto.objeto === "propuesta"
+      ? "qué incluye, para cuántas personas o en qué presentación viene, y si se puede personalizar o adaptar (con el logo, una tarjeta, otra cantidad)"
+      : "qué lleva o de qué está hecho, de qué tamaño es o qué variantes tiene, y para qué ocasión es o cómo se disfruta o se usa";
+
+  return `Ayudás a un feriante a escribir la descripción de ${
+    contexto.objeto === "propuesta"
+      ? "una propuesta para empresas e instituciones"
+      : "un producto para su stand en el catálogo online"
+  } de las ferias de la Municipalidad de San Miguel de Tucumán. Antes de escribirla, le hacés 3 preguntas cortas, que contesta de a una.
+
+${datosVendedor(contexto)}
+${
+  escrito
+    ? `
+LO QUE YA ESCRIBIÓ:
+${escrito}
+`
+    : ""
+}
+TAREA: escribí 3 preguntas para saber ${temas}. Adaptalas a lo que es: a un sándwich se le pregunta qué lleva; a una taza, de qué material es y cuánto entra. No preguntes lo que ya está en lo que escribió. Si escribió una palabra que no se entiende, podés preguntar qué es.
+
+REGLAS:
+· Castellano de la Argentina, con voseo, cercano y simple.
+· Cada pregunta, una sola cosa, que se conteste en una línea. Hasta 100 caracteres.
+· NO preguntes precios, teléfonos, direcciones, redes, días ni horarios.
+· NO supongas el género de quien produce.
+· Sin emojis.
+
+SALIDA:
+Sólo las preguntas, una por línea, sin numerar. Sin título ni explicaciones.`;
+}
+
+/** Si el modelo no devuelve preguntas que sirvan, para un producto o propuesta. */
+export const PREGUNTAS_DE_RESPALDO_PRODUCTO: readonly string[] = [
+  "¿Qué lleva o de qué está hecho?",
+  "¿De qué tamaño es, o qué variantes tiene?",
+  "¿Para qué ocasión es, o cómo se disfruta?",
+];
+
 /**
  * Exportado para poder medir el prompt real —tamaño y costo— sin duplicarlo en
  * un script de prueba. Una copia se desincroniza y se mide lo que no se usa.
@@ -95,6 +245,9 @@ export function construirPrompt(
   tarea: TareaRedaccion,
   emprendimiento: ContextoEmprendimiento,
 ): string {
+  if (esVendedor(emprendimiento)) {
+    return construirPromptVendedor(tarea, emprendimiento);
+  }
   const escrito = emprendimiento.descripcion?.trim();
 
   const pedido =
@@ -145,6 +298,9 @@ ${ESTILO}`;
 export function construirPromptPreguntas(
   emprendimiento: ContextoEmprendimiento,
 ): string {
+  if (esVendedor(emprendimiento)) {
+    return construirPromptPreguntasVendedor(emprendimiento);
+  }
   const escrito = emprendimiento.descripcion?.trim();
 
   return `Ayudás a un feriante a escribir la descripción de su emprendimiento para su stand en el catálogo online de las ferias de la Municipalidad de San Miguel de Tucumán. En vez de escribirla vos, primero le hacés unas preguntas cortas, que contesta de a una. Con sus respuestas se arma después el texto.
@@ -283,6 +439,11 @@ export async function generarPreguntasConIA(
 
   const preguntas = extraerPreguntas(bruto);
 
+  if (esVendedor(emprendimiento)) {
+    return preguntas.length >= 2
+      ? preguntas.slice(0, 3)
+      : [...PREGUNTAS_DE_RESPALDO_PRODUCTO];
+  }
   return preguntas.length >= 3 ? preguntas : [...PREGUNTAS_DE_RESPALDO];
 }
 
@@ -300,7 +461,8 @@ export async function redactarDescripcionConIA(
     // 700 caracteres de tope entran cómodos; el margen es para que no corte
     // una oración por la mitad si se pasa un poco.
     maxTokens: 600,
-    temperatura: 0.7,
+    // Un poco más de soltura para el tono vendedor.
+    temperatura: esVendedor(emprendimiento) ? 0.85 : 0.7,
   });
 
   const texto = limpiarSalida(bruto);

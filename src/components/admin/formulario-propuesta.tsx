@@ -6,6 +6,7 @@ import type { ModalidadSelloPropio } from "@prisma/client";
 
 import type { FerianteElegible } from "@/actions/sello-propio";
 import { SelectorFeriante } from "@/components/admin/selector-feriante";
+import { AsistenteDeDescripcion } from "@/components/vendedor/asistente-de-descripcion";
 import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { estilosBoton } from "@/components/ui/boton";
 import { BotonEnvio } from "@/components/ui/boton-envio";
@@ -64,6 +65,8 @@ interface PropsFormularioPropuesta {
   propuesta?: ValoresPropuesta;
   /** Adónde lleva «Cancelar». */
   volver: string;
+  /** Si hay IA configurada, para ofrecer la ayuda con la descripción. */
+  conIA?: boolean;
 }
 
 /** «Regalo · Caja», agrupadas por tipo en el orden de las pestañas. */
@@ -79,6 +82,7 @@ export function FormularioPropuesta({
   buscarFeriantes,
   propuesta,
   volver,
+  conIA = false,
 }: PropsFormularioPropuesta) {
   const [estado, enviar] = useActionState(accion, ESTADO_INICIAL);
   const errores = estado.errores;
@@ -89,6 +93,10 @@ export function FormularioPropuesta({
   );
   const servicio =
     modalidad !== "" && tipoDeModalidad(modalidad) === "SERVICIO";
+  // El título y la descripción alimentan la ayuda de la IA, que además
+  // reemplaza la descripción si se acepta su propuesta.
+  const [titulo, setTitulo] = useState(propuesta?.titulo ?? "");
+  const [descripcion, setDescripcion] = useState(propuesta?.descripcion ?? "");
 
   return (
     <form action={enviar} className="space-y-5" noValidate>
@@ -134,7 +142,8 @@ export function FormularioPropuesta({
             >
               <Entrada
                 name="titulo"
-                defaultValue={propuesta?.titulo}
+                value={titulo}
+                onChange={(evento) => setTitulo(evento.target.value)}
                 placeholder={
                   servicio
                     ? "Ej. Patio de empanadas y pastelería"
@@ -162,11 +171,26 @@ export function FormularioPropuesta({
               name="descripcion"
               rows={4}
               maxLength={1500}
-              defaultValue={propuesta?.descripcion}
+              value={descripcion}
+              onChange={(evento) => setDescripcion(evento.target.value)}
               errores={errores?.descripcion}
               required
             />
           </Campo>
+
+          {conIA && (
+            <AsistenteDeDescripcion
+              valor={descripcion}
+              nombreEmprendimiento=""
+              rubro=""
+              objeto="propuesta"
+              titulo={titulo}
+              detalle={modalidad ? MODALIDADES_SELLO_PROPIO[modalidad] : ""}
+              // En el panel municipal la carga el equipo; en Mi stand, el feriante.
+              puerta={buscarFeriantes ? "panel" : "perfil"}
+              onAplicar={setDescripcion}
+            />
+          )}
 
           <CampoImagen
             name="imagen"
