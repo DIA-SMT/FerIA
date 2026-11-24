@@ -10,9 +10,12 @@ import { RUBROS } from "@/lib/labels";
 import { urlPublica } from "@/lib/media";
 import {
   esProductoNuevo,
+  esPropuestaNueva,
   leerDatos,
   type DatosContacto,
+  type DatosPropuesta,
 } from "@/lib/revision";
+import { MODALIDADES_SELLO_PROPIO, precioOrientativo } from "@/lib/sello-propio";
 
 /** Lo publicado del feriante, para comparar. */
 export interface StandPublicado extends DatosContacto {
@@ -31,6 +34,9 @@ export interface ProductoPublicado {
   destacado: boolean;
 }
 
+/** Lo publicado de una propuesta de «Modo Feria», para comparar. */
+export type PropuestaPublicada = DatosPropuesta;
+
 export interface CambioParaRevisar {
   id: string;
   seccion: SeccionDelStand;
@@ -45,7 +51,21 @@ const TITULOS: Record<SeccionDelStand, string> = {
   DESCRIPCION: "Descripción",
   CONTACTO: "Contacto y redes",
   PRODUCTO: "Producto",
+  SELLO_PROPIO: "Modo Feria",
 };
+
+/** Lo que se compara de una propuesta, una fila por dato. */
+function filasDePropuesta(propuesta: DatosPropuesta) {
+  return [
+    { etiqueta: "Qué es", valor: MODALIDADES_SELLO_PROPIO[propuesta.modalidad] },
+    { etiqueta: "Título", valor: propuesta.titulo },
+    { etiqueta: "Descripción", valor: propuesta.descripcion },
+    { etiqueta: "Precio orientativo", valor: precioOrientativo(propuesta.precio, propuesta.precioUnidad) },
+    { etiqueta: "Mínimo", valor: propuesta.minimo },
+    { etiqueta: "Capacidad", valor: propuesta.capacidad },
+    { etiqueta: "Anticipación", valor: propuesta.anticipacion },
+  ];
+}
 
 function Foto({
   ruta,
@@ -155,10 +175,12 @@ function Detalle({
   cambio,
   stand,
   producto,
+  propuesta,
 }: {
   cambio: CambioParaRevisar;
   stand: StandPublicado;
   producto: ProductoPublicado | null;
+  propuesta: PropuestaPublicada | null;
 }) {
   switch (cambio.seccion) {
     case "PORTADA":
@@ -257,6 +279,49 @@ function Detalle({
         </div>
       );
     }
+    case "SELLO_PROPIO": {
+      if (!propuesta) {
+        return <p className="text-sm text-slate-500">La propuesta ya no existe.</p>;
+      }
+      const datos = leerDatos("SELLO_PROPIO", cambio.datos);
+      // Una nueva se muestra entera: es todo lo que se va a publicar.
+      if (esPropuestaNueva(datos)) {
+        return (
+          <div className="grid gap-4 sm:grid-cols-[16rem_1fr]">
+            <Foto ruta={propuesta.imagen} forma="apaisada" alt={propuesta.titulo} />
+            <dl className="divide-y divide-slate-100 text-sm">
+              {filasDePropuesta(propuesta)
+                // El título ya está en el encabezado de la tarjeta.
+                .filter((fila) => fila.valor && fila.etiqueta !== "Título")
+                .map((fila) => (
+                  <div key={fila.etiqueta} className="grid gap-1 py-1.5 sm:grid-cols-[9rem_1fr] sm:gap-3">
+                    <dt className="font-medium text-slate-500">{fila.etiqueta}</dt>
+                    <dd className="whitespace-pre-line text-slate-900">{fila.valor}</dd>
+                  </div>
+                ))}
+            </dl>
+          </div>
+        );
+      }
+      const propuestas = filasDePropuesta(datos);
+      return (
+        <div className="space-y-4">
+          <Diferencias
+            filas={filasDePropuesta(propuesta).map((fila, indice) => ({
+              etiqueta: fila.etiqueta,
+              antes: fila.valor,
+              despues: propuestas[indice]?.valor ?? null,
+            }))}
+          />
+          {datos.imagen !== propuesta.imagen && (
+            <Comparacion
+              antes={<Foto ruta={propuesta.imagen} forma="apaisada" alt="Foto actual" />}
+              despues={<Foto ruta={datos.imagen} forma="apaisada" alt="Foto propuesta" />}
+            />
+          )}
+        </div>
+      );
+    }
   }
 }
 
@@ -265,16 +330,22 @@ export function RevisionDeCambio({
   cambio,
   stand,
   producto,
+  propuesta = null,
 }: {
   cambio: CambioParaRevisar;
   stand: StandPublicado;
   producto: ProductoPublicado | null;
+  propuesta?: PropuestaPublicada | null;
 }) {
   const nuevo =
-    cambio.seccion === "PRODUCTO" &&
-    esProductoNuevo(leerDatos("PRODUCTO", cambio.datos));
+    (cambio.seccion === "PRODUCTO" &&
+      esProductoNuevo(leerDatos("PRODUCTO", cambio.datos))) ||
+    (cambio.seccion === "SELLO_PROPIO" &&
+      esPropuestaNueva(leerDatos("SELLO_PROPIO", cambio.datos)));
   const titulo =
-    cambio.seccion === "PRODUCTO"
+    cambio.seccion === "SELLO_PROPIO"
+      ? `Modo Feria: ${nuevo ? "propuesta nueva" : "cambios en una propuesta"}${propuesta ? ` — ${propuesta.titulo}` : ""}`
+      : cambio.seccion === "PRODUCTO"
       ? `${nuevo ? "Producto nuevo" : "Cambios en un producto"}${producto ? `: ${producto.nombre}` : ""}`
       : TITULOS[cambio.seccion];
 
@@ -293,7 +364,7 @@ export function RevisionDeCambio({
           </span>
         </div>
       </header>
-      <Detalle cambio={cambio} stand={stand} producto={producto} />
+      <Detalle cambio={cambio} stand={stand} producto={producto} propuesta={propuesta} />
       <div className="border-t border-slate-100 pt-3">
         <AccionesRevision cambioId={cambio.id} emprendimiento={stand.emprendimiento} />
       </div>

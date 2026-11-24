@@ -1,5 +1,6 @@
 import type {
   CambioDelStand,
+  ModalidadSelloPropio,
   Prisma,
   Rubro,
   SeccionDelStand,
@@ -21,6 +22,9 @@ import type { TipoDeCambio } from "@/lib/tipos-de-cambio";
   Lo propuesto vive en `CambioDelStand.datos` y recién al aprobarse se copia a
   `Vendedor` o a `Producto`. Un producto nuevo es la excepción: nace como fila
   de `Producto` con `publicado = false`, y aprobarlo es prenderle esa marca.
+  Las propuestas de «Modo Feria» (`PropuestaSelloPropio`, sección
+  `SELLO_PROPIO`) funcionan igual que los productos: la nueva nace con
+  `publicada = false`, y los cambios a una publicada esperan en `datos`.
 
   Dos cosas no pasan por acá, a propósito: marcar un producto sin stock y
   eliminarlo. Sólo sacan algo de la vista, no publican nada nuevo.
@@ -53,6 +57,19 @@ export interface DatosProducto {
   destacado: boolean;
 }
 
+/** Lo que el feriante propone para una propuesta de «Modo Feria» publicada. */
+export interface DatosPropuesta {
+  modalidad: ModalidadSelloPropio;
+  titulo: string;
+  descripcion: string;
+  imagen: string | null;
+  precio: number | null;
+  precioUnidad: string | null;
+  minimo: string | null;
+  capacidad: string | null;
+  anticipacion: string | null;
+}
+
 /** La forma de `CambioDelStand.datos` según la sección. */
 export interface DatosPorSeccion {
   PORTADA: { imagenPortada: string };
@@ -62,6 +79,8 @@ export interface DatosPorSeccion {
   CONTACTO: DatosContacto;
   /** `nuevo`: el alta de un producto, cuyos datos están en su propia fila. */
   PRODUCTO: { nuevo: true } | DatosProducto;
+  /** `nueva`: el alta de una propuesta, igual que un producto nuevo. */
+  SELLO_PROPIO: { nueva: true } | DatosPropuesta;
 }
 
 export function leerDatos<S extends SeccionDelStand>(
@@ -77,6 +96,12 @@ export function esProductoNuevo(
   return "nuevo" in datos;
 }
 
+export function esPropuestaNueva(
+  datos: DatosPorSeccion["SELLO_PROPIO"],
+): datos is { nueva: true } {
+  return "nueva" in datos;
+}
+
 /** Las fotos que nombra un cambio. */
 export function imagenesDelCambio(
   seccion: SeccionDelStand,
@@ -87,6 +112,12 @@ export function imagenesDelCambio(
   if (seccion === "PRODUCTO") {
     const producto = leerDatos("PRODUCTO", datos);
     return esProductoNuevo(producto) ? [] : producto.imagenes;
+  }
+  if (seccion === "SELLO_PROPIO") {
+    const propuesta = leerDatos("SELLO_PROPIO", datos);
+    return esPropuestaNueva(propuesta) || !propuesta.imagen
+      ? []
+      : [propuesta.imagen];
   }
   return [];
 }
@@ -102,8 +133,18 @@ async function borrar(rutas: string[], salvo: Iterable<string> = []) {
 
 /** Las fotos publicadas que un cambio de esta sección podría estar usando. */
 async function imagenesPublicadas(
-  cambio: Pick<CambioDelStand, "seccion" | "vendedorId" | "productoId">,
+  cambio: Pick<
+    CambioDelStand,
+    "seccion" | "vendedorId" | "productoId" | "propuestaId"
+  >,
 ): Promise<string[]> {
+  if (cambio.seccion === "SELLO_PROPIO" && cambio.propuestaId) {
+    const propuesta = await prisma.propuestaSelloPropio.findUnique({
+      where: { id: cambio.propuestaId },
+      select: { imagen: true },
+    });
+    return propuesta?.imagen ? [propuesta.imagen] : [];
+  }
   if (cambio.seccion === "PRODUCTO" && cambio.productoId) {
     const producto = await prisma.producto.findUnique({
       where: { id: cambio.productoId },
@@ -146,6 +187,10 @@ export function tipoDelCambio(
       return esProductoNuevo(leerDatos("PRODUCTO", datos))
         ? "producto-nuevo"
         : "producto";
+    case "SELLO_PROPIO":
+      return esPropuestaNueva(leerDatos("SELLO_PROPIO", datos))
+        ? "propuesta-nueva"
+        : "propuesta";
   }
 }
 
@@ -161,11 +206,13 @@ export async function proponerCambio<S extends SeccionDelStand>({
   vendedorId,
   seccion,
   productoId = null,
+  propuestaId = null,
   datos,
 }: {
   vendedorId: string;
   seccion: S;
   productoId?: string | null;
+  propuestaId?: string | null;
   datos: DatosPorSeccion[S];
 }): Promise<void> {
   const json = datos as unknown as Prisma.InputJsonValue;
@@ -174,6 +221,7 @@ export async function proponerCambio<S extends SeccionDelStand>({
       vendedorId,
       seccion,
       productoId,
+      propuestaId,
       estado: { in: ["PENDIENTE", "RECHAZADO"] },
     },
     orderBy: { creadoEn: "desc" },
@@ -181,7 +229,7 @@ export async function proponerCambio<S extends SeccionDelStand>({
 
   if (!anterior) {
     await prisma.cambioDelStand.create({
-      data: { vendedorId, seccion, productoId, datos: json },
+      data: { vendedorId, seccion, productoId, propuestaId, datos: json },
     });
     return;
   }
@@ -229,6 +277,13 @@ export async function descartarCambio(
   ) {
     return false;
   }
+  // Lo mismo con una propuesta nueva: descartarla es eliminarla.
+  if (
+    cambio.seccion === "SELLO_PROPIO" &&
+    esPropuestaNueva(leerDatos("SELLO_PROPIO", cambio.datos))
+  ) {
+    return false;
+  }
 
   await prisma.cambioDelStand.delete({ where: { id: cambio.id } });
   await borrar(
@@ -256,7 +311,7 @@ export async function aprobarCambio(
 ): Promise<ResultadoRevision> {
   const cambio = await prisma.cambioDelStand.findUnique({
     where: { id: cambioId },
-    include: { vendedor: true, producto: true },
+    include: { vendedor: true, producto: true, propuesta: true },
   });
   if (!cambio || cambio.estado !== "PENDIENTE") {
     return { ok: false, mensaje: "Ese cambio ya fue revisado o no existe." };
@@ -374,6 +429,30 @@ export async function aprobarCambio(
       }
       break;
     }
+    case "SELLO_PROPIO": {
+      const propuesta = cambio.propuesta;
+      if (!propuesta) {
+        return { ok: false, mensaje: "Esa propuesta ya no existe." };
+      }
+      const datos = leerDatos("SELLO_PROPIO", cambio.datos);
+      await prisma.$transaction([
+        prisma.propuestaSelloPropio.update({
+          where: { id: propuesta.id },
+          data: esPropuestaNueva(datos)
+            ? { publicada: true }
+            : { ...datos, publicada: true },
+        }),
+        marca,
+      ]);
+      if (
+        !esPropuestaNueva(datos) &&
+        propuesta.imagen &&
+        propuesta.imagen !== datos.imagen
+      ) {
+        aBorrar = [propuesta.imagen];
+      }
+      break;
+    }
   }
 
   await borrar(aBorrar);
@@ -427,8 +506,17 @@ export interface EstadoDeRevision {
 
 type CambioAbierto = Pick<
   CambioDelStand,
-  "id" | "seccion" | "productoId" | "datos" | "estado" | "motivoRechazo"
+  | "id"
+  | "seccion"
+  | "productoId"
+  | "propuestaId"
+  | "datos"
+  | "estado"
+  | "motivoRechazo"
 >;
+
+/** Las secciones que se aplican sobre la ficha del feriante. */
+type SeccionDeLaFicha = Exclude<SeccionDelStand, "PRODUCTO" | "SELLO_PROPIO">;
 
 function estadoDe(cambio: CambioAbierto): EstadoDeRevision {
   return {
@@ -453,18 +541,40 @@ export function standDelDueno<
   } & DatosContacto,
 >(vendedor: V, cambios: CambioAbierto[]) {
   const visto = { ...vendedor };
-  const estados: Partial<
-    Record<Exclude<SeccionDelStand, "PRODUCTO">, EstadoDeRevision>
-  > = {};
+  const estados: Partial<Record<SeccionDeLaFicha, EstadoDeRevision>> = {};
 
   for (const cambio of cambios) {
-    if (cambio.seccion === "PRODUCTO") continue;
+    if (cambio.seccion === "PRODUCTO" || cambio.seccion === "SELLO_PROPIO") {
+      continue;
+    }
     estados[cambio.seccion] = estadoDe(cambio);
     if (cambio.estado !== "PENDIENTE") continue;
     Object.assign(visto, leerDatos(cambio.seccion, cambio.datos));
   }
 
   return { vendedor: visto, estados };
+}
+
+/**
+ * Lo mismo, para una propuesta de «Modo Feria»: la que ve su dueño es la
+ * propuesta con el cambio pendiente encima.
+ */
+export function propuestaDelDueno<P extends { id: string } & DatosPropuesta>(
+  propuesta: P,
+  cambios: CambioAbierto[],
+) {
+  const cambio = cambios.find(
+    (c) => c.seccion === "SELLO_PROPIO" && c.propuestaId === propuesta.id,
+  );
+  if (!cambio) return { propuesta, revision: null, nueva: false };
+
+  const datos = leerDatos("SELLO_PROPIO", cambio.datos);
+  const nueva = esPropuestaNueva(datos);
+  const vista =
+    cambio.estado === "PENDIENTE" && !nueva
+      ? { ...propuesta, ...datos }
+      : propuesta;
+  return { propuesta: vista, revision: estadoDe(cambio), nueva };
 }
 
 /** Lo mismo, para un producto. */
@@ -493,6 +603,7 @@ export function cambiosAbiertos(vendedorId: string) {
       id: true,
       seccion: true,
       productoId: true,
+      propuestaId: true,
       datos: true,
       estado: true,
       motivoRechazo: true,

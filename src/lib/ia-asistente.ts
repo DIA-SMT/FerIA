@@ -1,6 +1,7 @@
 import { obtenerClienteIA } from "@/lib/ai";
 import { hayIngresoCidituc } from "@/lib/cidituc";
 import { edicionesVigentes, etapaDeEdicion } from "@/lib/consultas";
+import { tiposConPropuestas } from "@/lib/consultas-sello-propio";
 import { prisma } from "@/lib/db";
 import { formatearFechaLarga, formatearRangoFechas, hoyEnZona } from "@/lib/format";
 import { resumenHorario } from "@/lib/horarios";
@@ -72,6 +73,7 @@ export function guiaDelArea(area: AreaAsistente): string {
   if (area === "feriante") {
     const pestanias = [
       "«Mis ferias» (/mi-stand/ferias): en qué ferias presenciales está habilitado, el botón para pedir estar en otra y los stands que le asignaron en las próximas ediciones",
+      "«Modo Feria» (/mi-stand/modo-feria): sus propuestas de regalos y servicios con sello propio para empresas e instituciones (un producto, una caja, un combo, un food truck o puesto, un patio gastronómico), con foto, precio orientativo, mínimo, capacidad y anticipación. «Nueva propuesta» (/mi-stand/modo-feria/nueva) carga una; pasa por la revisión como los productos y, aprobada, aparece en Modo Feria (/modo-feria/regalos y /modo-feria/servicios) y en la portada. Cada tarjeta muestra su estado y abre su edición, donde también se elimina",
       ...(hayPedidos() ? ["«Pedidos» (/mi-stand/pedidos): los pedidos que le hicieron los vecinos"] : []),
       ...(hayCanon() ? ["«Canon» (/mi-stand/canon): lo que tiene registrado por participar de cada edición"] : []),
     ];
@@ -99,8 +101,9 @@ CÓMO SE USA EL PANEL DE ADMINISTRACIÓN (lo único que existe; no inventes pant
 - «Estadísticas» (/admin): el resumen de ferias, ediciones, feriantes por rubro y ocupación de stands.
 - «Ferias y ediciones» (/admin/ferias): crear y editar ferias (nombre, descripción, portada, ubicación y si está activa) y sus ediciones, con fechas y horarios.
 - «Postulaciones» (/admin/postulaciones): las altas de feriantes nuevos y los pedidos para sumarse a una feria, para aprobarlos o rechazarlos.
-- «Revisiones» (/admin/revisiones): todo lo que los feriantes cambiaron o agregaron en su stand (portada, logo, nombre y rubro, descripción, contacto y productos), con lo que se ve hoy al lado de lo propuesto. Nada se publica hasta que se aprueba; para rechazar hay que escribir el motivo, que lo lee el feriante.
-- «Feriantes» (/admin/feriantes): el listado completo, con un buscador por nombre del emprendimiento o de quien lo lleva y filtros por feria y por estado, incluido el padrón importado de Feria Digital. Cada nombre abre su ficha, con todos sus datos: contacto y documento, ferias, stands, cambios en revisión y productos.${
+- «Revisiones» (/admin/revisiones): todo lo que los feriantes cambiaron o agregaron en su stand (portada, logo, nombre y rubro, descripción, contacto, productos y propuestas de Modo Feria), con lo que se ve hoy al lado de lo propuesto. Nada se publica hasta que se aprueba; para rechazar hay que escribir el motivo, que lo lee el feriante.
+- «Feriantes» (/admin/feriantes): el listado completo, con un buscador por nombre del emprendimiento o de quien lo lleva y filtros por feria y por estado, incluido el padrón importado de Feria Digital. Cada nombre abre su ficha, con todos sus datos: contacto y documento, ferias, stands, cambios en revisión y productos.
+- «Modo Feria» (/admin/modo-feria): todas las propuestas de regalos y servicios con sello propio, en tarjetas con su estado (publicada, en revisión, no se aprobó, borrador). Los feriantes las cargan desde Mi stand y se aprueban o rechazan en «Revisiones», como los productos. Para quien todavía no tiene cuenta, el equipo puede cargar una con «Nueva propuesta», eligiendo el feriante (sólo aprobados); esa se publica marcando «Publicada». Desde cada tarjeta se edita o se elimina. En el sitio están en /modo-feria/regalos y /modo-feria/servicios.${
       hayCanon() ? "\n- «Canon y permisos» (/admin/canon): los pagos de canon de cada feriante." : ""
     }`;
   }
@@ -187,7 +190,7 @@ export async function contextoDelSitio(): Promise<string> {
   // Tucumán podría armar un contexto que se contradice a sí mismo.
   const hoy = hoyEnZona();
 
-  const [ferias, vendedores] = await Promise.all([
+  const [ferias, vendedores, tiposSelloPropio] = await Promise.all([
     prisma.feria.findMany({
       where: { activa: true },
       select: {
@@ -231,7 +234,14 @@ export async function contextoDelSitio(): Promise<string> {
       },
       orderBy: { emprendimiento: "asc" },
     }),
+    tiposConPropuestas(),
   ]);
+
+  // Sólo si hay algo publicado: si no, Migue mandaría a una página vacía.
+  const lineaSelloPropio =
+    tiposSelloPropio.length > 0
+      ? "\n- «Modo Feria», en el menú de arriba: «Regalos con sello propio» (/modo-feria/regalos: productos, cajas y combos) y «Servicios con sello propio» (/modo-feria/servicios: food trucks, puestos y patios gastronómicos), que los feriantes ofrecen a empresas e instituciones. Se consultan por WhatsApp directo con el feriante, desde la tarjeta de cada propuesta; el presupuesto, las cantidades y la entrega se acuerdan entre ellos. Un feriante suma la suya desde Mi stand, en «Modo Feria»."
+      : "";
 
   const bloquesFeria = ferias.map((feria) => {
     const ediciones =
@@ -308,7 +318,7 @@ CÓMO FUNCIONA LA PLATAFORMA:
 - Comprar: la persona interesada le escribe al feriante desde el botón de contacto de su página de stand. El precio y la entrega se acuerdan entre ellos; el municipio no interviene.
 - Las fotos de los productos pueden estar mejoradas con inteligencia artificial: son ilustrativas.
 - ${altaDeFeriante()}
-- ${lineaCanon}
+- ${lineaCanon}${lineaSelloPropio}
 - Los términos y condiciones están al pie de todas las páginas del sitio.`;
 }
 

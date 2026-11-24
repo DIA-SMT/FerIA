@@ -40,6 +40,8 @@ export default async function LayoutMiStand({
     ...(aprobado
       ? [
           { href: "/mi-stand/ferias", texto: "Mis ferias" },
+          // Regalos y servicios con sello propio, para empresas.
+          { href: "/mi-stand/modo-feria", texto: "Modo Feria" },
           // La pestaña aparece sólo con los pedidos habilitados: si no, lleva
           // a una lista que nunca va a tener nada.
           ...(hayPedidos()

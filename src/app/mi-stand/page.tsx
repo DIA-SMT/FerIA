@@ -245,8 +245,12 @@ export default async function PaginaMiStand({
     productoDelDueno(producto, cambios),
   );
 
-  const pendientes = cambios.filter((c) => c.estado === "PENDIENTE").length;
-  const rechazados = cambios.length - pendientes;
+  // Los de Modo Feria tienen su propia pestaña, con su estado en cada
+  // propuesta: contarlos acá mandaría a buscar el motivo «en esa parte del
+  // stand», donde no están.
+  const delStand = cambios.filter((c) => c.seccion !== "SELLO_PROPIO");
+  const pendientes = delStand.filter((c) => c.estado === "PENDIENTE").length;
+  const rechazados = delStand.length - pendientes;
 
   const sinStock = productos.filter(({ producto }) => !producto.disponible)
     .length;

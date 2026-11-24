@@ -12,7 +12,13 @@
  */
 
 /** Buckets públicos: cualquiera con la URL puede ver el archivo. */
-export const BUCKETS_PUBLICOS = ["ferias", "vendedores", "productos"] as const;
+export const BUCKETS_PUBLICOS = [
+  "ferias",
+  "vendedores",
+  "productos",
+  // Las fotos de «Regalos y servicios con sello propio».
+  "sello-propio",
+] as const;
 
 /** Bucket privado: se sirve con URL firmada a través de /api/comprobantes. */
 export const BUCKET_COMPROBANTES = "comprobantes";

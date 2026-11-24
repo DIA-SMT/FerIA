@@ -79,6 +79,19 @@ export default async function PaginaRevisiones({
           destacado: true,
         },
       },
+      propuesta: {
+        select: {
+          modalidad: true,
+          titulo: true,
+          descripcion: true,
+          imagen: true,
+          precio: true,
+          precioUnidad: true,
+          minimo: true,
+          capacidad: true,
+          anticipacion: true,
+        },
+      },
       vendedor: {
         select: {
           id: true,
@@ -155,7 +168,7 @@ export default async function PaginaRevisiones({
           descripcion={
             hayFiltros
               ? "Probá con otro tipo de cambio u otra feria."
-              : "Cuando un feriante cambie algo de su stand o agregue un producto, va a aparecer acá."
+              : "Cuando un feriante cambie algo de su stand, agregue un producto o sume una propuesta a Modo Feria, va a aparecer acá."
           }
           accion={
             hayFiltros ? (
@@ -216,6 +229,7 @@ export default async function PaginaRevisiones({
                     cambio={cambio}
                     stand={stand}
                     producto={cambio.producto}
+                    propuesta={cambio.propuesta}
                   />
                 ))}
               </section>

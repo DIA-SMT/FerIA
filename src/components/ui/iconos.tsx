@@ -403,6 +403,17 @@ export function IconoEtiqueta(props: PropsIcono) {
   );
 }
 
+export function IconoRegalo(props: PropsIcono) {
+  return (
+    <Base {...props}>
+      <rect x="3.5" y="8" width="17" height="4" rx="1" />
+      <path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" />
+      <path d="M12 8v13" />
+      <path d="M12 8S10.5 3.5 8 3.5a2.25 2.25 0 0 0 0 4.5M12 8s1.5-4.5 4-4.5a2.25 2.25 0 0 1 0 4.5" />
+    </Base>
+  );
+}
+
 export function IconoChat(props: PropsIcono) {
   return (
     <Base {...props}>

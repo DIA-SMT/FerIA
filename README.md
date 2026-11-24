@@ -40,6 +40,14 @@ La cara visible para los vecinos.
   búsqueda por nombre o producto y filtros por rubro y por feria.
 - **Vidriera del feriante** (`/stands/[slug]`): portada, descripción, catálogo
   y **botón de contacto por WhatsApp** con el mensaje ya escrito.
+- **Modo Feria** (`/modo-feria/regalos` y `/modo-feria/servicios`): la
+  convocatoria de regalos y servicios con sello propio para empresas e
+  instituciones. En el menú de arriba es un desplegable con las dos páginas:
+  «Regalos con sello propio» (productos, cajas, combos) y «Servicios con sello
+  propio» (food truck o puesto, patio gastronómico), cada una con su sello.
+  Cada propuesta muestra el precio orientativo y las condiciones, y su botón le
+  escribe al feriante por WhatsApp. La portada muestra las últimas tres
+  aprobadas, y no muestra nada si todavía no hay ninguna.
 
 > No hay carrito ni pagos online, y **el catálogo no publica precios**: el
 > modelo es vidriera + contacto directo entre el vecino y quien produce. El
@@ -59,6 +67,12 @@ La cara visible para los vecinos.
   emprendimiento; se aprueban o se rechazan con motivo (el feriante lo ve en su
   panel). Sólo los aprobados aparecen en el market y pueden ocupar stands.
 - **Feriantes**: listado completo filtrable por estado.
+- **Modo Feria**: todas las propuestas, en tarjetas con su estado (publicada,
+  en revisión, no se aprobó, borrador). Las de los feriantes se aprueban en
+  **Revisiones**, como los productos. Para quien todavía no tiene cuenta, el
+  equipo puede cargar una eligiendo el feriante (se busca por nombre, sólo
+  aprobados); esa no pasa por la revisión y se publica con una casilla. Las
+  fotos van al bucket `sello-propio`.
 - **Canon y permisos**: registro de pagos por feriante y edición, con estado del
   permiso (al día / pendiente / vencido), comprobantes y alertas visuales de
   morosidad.
@@ -71,6 +85,10 @@ La cara visible para los vecinos.
   logo, contacto y redes) y de su **catálogo de productos** (nombre,
   descripción, hasta 4 fotos, disponible sí/no).
 - **Sus ferias**: a qué ediciones y stands fue asignado.
+- **Modo Feria**: sus propuestas de regalos y servicios con sello propio, con
+  foto, precio orientativo, mínimo, capacidad y anticipación. Pasan por la
+  revisión como un producto: la nueva aparece cuando la aprueban, y los
+  cambios a una publicada esperan mientras se sigue viendo la anterior.
 - **Canon**: estado de sus pagos, en sólo lectura.
 
 ---
@@ -594,6 +612,7 @@ auth.users  (Supabase Auth — credenciales)
 | `Stand`        | Un lugar numerado dentro de una edición, con feriante o sin él. |
 | `Producto`     | Ítem del catálogo del feriante.                              |
 | `PagoCanon`    | Pago de canon de un feriante para una edición.               |
+| `PropuestaSelloPropio` | Un regalo o servicio de Modo Feria, de un feriante. El tipo (regalo o servicio) sale de la modalidad; sus cambios pendientes son `CambioDelStand` de la sección `SELLO_PROPIO`. |
 
 Restricciones que vale la pena conocer:
 
@@ -763,6 +782,13 @@ texto. Lleva la ruta con sus pines y `migue-mapa.webp`, un Migue con un mapa
 de la ciudad generado con el modelo de imágenes a partir de una de sus poses
 originales. Los filtros por categoría van adentro de la misma banda y sólo
 muestran las categorías que tienen alguna feria.
+
+**Los sellos de Modo Feria** (`public/sello-propio/`) son los de la
+convocatoria, recortados en círculo sobre blanco para que se vean igual en los
+dos temas. El de servicios sale del PDF de Illustrator que mandó la Dirección
+(traía una marca de agua de CamScanner, que era lo único rasterizado y se
+sacó al convertirlo); el de regalos, de una imagen de 425 px, hasta que llegue
+su PDF.
 
 El área pública es más cálida y visual (fotos, tarjetas, degradés); el panel
 municipal es más denso y funcional (tablas, filtros, barra lateral).

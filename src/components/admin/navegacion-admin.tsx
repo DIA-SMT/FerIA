@@ -13,6 +13,7 @@ import {
   IconoDocumento,
   IconoGrafico,
   IconoMenu,
+  IconoRegalo,
   IconoTienda,
   IconoTildeCirculo,
   IconoUsuarios,
@@ -34,6 +35,7 @@ const ICONOS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   revisiones: IconoTildeCirculo,
   feriantes: IconoUsuarios,
   canon: IconoDinero,
+  sello: IconoRegalo,
 };
 
 export interface EntradaMenu {

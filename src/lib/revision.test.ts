@@ -13,6 +13,7 @@ const { base, tabla, eliminar } = vi.hoisted(() => {
     cambios: [] as Fila[],
     vendedores: [] as Fila[],
     productos: [] as Fila[],
+    propuestas: [] as Fila[],
   };
 
   let secuencia = 0;
@@ -46,7 +47,8 @@ const { base, tabla, eliminar } = vi.hoisted(() => {
       if (valor && typeof valor === "object" && "not" in (valor as Fila)) {
         return fila[campo] !== (valor as { not: unknown }).not;
       }
-      return fila[campo] === valor;
+      // Una columna que la fila no trae es NULL, como en la base.
+      return (fila[campo] ?? null) === valor;
     });
   }
 
@@ -69,6 +71,10 @@ const { base, tabla, eliminar } = vi.hoisted(() => {
           if (include?.producto) {
             extra.producto =
               base.productos.find((p) => p.id === fila.productoId) ?? null;
+          }
+          if (include?.propuesta) {
+            extra.propuesta =
+              base.propuestas.find((p) => p.id === fila.propuestaId) ?? null;
           }
           return copia({ ...fila, ...extra });
         }),
@@ -104,6 +110,7 @@ vi.mock("@/lib/db", () => ({
     cambioDelStand: tabla("cambios"),
     vendedor: tabla("vendedores"),
     producto: tabla("productos"),
+    propuestaSelloPropio: tabla("propuestas"),
     $transaction: (operaciones: PromiseLike<unknown>[]) =>
       Promise.all(operaciones),
   },
@@ -116,6 +123,7 @@ import {
   descartarCambio,
   productoDelDueno,
   proponerCambio,
+  propuestaDelDueno,
   rechazarCambio,
   standDelDueno,
   tipoDelCambio,
@@ -146,6 +154,7 @@ beforeEach(() => {
   base.cambios = [];
   base.vendedores = [{ ...VENDEDOR }];
   base.productos = [];
+  base.propuestas = [];
   eliminar.mockClear();
 });
 
@@ -515,5 +524,143 @@ describe("la cantidad de un producto", () => {
       nombre: "Dulce de cayote",
       stock: 7,
     });
+  });
+});
+
+describe("las propuestas de Modo Feria", () => {
+  const PUBLICADA = {
+    id: "s1",
+    vendedorId: "v1",
+    publicada: true,
+    modalidad: "CAJA",
+    titulo: "Caja dulce",
+    descripcion: "Pan dulce y alfajores.",
+    imagen: "sello-propio/vieja.webp",
+    precio: 15000,
+    precioUnidad: "por caja",
+    minimo: null,
+    capacidad: null,
+    anticipacion: null,
+  };
+  const EDITADA = {
+    modalidad: "CAJA" as const,
+    titulo: "Caja dulce navideña",
+    descripcion: "Pan dulce, alfajores y garrapiñada.",
+    imagen: "sello-propio/nueva.webp",
+    precio: 18000,
+    precioUnidad: "por caja",
+    minimo: "10 cajas",
+    capacidad: null,
+    anticipacion: "7 días",
+  };
+
+  it("el alta se publica al aprobarla, sin borrar su foto", async () => {
+    base.propuestas.push({ ...PUBLICADA, publicada: false });
+    await proponerCambio({
+      vendedorId: "v1",
+      seccion: "SELLO_PROPIO",
+      propuestaId: "s1",
+      datos: { nueva: true },
+    });
+    const resultado = await aprobarCambio(
+      base.cambios[0]!.id as string,
+      "admin",
+    );
+
+    expect(resultado.ok).toBe(true);
+    expect(base.propuestas[0]!.publicada).toBe(true);
+    expect(borradas()).toEqual([]);
+  });
+
+  it("los cambios a una publicada esperan, y al aprobarlos se borra la foto que reemplazaron", async () => {
+    base.propuestas.push({ ...PUBLICADA });
+    await proponerCambio({
+      vendedorId: "v1",
+      seccion: "SELLO_PROPIO",
+      propuestaId: "s1",
+      datos: EDITADA,
+    });
+    expect(base.propuestas[0]!.titulo).toBe("Caja dulce");
+
+    await aprobarCambio(base.cambios[0]!.id as string, "admin");
+    expect(base.propuestas[0]).toMatchObject({ ...EDITADA, publicada: true });
+    expect(borradas()).toEqual(["sello-propio/vieja.webp"]);
+  });
+
+  it("rechazar los cambios borra la foto propuesta y deja la publicada", async () => {
+    base.propuestas.push({ ...PUBLICADA });
+    await proponerCambio({
+      vendedorId: "v1",
+      seccion: "SELLO_PROPIO",
+      propuestaId: "s1",
+      datos: EDITADA,
+    });
+    await rechazarCambio(
+      base.cambios[0]!.id as string,
+      "admin",
+      "La foto no es del producto.",
+    );
+
+    expect(base.propuestas[0]!.imagen).toBe("sello-propio/vieja.webp");
+    expect(borradas()).toEqual(["sello-propio/nueva.webp"]);
+  });
+
+  it("el alta no se descarta: se elimina", async () => {
+    base.propuestas.push({ ...PUBLICADA, publicada: false });
+    await proponerCambio({
+      vendedorId: "v1",
+      seccion: "SELLO_PROPIO",
+      propuestaId: "s1",
+      datos: { nueva: true },
+    });
+    expect(await descartarCambio(base.cambios[0]!.id as string, "v1")).toBe(
+      false,
+    );
+  });
+
+  it("cada propuesta tiene su propio cambio pendiente", async () => {
+    base.propuestas.push({ ...PUBLICADA }, { ...PUBLICADA, id: "s2" });
+    for (const propuestaId of ["s1", "s2"]) {
+      await proponerCambio({
+        vendedorId: "v1",
+        seccion: "SELLO_PROPIO",
+        propuestaId,
+        datos: EDITADA,
+      });
+    }
+    expect(base.cambios).toHaveLength(2);
+  });
+
+  it("el dueño ve su versión, y el stand no la mezcla con la ficha", () => {
+    const abierto = {
+      id: "c",
+      seccion: "SELLO_PROPIO" as const,
+      productoId: null,
+      propuestaId: "s1",
+      datos: EDITADA,
+      estado: "PENDIENTE" as const,
+      motivoRechazo: null,
+    };
+    const vista = propuestaDelDueno(
+      { ...PUBLICADA, modalidad: "CAJA" as const },
+      [abierto],
+    );
+    expect(vista.propuesta.titulo).toBe("Caja dulce navideña");
+    expect(vista.nueva).toBe(false);
+    expect(vista.revision?.estado).toBe("PENDIENTE");
+
+    const { vendedor, estados } = standDelDueno(
+      VENDEDOR as Parameters<typeof standDelDueno>[0],
+      [abierto],
+    );
+    expect(vendedor.descripcion).toBe("La de antes.");
+    expect(estados).toEqual({});
+  });
+
+  it("en la bandeja, el alta y los cambios son dos tipos", () => {
+    expect(tipoDelCambio("SELLO_PROPIO", { nueva: true })).toBe(
+      "propuesta-nueva",
+    );
+    expect(tipoDelCambio("SELLO_PROPIO", EDITADA)).toBe("propuesta");
   });
 });

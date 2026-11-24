@@ -25,6 +25,8 @@ function refrescar(slugs: string[]): void {
   revalidatePath("/mi-stand");
   revalidatePath("/stands");
   revalidatePath("/");
+  // Una propuesta de Modo Feria aprobada aparece en sus páginas.
+  revalidatePath("/modo-feria", "layout");
   for (const slug of slugs) revalidatePath(`/stands/${slug}`);
 }
 

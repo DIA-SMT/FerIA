@@ -7,8 +7,16 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { IconoCerrar, IconoMenu } from "@/components/ui/iconos";
 
+interface Enlace {
+  href: string;
+  texto: string;
+}
+
+/** Un enlace, o un grupo con su nombre y sus enlaces (ej. «Modo Feria»). */
+export type EntradaMenuMovil = Enlace | { texto: string; hijos: Enlace[] };
+
 interface PropsMenuMovil {
-  enlaces: Array<{ href: string; texto: string }>;
+  enlaces: EntradaMenuMovil[];
   /** Bloque de sesión (ingresar / panel + cerrar sesión) armado en el servidor. */
   acciones: React.ReactNode;
 }
@@ -58,31 +66,43 @@ export function MenuMovil({ enlaces, acciones }: PropsMenuMovil) {
         )}
       >
         <nav className="flex flex-col p-3">
-          {enlaces.map((enlace) => {
-            const activo =
-              enlace.href === "/"
-                ? ruta === "/"
-                : ruta.startsWith(enlace.href);
-
-            return (
-              <Link
-                key={enlace.href}
-                href={enlace.href}
-                aria-current={activo ? "page" : undefined}
-                className={cn(
-                  "rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  activo
-                    ? "bg-municipal-50 text-municipal-700"
-                    : "text-slate-700 hover:bg-slate-50",
-                )}
-              >
-                {enlace.texto}
-              </Link>
-            );
-          })}
+          {enlaces.map((entrada) =>
+            "hijos" in entrada ? (
+              <div key={entrada.texto} className="mt-1">
+                <p className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  {entrada.texto}
+                </p>
+                {entrada.hijos.map((hijo) => (
+                  <EnlaceMovil key={hijo.href} enlace={hijo} ruta={ruta} />
+                ))}
+              </div>
+            ) : (
+              <EnlaceMovil key={entrada.href} enlace={entrada} ruta={ruta} />
+            ),
+          )}
         </nav>
         <div className="border-t border-slate-200 p-3">{acciones}</div>
       </div>
     </div>
+  );
+}
+
+function EnlaceMovil({ enlace, ruta }: { enlace: Enlace; ruta: string }) {
+  const activo =
+    enlace.href === "/" ? ruta === "/" : ruta.startsWith(enlace.href);
+
+  return (
+    <Link
+      href={enlace.href}
+      aria-current={activo ? "page" : undefined}
+      className={cn(
+        "block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+        activo
+          ? "bg-municipal-50 text-municipal-700"
+          : "text-slate-700 hover:bg-slate-50",
+      )}
+    >
+      {enlace.texto}
+    </Link>
   );
 }

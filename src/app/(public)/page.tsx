@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HeroRuta } from "@/components/public/hero-ruta";
 import { SeccionFeriante } from "@/components/public/seccion-feriante";
 import { SeccionRubros } from "@/components/public/seccion-rubros";
+import { SeccionSelloPropio } from "@/components/public/seccion-sello-propio";
 import { TarjetaFeria } from "@/components/public/tarjeta-feria";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import {
@@ -23,6 +24,7 @@ import {
   feriasConProximaEdicion,
   ordenarPorRelevancia,
 } from "@/lib/consultas";
+import { ultimasPropuestas } from "@/lib/consultas-sello-propio";
 import { prisma } from "@/lib/db";
 import { hoyEnZona } from "@/lib/format";
 import {
@@ -47,7 +49,7 @@ export default async function PaginaInicio() {
   // El `count` de feriantes aprobados se fue con los contadores del hero: era
   // su único consumidor, y una consulta que no alimenta nada es una consulta
   // que igual cruza a São Paulo en cada visita a la portada.
-  const [ferias, edicionesSemana, porRubro] = await Promise.all([
+  const [ferias, edicionesSemana, porRubro, propuestas] = await Promise.all([
     feriasConProximaEdicion({ soloConEdiciones: true }),
     // Las que se cruzan con esta semana: empiezan antes de que termine y
     // terminan después de que empieza.
@@ -86,6 +88,7 @@ export default async function PaginaInicio() {
       orderBy: { _count: { rubro: "desc" } },
       take: 4,
     }),
+    ultimasPropuestas(3),
   ]);
 
   const feriasDestacadas = ordenarPorRelevancia(ferias).slice(0, 6);
@@ -276,6 +279,9 @@ export default async function PaginaInicio() {
           )}
         </div>
       </section>
+
+      {/* ------------------------------ Modo Feria -------------------------- */}
+      {propuestas.length > 0 && <SeccionSelloPropio propuestas={propuestas} />}
 
       {/* --------------------------- Qué vas a encontrar -------------------- */}
       {porRubro.length > 0 && (

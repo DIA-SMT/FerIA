@@ -14,6 +14,8 @@ export const TIPOS_DE_CAMBIO = {
   contacto: "Contacto y redes",
   "producto-nuevo": "Productos nuevos",
   producto: "Cambios en productos",
+  "propuesta-nueva": "Modo Feria: propuestas nuevas",
+  propuesta: "Modo Feria: cambios",
 } as const;
 
 export type TipoDeCambio = keyof typeof TIPOS_DE_CAMBIO;

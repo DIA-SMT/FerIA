@@ -266,6 +266,7 @@ export async function descartarCambioDelStand(datos: FormData): Promise<void> {
 
   if (await descartarCambio(cambioId, vendedor.id)) {
     revalidatePath("/mi-stand");
+    revalidatePath("/mi-stand/modo-feria");
     revalidatePath("/admin/revisiones");
   }
 }

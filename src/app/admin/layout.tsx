@@ -71,6 +71,7 @@ export default async function LayoutAdmin({
       contador: cambios,
     },
     { href: "/admin/feriantes", texto: "Feriantes", icono: "feriantes" },
+    { href: "/admin/modo-feria", texto: "Modo Feria", icono: "sello" },
     ...canon,
   ];
 

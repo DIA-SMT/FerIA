@@ -2,11 +2,13 @@ import Link from "next/link";
 
 import { cerrarSesion } from "@/actions/auth";
 import { IndicadorCarrito } from "@/components/carrito/indicador-carrito";
+import { MenuModoFeria } from "@/components/public/menu-modo-feria";
 import { MenuMovil } from "@/components/public/menu-movil";
 import { estilosBoton } from "@/components/ui/boton";
 import { LogoMunicipal } from "@/components/ui/logo-municipal";
 import { SelectorTema } from "@/components/ui/selector-tema";
 import { hayPedidos } from "@/lib/marketplace";
+import { TIPOS_SELLO_PROPIO } from "@/lib/sello-propio";
 import { obtenerSesion } from "@/lib/session";
 
 const ENLACES = [
@@ -14,6 +16,14 @@ const ENLACES = [
   { href: "/ferias", texto: "Ferias" },
   { href: "/stands", texto: "Emprendedores" },
 ];
+
+/** Las dos páginas de «Modo Feria», que en el menú van juntas. */
+const MODO_FERIA = (["REGALO", "SERVICIO"] as const).map((tipo) => ({
+  href: TIPOS_SELLO_PROPIO[tipo].href,
+  texto: TIPOS_SELLO_PROPIO[tipo].titulo,
+  detalle: TIPOS_SELLO_PROPIO[tipo].detalle,
+  sello: TIPOS_SELLO_PROPIO[tipo].sello,
+}));
 
 export async function EncabezadoPublico() {
   const sesion = await obtenerSesion();
@@ -59,6 +69,7 @@ export async function EncabezadoPublico() {
               {enlace.texto}
             </Link>
           ))}
+          <MenuModoFeria opciones={MODO_FERIA} />
         </nav>
 
         {/* El carrito queda afuera del menú móvil y visible siempre que tenga
@@ -68,7 +79,16 @@ export async function EncabezadoPublico() {
           <SelectorTema />
           {hayPedidos() && <IndicadorCarrito />}
           <div className="hidden lg:block">{acciones}</div>
-          <MenuMovil enlaces={ENLACES} acciones={acciones} />
+          <MenuMovil
+            enlaces={[
+              ...ENLACES,
+              {
+                texto: "Modo Feria",
+                hijos: MODO_FERIA.map(({ href, texto }) => ({ href, texto })),
+              },
+            ]}
+            acciones={acciones}
+          />
         </div>
       </div>
     </header>

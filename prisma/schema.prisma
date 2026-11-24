@@ -156,6 +156,17 @@ enum Rubro {
   OTROS
 }
 
+/// Qué es una propuesta de «sello propio». Las tres primeras son regalos y las
+/// dos últimas servicios: el tipo sale de acá (`tipoDeModalidad`) y no se
+/// guarda aparte, para que nunca puedan contradecirse.
+enum ModalidadSelloPropio {
+  PRODUCTO
+  CAJA
+  COMBO
+  FOOD_TRUCK
+  PATIO_GASTRONOMICO
+}
+
 // -------------------------------- Modelos ----------------------------------
 
 /// Perfil de la aplicación. Espeja `auth.users` de Supabase por `id`.
@@ -284,15 +295,17 @@ model Vendedor {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  productos      Producto[]
-  stands         Stand[]
-  pagos          PagoCanon[]
-  pedidos        Pedido[]
-  postulaciones  Postulacion[]
-  interes        InteresStand[]
-  cambios        CambioDelStand[]
+  productos             Producto[]
+  stands                Stand[]
+  pagos                 PagoCanon[]
+  pedidos               Pedido[]
+  postulaciones         Postulacion[]
+  interes               InteresStand[]
+  cambios               CambioDelStand[]
   /// Sus fichas de costos: privadas, sólo las ve él.
-  fichasDeCostos FichaDeCostos[]
+  fichasDeCostos        FichaDeCostos[]
+  /// Lo que ofrece en «Regalos y servicios con sello propio».
+  propuestasSelloPropio PropuestaSelloPropio[]
 
   // Idempotencia de la importación. Postgres admite varios NULL en un índice
   // único, así que las fichas propias (idExterno null) no chocan entre sí.
@@ -731,6 +744,7 @@ enum SeccionDelStand {
   DESCRIPCION
   CONTACTO
   PRODUCTO
+  SELLO_PROPIO
 }
 
 enum EstadoRevision {
@@ -761,6 +775,10 @@ model CambioDelStand {
   productoId String?
   producto   Producto? @relation(fields: [productoId], references: [id], onDelete: Cascade)
 
+  /// Sólo en los de «Modo Feria»: un regalo o un servicio con sello propio.
+  propuestaId String?
+  propuesta   PropuestaSelloPropio? @relation(fields: [propuestaId], references: [id], onDelete: Cascade)
+
   datos Json
 
   estado        EstadoRevision @default(PENDIENTE)
@@ -775,6 +793,7 @@ model CambioDelStand {
   @@index([estado, creadoEn])
   @@index([vendedorId])
   @@index([productoId])
+  @@index([propuestaId])
   @@map("cambios_del_stand")
 }
 
@@ -807,4 +826,53 @@ model FichaDeCostos {
   @@index([vendedorId])
   @@index([productoId])
   @@map("fichas_de_costos")
+}
+
+// ------------------------ Regalos y servicios con sello propio ----------------
+// La convocatoria «Modo Feria» de la Dirección: lo que los feriantes ofrecen a
+// empresas e instituciones —regalos de fin de año, cajas, combos, food trucks,
+// patios gastronómicos—. El feriante la carga desde Mi stand y pasa por la
+// revisión, igual que un producto: nace sin publicar y la aprueba la
+// administración (ver `src/lib/revision.ts`). El equipo también la puede cargar
+// desde el panel, para quien todavía no tiene cuenta; esa sale publicada sin
+// revisión. Quien se interesa le escribe directo al feriante, y entre ellos
+// acuerdan cantidades y entrega.
+
+model PropuestaSelloPropio {
+  id String @id @default(cuid())
+
+  /// Quién la ofrece. Hoy todas son individuales; si llegan combos de varios,
+  /// esto pasa a ser una tabla intermedia.
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+
+  modalidad   ModalidadSelloPropio
+  titulo      String               @db.VarChar(120)
+  descripcion String               @db.VarChar(1500)
+  /// Ruta en el almacenamiento, ej. "sello-propio/abc.webp".
+  imagen      String?
+
+  /// Precio orientativo en pesos, sin centavos: es una referencia, el precio
+  /// final lo arreglan el feriante y quien lo contrata.
+  precio       Int?
+  /// A qué corresponde el precio: «por caja», «por docena», «por persona».
+  precioUnidad String? @db.VarChar(40)
+  /// Lo que contó el feriante, con sus palabras: «10 cajas», «30 personas».
+  minimo       String? @db.VarChar(80)
+  capacidad    String? @db.VarChar(120)
+  anticipacion String? @db.VarChar(80)
+
+  /// La que carga el feriante nace sin publicar y se publica al aprobarse su
+  /// alta; la que carga el equipo, cuando marca «Publicada».
+  publicada Boolean @default(false)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  /// Su alta y sus cambios, mientras esperan revisión o después del rechazo.
+  cambios CambioDelStand[]
+
+  @@index([publicada, modalidad])
+  @@index([vendedorId])
+  @@map("propuestas_sello_propio")
 }
