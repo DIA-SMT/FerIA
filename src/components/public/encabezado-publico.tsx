@@ -84,7 +84,10 @@ export async function EncabezadoPublico() {
               ...ENLACES,
               {
                 texto: "Modo Feria",
-                hijos: MODO_FERIA.map(({ href, texto }) => ({ href, texto })),
+                hijos: [
+                  { href: "/modo-feria", texto: "Qué es Modo Feria" },
+                  ...MODO_FERIA.map(({ href, texto }) => ({ href, texto })),
+                ],
               },
             ]}
             acciones={acciones}

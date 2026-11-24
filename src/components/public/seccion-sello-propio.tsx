@@ -39,9 +39,12 @@ export function SeccionSelloPropio({
             ))}
           </div>
           <div>
-            <p className="text-sm font-semibold text-municipal-600">
+            <Link
+              href="/modo-feria"
+              className="text-sm font-semibold text-municipal-600 hover:underline"
+            >
               Modo Feria
-            </p>
+            </Link>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">
               Regalos y servicios con sello propio
             </h2>

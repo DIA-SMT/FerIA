@@ -67,6 +67,12 @@ export function VistaSelloPropio({
 
         <div className="mx-auto flex max-w-7xl items-start gap-4 px-4 py-9 sm:items-center sm:gap-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
           <div className="min-w-0 flex-1">
+            <Link
+              href="/modo-feria"
+              className="mb-2 inline-block text-sm font-semibold text-[#0866F2] hover:underline dark:text-[#8ec2fc]"
+            >
+              Modo Feria
+            </Link>
             <h1 className="font-globo text-[2.1rem] leading-[1.02] font-extrabold tracking-[-0.03em] text-[#081B45] sm:text-5xl dark:text-white">
               {datos.titulo}
             </h1>

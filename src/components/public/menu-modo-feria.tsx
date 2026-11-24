@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { IconoChevronAbajo } from "@/components/ui/iconos";
+import { IconoChevronAbajo, IconoChevronDerecha } from "@/components/ui/iconos";
 import { cn } from "@/lib/cn";
 
 export interface OpcionModoFeria {
@@ -127,6 +127,16 @@ export function MenuModoFeria({ opciones }: { opciones: OpcionModoFeria[] }) {
               </Link>
             </li>
           ))}
+          <li className="mt-1 border-t border-slate-100 pt-1">
+            <Link
+              href="/modo-feria"
+              aria-current={ruta === "/modo-feria" ? "page" : undefined}
+              className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm font-medium text-municipal-700 transition-colors hover:bg-slate-50"
+            >
+              Qué es Modo Feria y cómo funciona
+              <IconoChevronDerecha className="size-4" />
+            </Link>
+          </li>
         </ul>
       </div>
     </div>

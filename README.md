@@ -40,7 +40,7 @@ La cara visible para los vecinos.
   búsqueda por nombre o producto y filtros por rubro y por feria.
 - **Vidriera del feriante** (`/stands/[slug]`): portada, descripción, catálogo
   y **botón de contacto por WhatsApp** con el mensaje ya escrito.
-- **Modo Feria** (`/modo-feria/regalos` y `/modo-feria/servicios`): la
+- **Modo Feria** (`/modo-feria`, `/modo-feria/regalos` y `/modo-feria/servicios`): la
   convocatoria de regalos y servicios con sello propio para empresas e
   instituciones. En el menú de arriba es un desplegable con las dos páginas:
   «Regalos con sello propio» (productos, cajas, combos) y «Servicios con sello
@@ -48,6 +48,9 @@ La cara visible para los vecinos.
   Cada propuesta muestra el precio orientativo y las condiciones, y su botón le
   escribe al feriante por WhatsApp. La portada muestra las últimas tres
   aprobadas, y no muestra nada si todavía no hay ninguna.
+  `/modo-feria` es la entrada: el logo de la convocatoria (recortado del
+  centro del sello vectorial, `public/sello-propio/modo-feria.webp`), las dos
+  opciones en grande con su sello y cómo funciona en tres pasos.
 
 > No hay carrito ni pagos online, y **el catálogo no publica precios**: el
 > modelo es vidriera + contacto directo entre el vecino y quien produce. El

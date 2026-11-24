@@ -73,7 +73,12 @@ export function MenuMovil({ enlaces, acciones }: PropsMenuMovil) {
                   {entrada.texto}
                 </p>
                 {entrada.hijos.map((hijo) => (
-                  <EnlaceMovil key={hijo.href} enlace={hijo} ruta={ruta} />
+                  <EnlaceMovil
+                    key={hijo.href}
+                    enlace={hijo}
+                    ruta={ruta}
+                    exacto
+                  />
                 ))}
               </div>
             ) : (
@@ -87,9 +92,20 @@ export function MenuMovil({ enlaces, acciones }: PropsMenuMovil) {
   );
 }
 
-function EnlaceMovil({ enlace, ruta }: { enlace: Enlace; ruta: string }) {
+function EnlaceMovil({
+  enlace,
+  ruta,
+  exacto = false,
+}: {
+  enlace: Enlace;
+  ruta: string;
+  /** Dentro de un grupo, «/modo-feria» no tiene que marcarse en sus hijas. */
+  exacto?: boolean;
+}) {
   const activo =
-    enlace.href === "/" ? ruta === "/" : ruta.startsWith(enlace.href);
+    enlace.href === "/" || exacto
+      ? ruta === enlace.href
+      : ruta.startsWith(enlace.href);
 
   return (
     <Link

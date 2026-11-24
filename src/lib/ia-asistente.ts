@@ -241,7 +241,7 @@ export async function contextoDelSitio(): Promise<string> {
   // Sólo si hay algo publicado: si no, Migue mandaría a una página vacía.
   const lineaSelloPropio =
     tiposSelloPropio.length > 0
-      ? "\n- «Modo Feria», en el menú de arriba: «Regalos con sello propio» (/modo-feria/regalos: productos, cajas y combos) y «Servicios con sello propio» (/modo-feria/servicios: food trucks, puestos y patios gastronómicos), que los feriantes ofrecen a empresas e instituciones. Se consultan por WhatsApp directo con el feriante, desde la tarjeta de cada propuesta; el presupuesto, las cantidades y la entrega se acuerdan entre ellos. Un feriante suma la suya desde Mi stand, en «Modo Feria»."
+      ? "\n- «Modo Feria» (/modo-feria, con su explicación), en el menú de arriba: «Regalos con sello propio» (/modo-feria/regalos: productos, cajas y combos) y «Servicios con sello propio» (/modo-feria/servicios: food trucks, puestos y patios gastronómicos), que los feriantes ofrecen a empresas e instituciones. Se consultan por WhatsApp directo con el feriante, desde la tarjeta de cada propuesta; el presupuesto, las cantidades y la entrega se acuerdan entre ellos. Un feriante suma la suya desde Mi stand, en «Modo Feria»."
       : "";
 
   const bloquesFeria = ferias.map((feria) => {

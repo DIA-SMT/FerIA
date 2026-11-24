@@ -64,21 +64,37 @@ export async function propuestasPublicadas(
 }
 
 /**
- * Los tipos que tienen algo publicado. Lo usa Migue: si no hay nada, no manda
- * a nadie a Modo Feria. Con `cache` se consulta una vez por pedido.
+ * Cuántas hay publicadas de cada tipo. Con `cache` se consulta una vez por
+ * pedido aunque lo pregunten la página y Migue.
  */
-export const tiposConPropuestas = cache(
-  async (): Promise<TipoSelloPropio[]> => {
+export const cantidadesPorTipo = cache(
+  async (): Promise<Record<TipoSelloPropio, number>> => {
     const grupos = await prisma.propuestaSelloPropio.groupBy({
       by: ["modalidad"],
       where: PUBLICAS,
+      _count: true,
     });
-    const tipos = new Set(
-      grupos.map((grupo) => tipoDeModalidad(grupo.modalidad)),
-    );
-    return (["REGALO", "SERVICIO"] as const).filter((tipo) => tipos.has(tipo));
+    const cantidades: Record<TipoSelloPropio, number> = {
+      REGALO: 0,
+      SERVICIO: 0,
+    };
+    for (const grupo of grupos) {
+      cantidades[tipoDeModalidad(grupo.modalidad)] += grupo._count;
+    }
+    return cantidades;
   },
 );
+
+/**
+ * Los tipos que tienen algo publicado. Lo usa Migue: si no hay nada, no manda
+ * a nadie a Modo Feria.
+ */
+export async function tiposConPropuestas(): Promise<TipoSelloPropio[]> {
+  const cantidades = await cantidadesPorTipo();
+  return (["REGALO", "SERVICIO"] as const).filter(
+    (tipo) => cantidades[tipo] > 0,
+  );
+}
 
 /** Las últimas publicadas, de los dos tipos: las de la portada. */
 export async function ultimasPropuestas(
