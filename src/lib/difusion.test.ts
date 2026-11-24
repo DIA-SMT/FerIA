@@ -59,3 +59,17 @@ describe("visitas por día de la semana", () => {
     ]);
   });
 });
+
+describe("el título de la imagen publicitaria", () => {
+  it("corta entre palabras y deja el emoji con la última", async () => {
+    const { palabrasDelTitular } = await import("@/lib/publicidad");
+    expect(palabrasDelTitular("Preparate para las fiestas 🎁")).toEqual([
+      "Preparate",
+      "para",
+      "las",
+      "fiestas 🎁",
+    ]);
+    expect(palabrasDelTitular("Sin emoji")).toEqual(["Sin", "emoji"]);
+    expect(palabrasDelTitular("🎁")).toEqual(["🎁"]);
+  });
+});

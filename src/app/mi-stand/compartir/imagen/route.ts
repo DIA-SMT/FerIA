@@ -7,11 +7,14 @@ import {
   MAXIMO_PRODUCTOS,
   type FormatoImagen,
 } from "@/lib/imagen-catalogo";
+import {
+  abrirArchivo,
+  enlaceParaImagen,
+  ferianteDeLaSesion,
+  whatsappParaImagen,
+} from "@/lib/imagen-del-feriante";
 import { RUBROS } from "@/lib/labels";
 import { leerPrecio } from "@/lib/sello-propio";
-import { obtenerSesion } from "@/lib/session";
-import { almacenamiento } from "@/lib/storage";
-import { formatearWhatsapp } from "@/lib/whatsapp";
 
 /**
  * La imagen del catálogo del feriante que está en la sesión, con los
@@ -28,31 +31,8 @@ import { formatearWhatsapp } from "@/lib/whatsapp";
  * ficha de la sesión, así que un id ajeno simplemente no aparece.
  */
 export async function GET(peticion: NextRequest): Promise<Response> {
-  const sesion = await obtenerSesion();
-  if (!sesion) return new NextResponse(null, { status: 401 });
-
-  const vendedor = await prisma.vendedor.findUnique({
-    where: { usuarioId: sesion.id },
-    select: {
-      id: true,
-      estado: true,
-      emprendimiento: true,
-      slug: true,
-      rubro: true,
-      logo: true,
-      whatsapp: true,
-      instagram: true,
-      postulaciones: {
-        where: { estado: "ACEPTADA", feria: { activa: true } },
-        orderBy: { feria: { nombre: "asc" } },
-        take: 2,
-        select: { feria: { select: { nombre: true } } },
-      },
-    },
-  });
-  if (!vendedor || vendedor.estado !== "APROBADO") {
-    return new NextResponse(null, { status: 404 });
-  }
+  const vendedor = await ferianteDeLaSesion();
+  if (!vendedor) return new NextResponse(null, { status: 404 });
 
   const parametros = peticion.nextUrl.searchParams;
   const ids = (parametros.get("p") ?? "")
@@ -70,18 +50,15 @@ export async function GET(peticion: NextRequest): Promise<Response> {
   });
   const porId = new Map(encontrados.map((producto) => [producto.id, producto]));
 
-  const abrir = async (ruta: string | null | undefined) =>
-    ruta ? ((await almacenamiento.abrir(ruta))?.contenido ?? null) : null;
-
   const [logo, productos] = await Promise.all([
-    abrir(vendedor.logo),
+    abrirArchivo(vendedor.logo),
     Promise.all(
       ids.flatMap((id, indice) => {
         const producto = porId.get(id);
         if (!producto) return [];
         const precio = leerPrecio((precios[indice] ?? "").slice(0, 15));
         return [
-          abrir(producto.imagenes[0]).then((foto) => ({
+          abrirArchivo(producto.imagenes[0]).then((foto) => ({
             nombre: producto.nombre,
             foto,
             precio: precio ? formatearMoneda(precio) : null,
@@ -91,10 +68,6 @@ export async function GET(peticion: NextRequest): Promise<Response> {
     ),
   ]);
 
-  const sitio = (process.env.NEXT_PUBLIC_APP_URL ?? "https://feria.smt.gob.ar")
-    .replace(/^https?:\/\//, "")
-    .replace(/\/+$/, "");
-
   return imagenDelCatalogo({
     formato,
     emprendimiento: vendedor.emprendimiento,
@@ -103,10 +76,9 @@ export async function GET(peticion: NextRequest): Promise<Response> {
       ...vendedor.postulaciones.map((postulacion) => postulacion.feria.nombre),
     ].join(" · "),
     logo,
-    // En la ciudad nadie dice «+54 9»: el número como se lo pasa a un vecino.
-    whatsapp: formatearWhatsapp(vendedor.whatsapp).replace(/^\+54 9 /, ""),
+    whatsapp: whatsappParaImagen(vendedor.whatsapp),
     instagram: vendedor.instagram,
-    enlace: `${sitio}/stands/${vendedor.slug}`,
+    enlace: enlaceParaImagen(vendedor.slug),
     productos,
   });
 }

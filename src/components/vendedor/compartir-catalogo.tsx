@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAsistente } from "@/components/public/estado-asistente";
+import {
+  compartirImagen,
+  nombreDeArchivo,
+} from "@/components/vendedor/compartir-archivo";
 import { estilosBoton } from "@/components/ui/boton";
 import { BORDE_NORMAL, ESTILO_CONTROL } from "@/components/ui/campo";
 import {
@@ -114,42 +118,17 @@ export function CompartirCatalogo({
     );
   }
 
-  const nombreDelArchivo = `catalogo-${emprendimiento
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")}.png`;
+  const nombreDelArchivo = nombreDeArchivo("catalogo", emprendimiento);
 
   async function compartir() {
     setMensaje(null);
-    try {
-      const respuesta = await fetch(url);
-      if (!respuesta.ok) throw new Error("sin imagen");
-      const archivo = new File([await respuesta.blob()], nombreDelArchivo, {
-        type: "image/png",
-      });
-      if (navigator.canShare?.({ files: [archivo] })) {
-        await navigator.share({
-          files: [archivo],
-          text: `${emprendimiento}: mirá todo en ${enlace}`,
-        });
-        return;
-      }
-      // En la compu no hay a dónde compartir un archivo: se descarga.
-      const enlaceTemporal = document.createElement("a");
-      enlaceTemporal.href = URL.createObjectURL(archivo);
-      enlaceTemporal.download = nombreDelArchivo;
-      enlaceTemporal.click();
-      URL.revokeObjectURL(enlaceTemporal.href);
-      setMensaje(
-        "Se descargó la imagen. Desde el celular, este botón la manda directo a WhatsApp o Instagram.",
-      );
-    } catch (error) {
-      // Cerrar el menú de compartir sin elegir nada no es un error.
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      setMensaje("No se pudo armar la imagen. Probá de nuevo en un momento.");
-    }
+    setMensaje(
+      await compartirImagen(
+        url,
+        nombreDelArchivo,
+        `${emprendimiento}: mirá todo en ${enlace}`,
+      ),
+    );
   }
 
   async function copiar() {

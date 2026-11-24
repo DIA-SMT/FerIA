@@ -95,7 +95,9 @@ Devolvé únicamente el texto de la descripción, listo para pegar en el campo. 
 const ENCUADRE =
   "Escribís la descripción del emprendimiento de un feriante para su stand en el catálogo online de las ferias de la Municipalidad de San Miguel de Tucumán. La lee un vecino que está decidiendo si le compra.";
 
-function datosDelEmprendimiento(emprendimiento: ContextoEmprendimiento): string {
+function datosDelEmprendimiento(
+  emprendimiento: ContextoEmprendimiento,
+): string {
   return `DATOS DEL EMPRENDIMIENTO:
 
 * Nombre: ${emprendimiento.nombre}
@@ -478,4 +480,46 @@ export async function redactarDescripcionConIA(
   }
 
   return texto;
+}
+
+/**
+ * El título de la imagen publicitaria: una frase corta que enganche, con un
+ * emoji. Lo edita el feriante antes de compartir, así que no hace falta que
+ * salga perfecto; sí que no invente ni prometa.
+ */
+export async function titularPublicitario(contexto: {
+  emprendimiento: string;
+  rubro: string;
+  productos: Array<{ nombre: string; descripcion?: string | null }>;
+  ocasion?: string | null;
+}): Promise<string> {
+  const prompt = `Escribí el título de una imagen publicitaria para Instagram de un emprendimiento de las ferias de San Miguel de Tucumán.
+
+DATOS:
+* Emprendimiento: ${contexto.emprendimiento}
+* Rubro: ${contexto.rubro}
+* Lo que aparece en la imagen: ${contexto.productos
+    .map((p) =>
+      p.descripcion?.trim()
+        ? `${p.nombre} (${p.descripcion.trim().slice(0, 200)})`
+        : p.nombre,
+    )
+    .join(
+      "; ",
+    )}${contexto.ocasion ? `\n* Se viene: ${contexto.ocasion} (usalo sólo si encaja)` : ""}
+
+REGLAS:
+· Castellano de la Argentina, con voseo. Que enganche y dé ganas, como una marca que vende con onda.
+· Entre 3 y 7 palabras, hasta 40 caracteres, más un emoji al final que tenga que ver con lo que se vende.
+· NO inventes datos, NO pongas precios, descuentos ni promociones, NO uses superlativos que no se pueden comprobar («el mejor», «el más rico») y NO pongas el nombre del emprendimiento: va abajo.
+· NO supongas el género de nadie.
+· Si usás signos de exclamación o de pregunta, con el de apertura.
+
+SALIDA: sólo el título, en una línea, sin comillas.`;
+
+  const bruto = await pedirAlModelo(prompt, {
+    maxTokens: 60,
+    temperatura: 0.9,
+  });
+  return limpiarSalida(bruto.split("\n")[0] ?? "").slice(0, 60);
 }

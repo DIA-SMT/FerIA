@@ -148,7 +148,7 @@ export async function paraDifundir(vendedorId: string) {
     emprendimiento: vendedor.emprendimiento,
     rubro: RUBROS[vendedor.rubro],
     paginaDelStand: `/stands/${vendedor.slug}`,
-    imagenDelCatalogo: `Se arma en «Compartir» (${COMPARTIR}): una imagen con sus productos para mandar por WhatsApp o subir a Instagram.`,
+    imagenDelCatalogo: `Se arma en «Compartir» (${COMPARTIR}): una imagen con sus productos para mandar por WhatsApp o subir a Instagram, o en la pestaña «Publicidad con IA», una imagen publicitaria que arma la IA con sus fotos.`,
     instagram: vendedor.instagram
       ? `@${vendedor.instagram}`
       : "No cargó su Instagram. Lo puede sumar en Mi stand, en la tarjeta «Contacto», y así aparece en su stand y en la imagen del catálogo.",

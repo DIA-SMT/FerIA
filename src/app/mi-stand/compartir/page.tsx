@@ -1,13 +1,19 @@
+import { generarPublicidad } from "@/actions/publicidad";
 import {
   CompartirCatalogo,
   type ProductoParaCompartir,
 } from "@/components/vendedor/compartir-catalogo";
+import { PestaniasCompartir } from "@/components/vendedor/pestanias-compartir";
+import { PublicidadConIA } from "@/components/vendedor/publicidad-con-ia";
 import { hayIAConfigurada } from "@/lib/ai";
 import { prisma } from "@/lib/db";
 import { urlPublica } from "@/lib/media";
 import { requerirVendedorAprobado } from "@/lib/session";
 
 export const metadata = { title: "Compartir mi catálogo" };
+
+/** La imagen publicitaria tarda: la escena de la IA ronda los 10 a 15 segundos. */
+export const maxDuration = 60;
 
 /**
  * Para difundir el stand: la imagen del catálogo para WhatsApp e Instagram,
@@ -26,6 +32,14 @@ export default async function PaginaCompartir() {
     process.env.NEXT_PUBLIC_APP_URL ?? "https://feria.smt.gob.ar"
   ).replace(/\/+$/, "");
 
+  const paraCompartir = productos.map((producto): ProductoParaCompartir => ({
+    id: producto.id,
+    nombre: producto.nombre,
+    foto: urlPublica(producto.imagenes[0]),
+  }));
+  const enlace = `${sitio}/stands/${vendedor.slug}`;
+  const conIA = hayIAConfigurada();
+
   return (
     <div>
       <header className="mb-6">
@@ -39,16 +53,26 @@ export default async function PaginaCompartir() {
         </p>
       </header>
 
-      <CompartirCatalogo
-        productos={productos.map((producto): ProductoParaCompartir => ({
-          id: producto.id,
-          nombre: producto.nombre,
-          foto: urlPublica(producto.imagenes[0]),
-        }))}
-        enlace={`${sitio}/stands/${vendedor.slug}`}
-        emprendimiento={vendedor.emprendimiento}
-        conInstagram={Boolean(vendedor.instagram)}
-        conMigue={hayIAConfigurada()}
+      <PestaniasCompartir
+        catalogo={
+          <CompartirCatalogo
+            productos={paraCompartir}
+            enlace={enlace}
+            emprendimiento={vendedor.emprendimiento}
+            conInstagram={Boolean(vendedor.instagram)}
+            conMigue={conIA}
+          />
+        }
+        publicidad={
+          conIA ? (
+            <PublicidadConIA
+              productos={paraCompartir}
+              emprendimiento={vendedor.emprendimiento}
+              enlace={enlace}
+              generar={generarPublicidad}
+            />
+          ) : null
+        }
       />
     </div>
   );

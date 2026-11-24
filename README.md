@@ -95,6 +95,16 @@ La cara visible para los vecinos.
   (`src/lib/imagen-catalogo.tsx`, tipografía Baloo 2 en
   `src/fuentes/imagenes/`). En el celular se comparte directo a WhatsApp o
   Instagram; en la compu se descarga.
+- **Publicidad con IA** (otra pestaña de «Compartir»): el modelo de imagen
+  arma una escena de campaña con las fotos reales de hasta tres productos
+  (`src/lib/ia-publicidad.ts`, siempre en 4:5: en 9:16 rellenaba con franjas
+  borroneadas) y el de texto propone un título. El título, el nombre, el
+  WhatsApp y el Instagram los pone el código encima
+  (`imagenPublicitaria` en `src/lib/imagen-catalogo.tsx`): un modelo de
+  imagen escribe letras deformes y cambia números. La escena se guarda en
+  `productos/vendedores/<id>/publicidad/` y la anterior se borra; cambiar el
+  título o el formato no vuelve a llamar a la IA. Hasta 10 por día por
+  feriante.
 - **Migue para difundir**: le arma un plan de publicaciones atado a sus
   próximas ferias, los días en que más miran su página, sus productos más
   consultados y las fechas comerciales que se vienen
