@@ -49,3 +49,20 @@ export function sinSaludoRepetido(respuesta: string, pregunta: string): string {
     (_, signo: string, letra: string) => signo + letra.toUpperCase(),
   );
 }
+
+/**
+ * Saca el formato de Markdown que el chat no dibuja.
+ *
+ * Las reglas piden texto llano con guiones, pero con respuestas largas —un
+ * plan de publicaciones, por ejemplo— el modelo a veces vuelve a sus
+ * costumbres: «**Viernes:**», viñetas con asterisco, títulos con «#». En la
+ * burbuja eso se ve como asteriscos sueltos. Los hashtags no se tocan: «#»
+ * seguido de una palabra no es un título.
+ */
+export function sinMarkdown(texto: string): string {
+  return texto
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/^[ \t]*[*•][ \t]+/gm, "- ")
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, "");
+}

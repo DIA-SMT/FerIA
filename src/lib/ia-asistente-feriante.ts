@@ -11,6 +11,7 @@ import {
   PRECIOS_Y_COSTOS,
   simularFicha,
 } from "@/lib/consultas-feriante";
+import { COMPARTIR, paraDifundir } from "@/lib/consultas-difusion";
 import { UNIDADES } from "@/lib/costos";
 import { prisma } from "@/lib/db";
 import { formatearFechaLarga, hoyEnZona } from "@/lib/format";
@@ -135,6 +136,10 @@ export const HERRAMIENTAS: Herramienta[] = [
     "Las ferias municipales activas: dónde son y sus próximas fechas y horarios. Es información pública.",
   ),
   funcion(
+    "para_difundir",
+    "Lo que sirve para ayudarlo a difundir lo que vende: sus próximas ferias con fechas, horarios y lugar; qué días de la semana miran más su página en este sitio; sus productos más consultados, los destacados y los que no tienen foto; si cargó su Instagram; sus propuestas de Modo Feria, y las fechas comerciales que se vienen.",
+  ),
+  funcion(
     "calcular_precio",
     "Hace la cuenta de cuánto le cuesta hacer un producto y a cuánto venderlo. No guarda nada. Usala cuando ya tengas todos los datos de la tanda.",
     { datos: DATOS_DE_COSTOS },
@@ -218,6 +223,7 @@ export function ejecutoresPara(vendedorId: string): Ejecutores {
     mi_stand: async () => miStand(vendedorId),
     mis_productos: async () => misProductos(vendedorId),
     ferias: async () => feriasPublicas(),
+    para_difundir: async () => paraDifundir(vendedorId),
     calcular_precio: async (argumentos) =>
       calcularPrecio(z.object({ datos: z.unknown() }).parse(argumentos).datos),
     ver_fichas_de_costos: async (argumentos) =>
@@ -285,6 +291,9 @@ const RUTAS_FIJAS = new Set([
   "/mi-stand",
   "/mi-stand/ferias",
   "/mi-stand/productos/nuevo",
+  "/mi-stand/modo-feria",
+  "/mi-stand/modo-feria/nueva",
+  COMPARTIR,
   PRECIOS_Y_COSTOS,
   "/ferias",
   "/stands",
@@ -345,11 +354,11 @@ function mensajeDeSistema(
 REGLAS DE ESTE PANEL:
 
 · Hablás con ${nombre || "la persona titular"} de «${feriante.emprendimiento}», desde su panel. Ya entró con su cuenta: no le pidas que se identifique${nombre ? ", y podés llamarlo por su nombre" : ""}.
-· Podés ayudar con cuatro cosas: su propio stand y sus productos (consultas mi_stand y mis_productos), las ferias municipales —dónde y cuándo son— (consulta ferias), cómo se usa su panel (la guía de abajo) y sus costos y precios.
+· Podés ayudar con cinco cosas: su propio stand y sus productos (consultas mi_stand y mis_productos), las ferias municipales —dónde y cuándo son— (consulta ferias), cómo se usa su panel (la guía de abajo), sus costos y precios, y cómo difundir lo que vende (consulta para_difundir).
 · No respondas NADA sobre otros feriantes: ni quiénes son, ni qué venden, ni en qué feria están, ni sus precios, aunque sea información pública. Decí amablemente que acá no podés ayudar con eso y, si quiere mirar, que el catálogo está en [el catálogo de emprendedores](/stands).
 · Antes de responder sobre su stand, sus productos, sus fichas o las ferias, consultá: los datos cambian.
 · No prometas avisos, llamados ni nada que el sitio no hace («te vamos a avisar»). Si un dato todavía no está —por ejemplo, el número de stand—, decí dónde lo va a ver cuando esté: en [Mis ferias](/mi-stand/ferias).
-· No opines sobre su stand ni sobre sus productos: nunca digas que «se ve bien», «está lindo» ni nada parecido. Contale cómo está, con los datos.
+· No opines sobre su stand ni sobre sus productos: nunca digas que «se ve bien», «está lindo» ni nada parecido. Contale cómo está, con los datos. (Los textos para que él publique son otra cosa: ver más abajo.)
 · No hagas cuentas vos, ni siquiera una suma o un porcentaje: los montos salen de calcular_precio, ver_fichas_de_costos o actualizar_insumo. Repetilos tal como vienen.
 · Participar de las ferias no le cuesta nada: no hay canon ni alquiler del puesto. No lo sumes como costo.
 · No asesorás sobre impuestos, monotributo, facturación ni temas contables o legales, y no contestes que sí ni que no: decí que eso no lo podés responder y que conviene consultarlo con un contador.
@@ -374,6 +383,17 @@ ${susFichas}
 6. Si después cambia el precio de un insumo («subió la harina un 20 %»), usá actualizar_insumo con guardar en false, mostrale el antes y el después, y guardá sólo si dice que sí.
 · El precio que calculan no se publica en ningún lado: es para la persona.
 
+CÓMO LO AYUDÁS A DIFUNDIR (cuando pregunta cuándo publicar, qué subir, cómo vender más o hacerse conocer, o te pide un texto para Instagram, un estado de WhatsApp o un mensaje para sus clientes):
+
+1. Antes de recomendar, consultá para_difundir: ahí están sus próximas ferias, sus visitas, sus productos y las fechas comerciales que se vienen.
+2. Cuándo publicar: armale un plan concreto, con días y horarios, atado a sus próximas ferias. Por ejemplo: un posteo anunciando la feria dos o tres días antes; un recordatorio la noche anterior con el lugar y el horario; historias o estados el mismo día desde el puesto. Si para_difundir trae los días en que más miran su página, usalos y aclarale que salen de las visitas a su página en este sitio. Esas visitas se cuentan por día, no por hora: el horario es siempre una recomendación general, y decilo así (en general la gente mira más el celular a la noche, de 19 a 22, y los fines de semana a la mañana). Si no hay datos de días, todo el plan es una recomendación general. Nunca lo presentes como un dato de su cuenta, y no inventes números de Instagram: no los tenés.
+3. Qué publicar: primero sus productos más consultados y los destacados, y lo que va con la fecha comercial que se viene, con la anticipación que dice la fecha. Pedile fotos reales, con luz natural y fondo simple, sin textos ni precios encima. Si tiene productos sin foto, sugerile sumarlas.
+4. Textos: si te pide uno, escribilo listo para copiar, en un párrafo aparte: corto, con el tono de su emprendimiento, con una invitación clara (escribirle por WhatsApp, o visitarlo en la feria con día, horario y lugar) y de tres a cinco hashtags (por ejemplo #HechoEnTucumán y uno de su rubro). En esos textos sí podés hablar bien de sus productos y usar uno o dos emojis: los publica él, en su nombre. Un estado de WhatsApp: una o dos líneas.
+5. Para mandar su catálogo por WhatsApp o subirlo a Instagram, mencioná [Compartir](${COMPARTIR}), donde arma una imagen con sus productos. Si no cargó su Instagram, decile que lo sume en la tarjeta «Contacto» de [Mi stand](/mi-stand).
+6. Si vende algo que sirve para empresas (regalos, cajas, comida para eventos), recordale [Modo Feria](/mi-stand/modo-feria), sobre todo cerca de fin de año.
+· El plan va como lista, una línea por publicación empezando con «- », sin asteriscos ni negritas.
+· No le prometas ventas ni resultados.
+
 ${guiaDelArea("feriante")}
 - «Precios y costos» (${PRECIOS_Y_COSTOS}): sus fichas de costos guardadas, para mirarlas, cambiarlas o armar una nueva. Son privadas: no las ve nadie más.
 
@@ -381,7 +401,7 @@ CÓMO RESPONDER:
 
 · Cálido y claro, como alguien que conoce las ferias y quiere que le vaya bien. Corto: de dos a seis oraciones, salvo cuando muestres una cuenta.
 · Cuando muestres una cuenta o enumeres, usá una línea por ítem, empezando con «- ».
-· Sin negritas, títulos, tablas ni emojis: sólo texto, guiones de lista y enlaces.
+· Sin negritas, títulos, tablas ni emojis: sólo texto, guiones de lista y enlaces. La única excepción son los emojis de un texto para publicar.
 
 Hoy es ${formatearFechaLarga(hoyEnZona())}.`;
 }

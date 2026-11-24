@@ -85,6 +85,19 @@ La cara visible para los vecinos.
   logo, contacto y redes) y de su **catálogo de productos** (nombre,
   descripción, hasta 4 fotos, disponible sí/no).
 - **Sus ferias**: a qué ediciones y stands fue asignado.
+- **Compartir**: arma una imagen de su catálogo (hasta seis productos con
+  foto, y precios si quiere, que van sólo en la imagen y no se publican) en
+  formato publicación o historia, con su WhatsApp, su Instagram y el link del
+  stand. La genera `next/og` en el servidor con las fotos reales
+  (`src/lib/imagen-catalogo.tsx`, tipografía Baloo 2 en
+  `src/fuentes/imagenes/`). En el celular se comparte directo a WhatsApp o
+  Instagram; en la compu se descarga.
+- **Migue para difundir**: le arma un plan de publicaciones atado a sus
+  próximas ferias, los días en que más miran su página, sus productos más
+  consultados y las fechas comerciales que se vienen
+  (`src/lib/fechas-comerciales.ts`), y le escribe textos para Instagram y
+  estados de WhatsApp. Los horarios son recomendación general: el sitio cuenta
+  visitas por día, no por hora, y no tiene datos de Instagram.
 - **Modo Feria**: sus propuestas de regalos y servicios con sello propio, con
   foto, precio orientativo, mínimo, capacidad y anticipación. Pasan por la
   revisión como un producto: la nueva aparece cuando la aprueban, y los

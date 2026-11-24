@@ -3,7 +3,11 @@ import type { ModalidadSelloPropio } from "@prisma/client";
 
 import { EnlaceConsulta } from "@/components/public/enlace-consulta";
 import { Badge } from "@/components/ui/badge";
-import { IconoRegalo, IconoWhatsapp } from "@/components/ui/iconos";
+import {
+  IconoInstagram,
+  IconoRegalo,
+  IconoWhatsapp,
+} from "@/components/ui/iconos";
 import { ImagenPortada } from "@/components/ui/imagen";
 import {
   MODALIDADES_SELLO_PROPIO,
@@ -11,6 +15,7 @@ import {
   precioOrientativo,
   tipoDeModalidad,
 } from "@/lib/sello-propio";
+import { linkInstagram } from "@/lib/redes";
 import { linkWhatsapp } from "@/lib/whatsapp";
 
 /** Lo que muestra la tarjeta. Es `PropuestaPublica` de la consulta. */
@@ -30,6 +35,8 @@ export interface PropuestaParaTarjeta {
     slug: string;
     emprendimiento: string;
     whatsapp: string;
+    /** Usuario, sin @. */
+    instagram: string | null;
     postulaciones: { feria: { nombre: string; slug: string } }[];
   };
 }
@@ -105,6 +112,16 @@ export function TarjetaPropuesta({
             </span>
           ))}
         </p>
+        {vendedor.instagram && (
+          <a
+            href={linkInstagram(vendedor.instagram)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center gap-1.5 self-start text-sm text-slate-600 transition-colors hover:text-municipal-700"
+          >
+            <IconoInstagram className="size-4" />@{vendedor.instagram}
+          </a>
+        )}
 
         <p className="mt-3 text-sm leading-relaxed whitespace-pre-line text-slate-700">
           {propuesta.descripcion}

@@ -36,6 +36,7 @@ const SELECCION_PUBLICA = {
       slug: true,
       emprendimiento: true,
       whatsapp: true,
+      instagram: true,
       // Las ferias en las que está habilitado, que es lo que pedía la
       // convocatoria: «nombre del emprendimiento y feria en la que participan».
       postulaciones: {

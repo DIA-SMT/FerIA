@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { REGLAS_COMUNES, sinSaludoRepetido } from "@/lib/migue-reglas";
+import {
+  REGLAS_COMUNES,
+  sinMarkdown,
+  sinSaludoRepetido,
+} from "@/lib/migue-reglas";
 
 describe("sin saludar dos veces", () => {
   it("las reglas comunes le dicen que el chat ya saludó", () => {
@@ -66,5 +70,22 @@ describe("sin saludar dos veces", () => {
 
   it("si la respuesta es sólo el saludo, no la deja vacía", () => {
     expect(sinSaludoRepetido("¡Hola!", "?")).toBe("¡Hola!");
+  });
+});
+
+describe("sin Markdown que el chat no dibuja", () => {
+  it("saca negritas, viñetas con asterisco y títulos", () => {
+    expect(
+      sinMarkdown(
+        "## Tu plan\n*   **Jueves 27:** contá que vas a la feria.\n* El sábado, historias.",
+      ),
+    ).toBe(
+      "Tu plan\n- Jueves 27: contá que vas a la feria.\n- El sábado, historias.",
+    );
+  });
+
+  it("no toca los hashtags ni los guiones", () => {
+    const texto = "- Viernes a la noche.\n#HechoEnTucumán #Alfajores";
+    expect(sinMarkdown(texto)).toBe(texto);
   });
 });

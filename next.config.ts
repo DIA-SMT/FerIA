@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
    */
   outputFileTracingIncludes: {
     "/**": ["./public/logo.png"],
+    // Las tipografías de la imagen del catálogo, que se leen del disco.
+    "/mi-stand/compartir/imagen": ["./src/fuentes/imagenes/*.ttf"],
   },
   /**
    * Direcciones de ferias que cambiaron de nombre, para que no se rompan los
