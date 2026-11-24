@@ -73,7 +73,7 @@ export function guiaDelArea(area: AreaAsistente): string {
   if (area === "feriante") {
     const pestanias = [
       "«Mis ferias» (/mi-stand/ferias): en qué ferias presenciales está habilitado, el botón para pedir estar en otra y los stands que le asignaron en las próximas ediciones",
-      "«Modo Feria» (/mi-stand/modo-feria): sus propuestas de regalos y servicios con sello propio para empresas e instituciones (un producto, una caja, un combo, un food truck o puesto, un patio gastronómico), con foto, precio orientativo, mínimo, capacidad y anticipación. «Nueva propuesta» (/mi-stand/modo-feria/nueva) carga una; pasa por la revisión como los productos y, aprobada, aparece en Modo Feria (/modo-feria/regalos y /modo-feria/servicios) y en la portada. Cada tarjeta muestra su estado y abre su edición, donde también se elimina",
+      "«Modo Feria» (/mi-stand/modo-feria): sus propuestas de regalos y servicios con sello propio para empresas e instituciones (un producto, una caja, un combo, un food truck o puesto, un patio gastronómico), con una foto real (sin textos ni precios encima: el precio va en su campo), precio orientativo, mínimo, capacidad y anticipación. «Nueva propuesta» (/mi-stand/modo-feria/nueva) carga una; pasa por la revisión como los productos y, aprobada, aparece en Modo Feria (/modo-feria/regalos y /modo-feria/servicios) y en la portada. Cada tarjeta muestra su estado y abre su edición, donde también se elimina",
       ...(hayPedidos() ? ["«Pedidos» (/mi-stand/pedidos): los pedidos que le hicieron los vecinos"] : []),
       ...(hayCanon() ? ["«Canon» (/mi-stand/canon): lo que tiene registrado por participar de cada edición"] : []),
     ];

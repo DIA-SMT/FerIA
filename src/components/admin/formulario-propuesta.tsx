@@ -171,10 +171,14 @@ export function FormularioPropuesta({
           <CampoImagen
             name="imagen"
             etiqueta={propuesta?.imagen ? "Reemplazar foto" : "Foto"}
+            // Real y sin nada escrito encima: había feriantes armando imágenes
+            // con IA que traían el precio adentro, y entonces el precio de la
+            // foto y el del campo de abajo podían no coincidir. Por eso el
+            // menú tampoco va acá: es texto y precios en una imagen.
             ayuda={
               servicio
-                ? "Una foto del puesto o de lo que sirve, o el menú. JPG, PNG, WEBP o AVIF, hasta 5 MB."
-                : "Una foto del producto, la caja o el combo. JPG, PNG, WEBP o AVIF, hasta 5 MB."
+                ? "Una foto real del puesto o de lo que sirve, sin textos ni precios encima: el precio va abajo, en su campo. JPG, PNG, WEBP o AVIF, hasta 5 MB."
+                : "Una foto real del producto, la caja o el combo, sin textos ni precios encima: el precio va abajo, en su campo. JPG, PNG, WEBP o AVIF, hasta 5 MB."
             }
             errores={errores?.imagen}
             actual={urlPublica(propuesta?.imagen)}
