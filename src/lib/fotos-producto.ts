@@ -44,10 +44,12 @@ export const ESTADO_VARIANTES_INICIAL: EstadoVariantes = {};
 
 /**
  * Cuántas fotos puede mejorar con IA cada feriante por día (el de Tucumán):
- * cada una es una llamada paga al modelo de imagen. Sólo cuentan las que
- * salieron bien.
+ * cada una es una llamada paga al modelo de imagen (~US$ 0,04). Sólo cuentan
+ * las que salieron bien. Era 15 y se bajó a 5 el 25/11/2026: las fotos son
+ * más de la mitad del gasto de IA, y con 15 un feriante podía gastar hasta
+ * US$ 18 por mes sólo en esto.
  */
-export const FOTOS_IA_POR_DIA = 15;
+export const FOTOS_IA_POR_DIA = 5;
 
 /**
  * Carpeta donde van las fotos de un feriante.

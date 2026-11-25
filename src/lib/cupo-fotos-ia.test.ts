@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /*
-  El tope de «Mejorar imagen con IA»: 15 por día, y el día es el de Tucumán.
+  El tope de «Mejorar imagen con IA»: 5 por día, y el día es el de Tucumán.
   A las 22:00 de allá ya es el día siguiente en UTC, y no por eso se renueva.
 */
 
@@ -43,8 +43,8 @@ describe("cuántas fotos le quedan por mejorar", () => {
   const ahora = new Date("2026-11-25T15:00:00Z");
 
   it("cuenta sólo las de hoy y del feriante", async () => {
-    prisma.fotoMejorada.count.mockResolvedValueOnce(4);
-    expect(await fotosIARestantes("v1", ahora)).toBe(11);
+    prisma.fotoMejorada.count.mockResolvedValueOnce(2);
+    expect(await fotosIARestantes("v1", ahora)).toBe(3);
     expect(prisma.fotoMejorada.count).toHaveBeenCalledWith({
       where: {
         vendedorId: "v1",
@@ -54,7 +54,7 @@ describe("cuántas fotos le quedan por mejorar", () => {
   });
 
   it("nunca da menos de cero", async () => {
-    prisma.fotoMejorada.count.mockResolvedValueOnce(17);
+    prisma.fotoMejorada.count.mockResolvedValueOnce(7);
     expect(await fotosIARestantes("v1", ahora)).toBe(0);
   });
 });

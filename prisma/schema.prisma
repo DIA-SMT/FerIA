@@ -901,7 +901,7 @@ model PublicidadGenerada {
 // --------------------------- Fotos mejoradas con IA ---------------------------
 // «Mejorar imagen con IA» en el alta de productos es otra llamada paga al
 // modelo de imagen. Igual que con las publicidades, se registra cuándo se hizo
-// cada una, y nada más, para el tope de 15 por día y por feriante
+// cada una, y nada más, para el tope de 5 por día y por feriante
 // (`src/actions/fotos-producto.ts`). En la base y no en memoria por lo mismo:
 // el proceso se reinicia con cada despliegue.
 
