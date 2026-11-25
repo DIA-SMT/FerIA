@@ -17,6 +17,7 @@ import { validarImagen } from "@/lib/storage";
 
 /**
  * Server Action del banco de pruebas de fotos (`/mi-stand/productos/probar-foto`).
+ * Sólo anda en desarrollo, igual que la página.
  *
  * Sólo existe para evaluar el pipeline con fotos reales antes de decidir la
  * interfaz definitiva. **No guarda nada**: devuelve las variantes como data URL
@@ -48,6 +49,13 @@ export async function probarFoto(
   _estado: ResultadoPrueba,
   datos: FormData,
 ): Promise<ResultadoPrueba> {
+  // La página da 404 fuera de desarrollo, pero la acción queda compilada y se
+  // puede llamar igual: sin este corte, cualquier feriante tendría mejoras
+  // con IA sin el tope diario.
+  if (process.env.NODE_ENV !== "development") {
+    return { ok: false, mensaje: "El banco de pruebas es sólo de desarrollo." };
+  }
+
   try {
     const { vendedor } = await requerirVendedorAprobado();
 

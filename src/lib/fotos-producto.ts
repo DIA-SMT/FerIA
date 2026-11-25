@@ -36,9 +36,18 @@ export interface EstadoVariantes {
   variantes?: Variante[];
   /** Error propio de la IA: las otras dos variantes siguen sirviendo. */
   errorIA?: string;
+  /** Cuántas mejoras con IA le quedan hoy, si se pidió una. */
+  restantesIA?: number;
 }
 
 export const ESTADO_VARIANTES_INICIAL: EstadoVariantes = {};
+
+/**
+ * Cuántas fotos puede mejorar con IA cada feriante por día (el de Tucumán):
+ * cada una es una llamada paga al modelo de imagen. Sólo cuentan las que
+ * salieron bien.
+ */
+export const FOTOS_IA_POR_DIA = 15;
 
 /**
  * Carpeta donde van las fotos de un feriante.

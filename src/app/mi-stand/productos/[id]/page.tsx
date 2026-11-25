@@ -6,6 +6,7 @@ import { actualizarProducto } from "@/actions/productos";
 import { FormularioProducto } from "@/components/vendedor/formulario-producto";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
 import { EstadoDeRevision } from "@/components/vendedor/estado-de-revision";
+import { fotosIARestantes } from "@/lib/cupo-fotos-ia";
 import { prisma } from "@/lib/db";
 import { aNumero } from "@/lib/format";
 import { hayPreciosPublicos } from "@/lib/marketplace";
@@ -43,9 +44,11 @@ export default async function PaginaEditarProducto({
   const { id } = await params;
 
   // El filtro por `vendedorId` evita que un feriante abra el producto de otro.
-  const [publicado, cambios] = await Promise.all([
+  const conIA = hayIAConfigurada();
+  const [publicado, cambios, restantesIA] = await Promise.all([
     prisma.producto.findFirst({ where: { id, vendedorId: vendedor.id } }),
     cambiosAbiertos(vendedor.id),
+    conIA ? fotosIARestantes(vendedor.id) : 0,
   ]);
 
   if (!publicado) notFound();
@@ -86,8 +89,9 @@ export default async function PaginaEditarProducto({
       </header>
 
       <FormularioProducto
-        hayIA={hayIAConfigurada()}
+        hayIA={conIA}
         conPrecios={hayPreciosPublicos()}
+        restantesIA={restantesIA}
         accion={actualizarProducto}
         producto={{
           id: producto.id,

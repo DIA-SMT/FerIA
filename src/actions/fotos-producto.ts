@@ -1,8 +1,10 @@
 "use server";
 
+import { fotosIARestantes, registrarFotoMejorada } from "@/lib/cupo-fotos-ia";
 import { esControlDeFlujoDeNext } from "@/lib/errores";
 import {
   carpetaDelVendedor,
+  FOTOS_IA_POR_DIA,
   type EstadoVariantes,
   type Variante,
 } from "@/lib/fotos-producto";
@@ -85,6 +87,18 @@ export async function generarVariantesDeFoto(
 
     if (!usarIA) return { ok: true, variantes };
 
+    // El tope se mira antes de llamar al modelo y la mejora se anota recién
+    // cuando está subida: lo que falla no cuenta.
+    const restantes = await fotosIARestantes(vendedor.id);
+    if (restantes === 0) {
+      return {
+        ok: true,
+        variantes,
+        restantesIA: 0,
+        errorIA: `Ya mejoraste ${FOTOS_IA_POR_DIA} fotos con IA hoy. Mañana podés mejorar más; tu foto ya quedó agregada.`,
+      };
+    }
+
     // --- Con IA ------------------------------------------------------------
     // Si falla, se devuelve la determinista con el error al lado: el feriante
     // puede seguir sin depender de que OpenRouter responda.
@@ -107,6 +121,10 @@ export async function generarVariantesDeFoto(
         await normalizarSalidaIA(editada),
       );
       const rutaIA = await subir(conInsigniaIA.contenido);
+      // Si no se puede anotar, la foto se entrega igual: ya está pagada.
+      await registrarFotoMejorada(vendedor.id).catch((error) =>
+        console.error("[fotos] no se pudo anotar la mejora con IA", error),
+      );
 
       variantes.push({
         clave: "ia",
@@ -121,12 +139,13 @@ export async function generarVariantesDeFoto(
         url: urlDe(rutaIA),
       });
 
-      return { ok: true, variantes };
+      return { ok: true, variantes, restantesIA: restantes - 1 };
     } catch (error) {
       if (esControlDeFlujoDeNext(error)) throw error;
       return {
         ok: true,
         variantes,
+        restantesIA: restantes,
         errorIA:
           error instanceof ErrorDeIA
             ? error.message

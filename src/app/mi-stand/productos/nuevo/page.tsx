@@ -4,6 +4,7 @@ import Link from "next/link";
 import { crearProducto } from "@/actions/productos";
 import { FormularioProducto } from "@/components/vendedor/formulario-producto";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
+import { fotosIARestantes } from "@/lib/cupo-fotos-ia";
 import { hayPreciosPublicos } from "@/lib/marketplace";
 import { requerirVendedorAprobado } from "@/lib/session";
 
@@ -30,7 +31,9 @@ export const metadata = { title: "Nuevo producto" };
 export const maxDuration = 60;
 
 export default async function PaginaNuevoProducto() {
-  await requerirVendedorAprobado();
+  const { vendedor } = await requerirVendedorAprobado();
+  const conIA = hayIAConfigurada();
+  const restantesIA = conIA ? await fotosIARestantes(vendedor.id) : 0;
 
   return (
     <div className="max-w-3xl">
@@ -54,8 +57,9 @@ export default async function PaginaNuevoProducto() {
 
       <FormularioProducto
         accion={crearProducto}
-        hayIA={hayIAConfigurada()}
+        hayIA={conIA}
         conPrecios={hayPreciosPublicos()}
+        restantesIA={restantesIA}
       />
     </div>
   );

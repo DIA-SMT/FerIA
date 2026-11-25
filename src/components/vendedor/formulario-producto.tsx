@@ -48,6 +48,8 @@ interface PropsFormularioProducto {
    * motivo: `hayPreciosPublicos()` lee el entorno del servidor.
    */
   conPrecios?: boolean;
+  /** Cuántas fotos puede mejorar con IA hoy; viaja igual que `hayIA`. */
+  restantesIA?: number;
 }
 
 export function FormularioProducto({
@@ -55,6 +57,7 @@ export function FormularioProducto({
   producto,
   hayIA = true,
   conPrecios = false,
+  restantesIA,
 }: PropsFormularioProducto) {
   const [estado, enviar] = useActionState(accion, ESTADO_INICIAL);
   const errores = estado.errores;
@@ -234,6 +237,7 @@ export function FormularioProducto({
                 disponibles={espacioLibre}
                 fotosNuevas={nuevas.map((v) => v.ruta)}
                 hayIA={hayIA}
+                restantesIA={restantesIA}
               />
             </div>
           </Paso>

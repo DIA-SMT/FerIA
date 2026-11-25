@@ -308,6 +308,8 @@ model Vendedor {
   propuestasSelloPropio PropuestaSelloPropio[]
   /// Cuándo generó cada imagen publicitaria con IA, para el tope.
   publicidadesGeneradas PublicidadGenerada[]
+  /// Cuándo mejoró cada foto de producto con IA, para el tope diario.
+  fotosMejoradas        FotoMejorada[]
 
   // Idempotencia de la importación. Postgres admite varios NULL en un índice
   // único, así que las fichas propias (idExterno null) no chocan entre sí.
@@ -894,4 +896,21 @@ model PublicidadGenerada {
 
   @@index([vendedorId, creadoEn])
   @@map("publicidades_generadas")
+}
+
+// --------------------------- Fotos mejoradas con IA ---------------------------
+// «Mejorar imagen con IA» en el alta de productos es otra llamada paga al
+// modelo de imagen. Igual que con las publicidades, se registra cuándo se hizo
+// cada una, y nada más, para el tope de 15 por día y por feriante
+// (`src/actions/fotos-producto.ts`). En la base y no en memoria por lo mismo:
+// el proceso se reinicia con cada despliegue.
+
+model FotoMejorada {
+  id         String   @id @default(cuid())
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+  creadoEn   DateTime @default(now())
+
+  @@index([vendedorId, creadoEn])
+  @@map("fotos_mejoradas")
 }

@@ -11,6 +11,7 @@ import {
 import { generarVariantesDeFoto } from "@/actions/fotos-producto";
 import {
   ESTADO_VARIANTES_INICIAL,
+  FOTOS_IA_POR_DIA,
   type EstadoVariantes,
   type Variante,
 } from "@/lib/fotos-producto";
@@ -59,6 +60,7 @@ export function SelectorDeFoto({
   disponibles,
   fotosNuevas,
   hayIA = true,
+  restantesIA = FOTOS_IA_POR_DIA,
 }: {
   /** Se interpolan en el prompt de la IA para ambientar la escena. */
   nombreProducto: string;
@@ -85,6 +87,11 @@ export function SelectorDeFoto({
    * cliente.
    */
   hayIA?: boolean;
+  /**
+   * Cuántas fotos puede mejorar con IA en lo que queda del día. Lo cuenta la
+   * página y después lo actualiza cada respuesta.
+   */
+  restantesIA?: number;
 }) {
   const [estado, generar, generando] = useActionState(
     generarVariantesDeFoto,
@@ -108,6 +115,7 @@ export function SelectorDeFoto({
     despues: Variante;
   } | null>(null);
   const [errorIA, setErrorIA] = useState<string | null>(null);
+  const [restantes, setRestantes] = useState(restantesIA);
 
   function pedir(tipo: Peticion, foto: File): void {
     setPeticion(tipo);
@@ -155,7 +163,9 @@ export function SelectorDeFoto({
       sobrantes.push(ia.ruta);
     }
     if (sobrantes.length > 0) onConfirmar(null, sobrantes);
-    setErrorIA(estado.errorIA ?? null);
+    if (estado.restantesIA !== undefined) setRestantes(estado.restantesIA);
+    // Si no le quedan, ya lo dice el texto del botón: no se repite en rojo.
+    setErrorIA(estado.restantesIA === 0 && !ia ? null : (estado.errorIA ?? null));
   }, [estado, generando, peticion, agregada, fotosNuevas, onConfirmar]);
 
   function cerrar(): void {
@@ -255,13 +265,14 @@ export function SelectorDeFoto({
               type="button"
               variante="contorno"
               onClick={() => archivo && pedir("ia", archivo)}
-              disabled={generando}
+              disabled={generando || restantes === 0}
             >
               {mejorando ? "Mejorando la imagen…" : "Mejorar imagen con IA"}
             </Boton>
             <p className="min-w-0 flex-1 text-xs text-slate-500">
-              Reemplaza el fondo por un escenario de estudio y te deja elegir
-              con cuál quedarte. Tarda unos 10 segundos.
+              {restantes === 0
+                ? `Ya mejoraste ${FOTOS_IA_POR_DIA} fotos con IA hoy. Mañana podés mejorar más.`
+                : `Reemplaza el fondo por un escenario de estudio y te deja elegir con cuál quedarte. Tarda unos 10 segundos. Hoy ${restantes === 1 ? "te queda 1" : `te quedan ${restantes}`}.`}
             </p>
           </div>
         </div>

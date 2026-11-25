@@ -163,6 +163,45 @@ export function hoyEnZona(): Date {
   return new Date(Date.UTC(anio!, mes! - 1, dia!));
 }
 
+/**
+ * El instante en que empezó el día de `ahora` **en Tucumán**: las 00:00 de
+ * allá, que son las 03:00 UTC. A diferencia de `hoyEnZona`, es un momento
+ * real, para comparar contra columnas con hora (`creadoEn`).
+ *
+ * El desfase no está fijo en el código: se mide comparando la hora de
+ * Tucumán con la UTC del mismo instante.
+ */
+export function inicioDelDiaEnZona(ahora: Date = new Date()): Date {
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: ZONA,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(ahora)
+      .map((parte) => [parte.type, Number(parte.value)]),
+  ) as Record<"year" | "month" | "day" | "hour" | "minute", number>;
+
+  const MS_POR_MINUTO = 60 * 1000;
+  const comoSiFueraUTC = Date.UTC(
+    partes.year,
+    partes.month - 1,
+    partes.day,
+    partes.hour,
+    partes.minute,
+  );
+  const desfase =
+    Math.round((comoSiFueraUTC - ahora.getTime()) / MS_POR_MINUTO) *
+    MS_POR_MINUTO;
+  return new Date(
+    Date.UTC(partes.year, partes.month - 1, partes.day) - desfase,
+  );
+}
+
 /** Días entre dos fechas (positivo si `hasta` es posterior). */
 export function diasDeDiferencia(desde: Date, hasta: Date): number {
   const MS_POR_DIA = 24 * 60 * 60 * 1000;
