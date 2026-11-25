@@ -305,9 +305,14 @@ const RUTAS_FIJAS = new Set([
  */
 export const CONSULTA_DE_FINANZAS = "(consulta de finanzas de un feriante)";
 
-/** Las palabras que dicen que la conversación va de plata. */
+/**
+ * Las palabras que dicen que la conversación va de plata. Incluye las de las
+ * preguntas del cálculo de precios («¿cuánto gastás…?», «¿cuántas te salen de
+ * una tanda?»): las respuestas son números sueltos, y sin esto un «15000» o un
+ * «24» quedaba en el registro con el texto.
+ */
 const DE_FINANZAS =
-  /precio|cost|cuest|cobr|gananc|ganar|gano|margen|insumo|materia prima|rentab|finanz|plata|pesos|\$|cu[aá]nto (le )?(pongo|vendo|cobro|sale|me sale)|ficha de costos/i;
+  /precio|cost|cuest|cobr|gananc|ganar|gano|margen|insumo|materia prima|ingrediente|materiales|envase|tanda|gast|pag[oóué]|vend[eéoí]|rentab|finanz|plata|pesos|\$|cu[aá]nto (le )?(pongo|vendo|cobro|sale|me sale)|ficha de costos/i;
 
 /**
  * Si la consulta es de finanzas: por lo que dice o por lo que consultó. Lo
@@ -368,20 +373,32 @@ CÓMO LO AYUDÁS CON PRECIOS Y COSTOS (cuando pregunta cuánto cobrar algo, cuá
 
 ${susFichas}
 
-1. SIEMPRE, antes de pedir cualquier dato, fijate si ya tiene una ficha de ese producto (ver_fichas_de_costos con el nombre). Si la tiene, trabajá sobre esa ficha y no le pidas datos que ya están: para «¿cuánto le gano si la vendo a X?» o «¿y si le gano un Y %?» usá probar_con_otros_datos; para un insumo que cambió de precio, actualizar_insumo.
-2. Si no, armala con la persona, preguntando de a una o dos cosas por mensaje y en este orden. No le pases la lista entera de entrada: empezá por lo primero que falte, y si ya te dio algún dato, no se lo vuelvas a pedir.
-   a. Qué producto es. Puede ser uno de su catálogo (mis_productos).
-   b. Cuántas unidades le salen de una tanda: una hornada, una olla, una producción.
-   c. La materia prima de la tanda, insumo por insumo: qué es, cuánto pagó, cuánto compró por ese precio y cuánto usa en la tanda (en g, kg, ml, l o unidades). Si sabe directamente cuánto le cuesta lo que usa, alcanza con eso.
-   d. Cuánto tiempo le lleva la tanda y cuánto quiere cobrar su hora de trabajo. Ese valor lo decide la persona: no sugieras un monto ni des referencias.
-   e. Otros costos de la tanda: envases, etiquetas, gas, luz.
-   f. Cuánto le quiere ganar, en porcentaje sobre el costo.
-   g. Si quiere: cuánto le cuesta ir a un día de feria (traslado, armado) y a cuánto lo vende hoy.
-3. Con los datos, usá calcular_precio y mostrale: el costo por unidad (materia prima, su trabajo y otros), el precio sugerido y la ganancia por unidad. Si dio los datos opcionales, también cuántas tiene que vender para cubrir el día de feria y cuánto le gana hoy con su precio. Si con su precio de hoy pierde, decíselo con claridad y sin dramatismo.
+1. SIEMPRE, antes de pedir cualquier dato, fijate si ya tiene una ficha de ese producto (ver_fichas_de_costos con el nombre). Si no la tiene, no lo menciones. Si la tiene, trabajá sobre esa ficha y no le pidas datos que ya están: para «¿cuánto le gano si la vendo a X?» o «¿y si le gano un Y %?» usá probar_con_otros_datos; para un insumo que cambió de precio, actualizar_insumo.
+2. Si no, armala con la persona con preguntas simples: UNA por mensaje, corta y con un ejemplo, en este orden. Muchos nunca hicieron esta cuenta: que se entienda sin saber de costos. Si ya te dio algún dato, no se lo vuelvas a pedir.
+   a. Qué producto es, si no lo dijo. Puede ser uno de su catálogo (mis_productos).
+   b. Cuántas unidades le salen de una tanda: una hornada, una olla, una producción. Ejemplo: «24 alfajores».
+   c. Cuánto gasta en total en ingredientes o materiales para esa tanda. Ofrecé [[No sé, vamos de a uno]]. Si sabe el total, va como un solo insumo, «Ingredientes y materiales», con ese precio. Si no, de a un insumo por mensaje: qué es, cuánto pagó y cuánto compró por ese precio, y cuánto usa en la tanda (en g, kg, ml, l o unidades); después de cada uno ofrecé [[Agregar otro | Ya están todos]].
+   d. Cuánto tiempo le lleva hacer la tanda. Ejemplo: «2 horas».
+   e. Cuánto quiere cobrar por cada hora de su trabajo. Ese valor lo decide la persona: no sugieras un monto, no des referencias y no ofrezcas botones.
+   f. Si gasta en algo más para esa tanda: envases, etiquetas, gas, luz. Ofrecé [[No, nada más]].
+   g. Cuánto le quiere ganar sobre lo que le cuesta. Ofrecé [[30 % | 50 % | El doble (100 %)]]; también puede decir otro.
+   h. A cuánto lo vende hoy, para compararlo. Ofrecé [[Todavía no lo vendo]].
+   El costo de ir a un día de feria (traslado, armado) no se pregunta; si lo cuenta, va como costoDelDia.
+3. Con los datos, usá calcular_precio y mostrale el resultado así, una línea por dato:
+   - Precio recomendado: (precioSugerido)
+   - Te cuesta cada uno: (costoPorUnidad.total): (materiaPrima) de materia prima, (trabajo) de tu trabajo y (otros) de otros gastos
+   - Le ganás a cada uno: (gananciaPorUnidadAlPrecioSugerido)
+   Si alguno de los tres costos da $ 0,00, no lo nombres. Si dijo a cuánto lo vende hoy, sumá una línea con cuánto le gana con ese precio; si pierde, decíselo con claridad y sin dramatismo. Si dio el costo del día de feria, cuántas tiene que vender para cubrirlo.
 4. Aclarale en una línea que es una cuenta orientativa.
-5. Preguntale si quiere guardar la ficha, y guardala sólo si dice que sí (guardar_ficha_de_costos). Se ve en [Precios y costos](${PRECIOS_Y_COSTOS}).
+5. Preguntale si quiere guardar la ficha y ofrecé [[Sí, guardala | No, gracias]]. Guardala sólo si dice que sí (guardar_ficha_de_costos). Se ve en [Precios y costos](${PRECIOS_Y_COSTOS}).
 6. Si después cambia el precio de un insumo («subió la harina un 20 %»), usá actualizar_insumo con guardar en false, mostrale el antes y el después, y guardá sólo si dice que sí.
 · El precio que calculan no se publica en ningún lado: es para la persona.
+
+BOTONES PARA RESPONDER:
+
+· Cuando la guía de arriba dice «Ofrecé [[…]]», terminá ese mensaje con esa línea tal cual, y no repitas las opciones en el texto.
+· Fuera de esos casos, cuando la respuesta sea una de pocas opciones, también podés ofrecerlas como botones: en la última línea del mensaje, entre corchetes dobles y separadas por «|», como [[Sí, guardala | No, gracias]]. La pantalla las muestra como botones que mandan ese texto, y la persona igual puede escribir otra cosa.
+· Hasta cuatro opciones, de pocas palabras cada una, y sólo para la pregunta que acabás de hacer. Nunca con montos de plata.
 
 CÓMO LO AYUDÁS A DIFUNDIR (cuando pregunta cuándo publicar, qué subir, cómo vender más o hacerse conocer, o te pide un texto para Instagram, un estado de WhatsApp o un mensaje para sus clientes):
 

@@ -90,6 +90,12 @@ describe("sin saludar dos veces", () => {
     expect(sinSaludoRepetido("¡Claro! Hay 67.", "¿hay cosmética?")).toBe(
       "Hay 67.",
     );
+    expect(
+      sinSaludoRepetido(
+        "¡Excelente, Rosa! ¿Cuántos te salen de una tanda?",
+        "alfajores",
+      ),
+    ).toBe("¿Cuántos te salen de una tanda?");
   });
 
   it("no toca una exclamación que ya es la respuesta", () => {
@@ -121,5 +127,45 @@ describe("sin Markdown que el chat no dibuja", () => {
   it("no toca los hashtags ni los guiones", () => {
     const texto = "- Viernes a la noche.\n#HechoEnTucumán #Alfajores";
     expect(sinMarkdown(texto)).toBe(texto);
+  });
+});
+
+describe("los botones para responder", () => {
+  it("separa los de la última línea", async () => {
+    const { separarOpciones } = await import("@/lib/migue-reglas");
+    expect(
+      separarOpciones(
+        "¿Cuánto le querés ganar sobre lo que te cuesta?\n[[30 % | 50 % | El doble (100 %)]]",
+      ),
+    ).toEqual({
+      texto: "¿Cuánto le querés ganar sobre lo que te cuesta?",
+      opciones: ["30 %", "50 %", "El doble (100 %)"],
+    });
+  });
+
+  it("sin corchetes no hay botones y el texto queda igual", async () => {
+    const { separarOpciones } = await import("@/lib/migue-reglas");
+    expect(separarOpciones("¿Cuánto tiempo te lleva la tanda?")).toEqual({
+      texto: "¿Cuánto tiempo te lleva la tanda?",
+      opciones: [],
+    });
+  });
+
+  it("los del medio se sacan pero no se ofrecen", async () => {
+    const { separarOpciones } = await import("@/lib/migue-reglas");
+    expect(
+      separarOpciones("Elegí [[Sí | No]] y después contame cuántas te salen."),
+    ).toEqual({
+      texto: "Elegí y después contame cuántas te salen.",
+      opciones: [],
+    });
+  });
+
+  it("descarta las vacías, las repetidas, las largas y las de más", async () => {
+    const { separarOpciones } = await import("@/lib/migue-reglas");
+    const { opciones } = separarOpciones(
+      `¿Y?\n[[A | | A | ${"x".repeat(41)} | B | C | D | E]]`,
+    );
+    expect(opciones).toEqual(["A", "B", "C", "D"]);
   });
 });

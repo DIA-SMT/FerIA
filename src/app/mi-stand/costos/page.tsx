@@ -7,6 +7,8 @@ import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { IconoLapiz, IconoMas } from "@/components/ui/iconos";
 import { Tarjeta, TarjetaCuerpo } from "@/components/ui/tarjeta";
+import { CalcularConMigue } from "@/components/vendedor/calcular-con-migue";
+import { hayIAConfigurada } from "@/lib/ai";
 import { cn } from "@/lib/cn";
 import { calcularCostos, datosDeCostosSchema } from "@/lib/costos";
 import { prisma } from "@/lib/db";
@@ -24,21 +26,38 @@ const plata = (valor: number) => formatearMoneda(valor, { centavos: true });
  * Son suyas y de nadie más: la Dirección no las ve, y el precio que sale no se
  * publica. La cuenta no se guarda: se rehace con los datos cada vez que se
  * abre, así siempre es la de hoy.
+ *
+ * Con IA, lo primero es Migue: arma la ficha conversando, de a una pregunta
+ * y con botones para responder. El formulario queda como «Prefiero
+ * completarlo yo».
  */
 export default async function PaginaPreciosYCostos() {
   const { vendedor } = await obtenerVendedorActual();
 
-  const fichas = await prisma.fichaDeCostos.findMany({
-    where: { vendedorId: vendedor.id },
-    orderBy: { actualizadoEn: "desc" },
-    select: {
-      id: true,
-      nombre: true,
-      datos: true,
-      actualizadoEn: true,
-      producto: { select: { nombre: true } },
-    },
-  });
+  const conMigue = hayIAConfigurada();
+  const [fichas, sinFicha] = await Promise.all([
+    prisma.fichaDeCostos.findMany({
+      where: { vendedorId: vendedor.id },
+      orderBy: { actualizadoEn: "desc" },
+      select: {
+        id: true,
+        nombre: true,
+        datos: true,
+        actualizadoEn: true,
+        producto: { select: { nombre: true } },
+      },
+    }),
+    // Los botones de la primera pregunta de Migue: los productos que todavía
+    // no tienen ficha, primero los destacados.
+    conMigue
+      ? prisma.producto.findMany({
+          where: { vendedorId: vendedor.id, fichasDeCostos: { none: {} } },
+          orderBy: [{ destacado: "desc" }, { creadoEn: "desc" }],
+          select: { nombre: true },
+          take: 4,
+        })
+      : [],
+  ]);
 
   return (
     <>
@@ -52,7 +71,7 @@ export default async function PaginaPreciosYCostos() {
             tuyo: no lo ve nadie más y no se publica.
           </p>
         </div>
-        {fichas.length > 0 && (
+        {!conMigue && fichas.length > 0 && (
           <BotonLink href="/mi-stand/costos/nueva">
             <IconoMas className="size-4" />
             Nueva ficha
@@ -60,17 +79,25 @@ export default async function PaginaPreciosYCostos() {
         )}
       </header>
 
-      {fichas.length === 0 ? (
-        <EstadoVacio
-          titulo="Todavía no armaste ninguna ficha"
-          descripcion="Contás qué materia prima usás, cuánto tiempo te lleva y cuánto querés ganar, y te sale el precio. También se la podés pedir a Migue: «quiero calcular el precio de mis alfajores»."
-          accion={
-            <BotonLink href="/mi-stand/costos/nueva">
-              <IconoMas className="size-4" />
-              Armar la primera
-            </BotonLink>
-          }
+      {conMigue && (
+        <CalcularConMigue
+          productos={sinFicha.map((producto) => producto.nombre)}
         />
+      )}
+
+      {fichas.length === 0 ? (
+        !conMigue && (
+          <EstadoVacio
+            titulo="Todavía no armaste ninguna ficha"
+            descripcion="Contás qué materia prima usás, cuánto tiempo te lleva y cuánto querés ganar, y te sale el precio."
+            accion={
+              <BotonLink href="/mi-stand/costos/nueva">
+                <IconoMas className="size-4" />
+                Armar la primera
+              </BotonLink>
+            }
+          />
+        )
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {fichas.map((ficha) => {

@@ -32,12 +32,12 @@ const SALUDO_INICIAL =
   /^\s*¡?\s*(?:hola|buenas(?:\s+(?:tardes|noches))?|buen\s+d[ií]a|buenos\s+d[ií]as)(?:\s*,?\s*\p{Lu}\p{Ll}+)?\s*[!.,]+\s*/iu;
 
 /**
- * Una exclamación de entrada, sola: «¡Claro!», «¡Qué buena pregunta!», «¡Con
- * gusto te cuento!». Sólo si es la exclamación entera: «¡Sí!» es una
+ * Una exclamación de entrada, sola o con el nombre: «¡Claro!», «¡Qué buena
+ * pregunta!», «¡Con gusto te cuento!», «¡Excelente, Rosa!». Sólo si es la exclamación entera: «¡Sí!» es una
  * respuesta, y «¡Claro que hay feria el sábado!» también.
  */
 const FRASE_DE_ENTRADA =
-  /^\s*¡\s*(?:claro(?:\s+que\s+s[ií])?|por\s+supuesto|qu[eé]\s+(?:rico|lindo|linda|bueno|buena|buena\s+(?:pregunta|idea|elecci[oó]n))|(?:muy\s+)?buena\s+(?:pregunta|idea|elecci[oó]n)|excelente(?:\s+(?:pregunta|idea|elecci[oó]n))?|perfecto|genial|con\s+(?:mucho\s+)?gusto(?:\s+te\s+(?:ayudo|cuento|respondo))?)\s*!\s*/iu;
+  /^\s*¡\s*(?:claro(?:\s+que\s+s[ií])?|por\s+supuesto|qu[eé]\s+(?:rico|lindo|linda|bueno|buena|buena\s+(?:pregunta|idea|elecci[oó]n))|(?:muy\s+)?buena\s+(?:pregunta|idea|elecci[oó]n)|excelente(?:\s+(?:pregunta|idea|elecci[oó]n))?|perfecto|genial|con\s+(?:mucho\s+)?gusto(?:\s+te\s+(?:ayudo|cuento|respondo))?)(?:\s*,\s*\p{Lu}\p{Ll}+)?\s*!\s*/iu;
 
 /**
  * Saca el saludo del principio de la respuesta cuando la persona no saludó.
@@ -79,4 +79,42 @@ export function sinMarkdown(texto: string): string {
     .replace(/__(.+?)__/g, "$1")
     .replace(/^[ \t]*[*•][ \t]+/gm, "- ")
     .replace(/^[ \t]*#{1,6}[ \t]+/gm, "");
+}
+
+/** Hasta cuántos botones y de qué largo: son respuestas, no párrafos. */
+const MAXIMO_OPCIONES = 4;
+const MAXIMO_LARGO_OPCION = 40;
+
+/**
+ * Separa los botones para responder del texto de Migue.
+ *
+ * Migue los escribe en la última línea entre corchetes dobles —
+ * `[[Sí, guardala | No, gracias]]`— y la burbuja los dibuja como botones que
+ * mandan ese texto. Sólo valen si van al final: unos corchetes en el medio se
+ * sacan del texto pero no se ofrecen, porque la pregunta a la que responden es
+ * la última. Las opciones largas, repetidas o de más se descartan: con un
+ * botón de menos la persona igual puede escribir.
+ */
+export function separarOpciones(texto: string): {
+  texto: string;
+  opciones: string[];
+} {
+  const alFinal = /\[\[([^[\]]*)\]\]\s*$/.exec(texto);
+  const opciones = [
+    ...new Set(
+      (alFinal?.[1] ?? "")
+        .split("|")
+        .map((opcion) => opcion.trim())
+        .filter(
+          (opcion) => opcion.length > 0 && opcion.length <= MAXIMO_LARGO_OPCION,
+        ),
+    ),
+  ].slice(0, MAXIMO_OPCIONES);
+
+  const limpio = texto
+    .replace(/[ \t]*\[\[[^[\]]*\]\]/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+
+  return { texto: limpio || texto.trim(), opciones };
 }

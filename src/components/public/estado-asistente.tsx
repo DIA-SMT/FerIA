@@ -25,6 +25,16 @@ import {
  * cumple por la de adelante.
  */
 
+/**
+ * Un mensaje de Migue que arma la pantalla, sin pasar por el modelo: el
+ * primero de un recorrido guiado, que es siempre igual y no vale la pena
+ * pagarlo ni esperarlo.
+ */
+export interface TurnoDeMigue {
+  texto: string;
+  opciones?: string[];
+}
+
 interface ValorAsistente {
   abierto: boolean;
   abrir: () => void;
@@ -43,6 +53,11 @@ interface ValorAsistente {
   consultaPendiente: string | null;
   consultar: (pregunta: string) => void;
   limpiarConsulta: () => void;
+  /** Un mensaje de Migue que la burbuja todavía no mostró. */
+  turnoPendiente: TurnoDeMigue | null;
+  /** Abre la burbuja con un mensaje de Migue, sin preguntarle al modelo. */
+  presentar: (turno: TurnoDeMigue) => void;
+  limpiarTurno: () => void;
 }
 
 const Contexto = createContext<ValorAsistente | null>(null);
@@ -66,6 +81,15 @@ export function ProveedorAsistente({ children }: { children: ReactNode }) {
 
   const limpiarConsulta = useCallback(() => setConsultaPendiente(null), []);
 
+  const [turnoPendiente, setTurnoPendiente] = useState<TurnoDeMigue | null>(
+    null,
+  );
+  const presentar = useCallback((turno: TurnoDeMigue) => {
+    setTurnoPendiente(turno);
+    setAbierto(true);
+  }, []);
+  const limpiarTurno = useCallback(() => setTurnoPendiente(null), []);
+
   const valor = useMemo<ValorAsistente>(
     () => ({
       abierto,
@@ -75,6 +99,9 @@ export function ProveedorAsistente({ children }: { children: ReactNode }) {
       consultaPendiente,
       consultar,
       limpiarConsulta,
+      turnoPendiente,
+      presentar,
+      limpiarTurno,
     }),
     [
       abierto,
@@ -84,6 +111,9 @@ export function ProveedorAsistente({ children }: { children: ReactNode }) {
       consultaPendiente,
       consultar,
       limpiarConsulta,
+      turnoPendiente,
+      presentar,
+      limpiarTurno,
     ],
   );
 

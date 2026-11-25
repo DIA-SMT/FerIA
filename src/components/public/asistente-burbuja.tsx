@@ -46,6 +46,12 @@ const MIGUE_CARA = "/migue-cara.webp";
  * emitir HTML—, acá nada se interpreta: sólo se enlazan rutas internas.
  */
 
+/**
+ * Un mensaje del chat. Los de Migue pueden traer botones para responder:
+ * se muestran sólo debajo del último, que es la pregunta abierta.
+ */
+type Mensaje = TurnoAsistente & { opciones?: string[] };
+
 /** El saludo dice qué se le puede preguntar, y eso cambia según la pantalla. */
 const SALUDOS: Record<AreaAsistente, TurnoAsistente> = {
   publico: {
@@ -150,7 +156,7 @@ export function AsistenteBurbuja({
     [asistente],
   );
 
-  const [mensajes, setMensajes] = useState<TurnoAsistente[]>([saludo]);
+  const [mensajes, setMensajes] = useState<Mensaje[]>([saludo]);
   const [borrador, setBorrador] = useState("");
   const [pendiente, iniciarTransicion] = useTransition();
 
@@ -196,14 +202,17 @@ export function AsistenteBurbuja({
     y ahí no se puede llamar a `startTransition`. La consola tiraba «Cannot call
     startTransition while rendering» y la pregunta no se mandaba nunca.
   */
-  const mensajesRef = useRef<TurnoAsistente[]>([saludo]);
+  const mensajesRef = useRef<Mensaje[]>([saludo]);
   useEffect(() => {
     mensajesRef.current = mensajes;
   }, [mensajes]);
 
   const preguntar = useCallback((pregunta: string) => {
-    // La conversación menos el saludo fijo, que el modelo no necesita ver.
-    const historial = mensajesRef.current.slice(1);
+    // La conversación menos el saludo fijo, que el modelo no necesita ver, y
+    // sin los botones, que ya no hacen falta: la respuesta dice cuál tocó.
+    const historial = mensajesRef.current
+      .slice(1)
+      .map(({ rol, texto }) => ({ rol, texto }));
 
     setMensajes((previos) => [...previos, { rol: "usuario", texto: pregunta }]);
 
@@ -211,7 +220,11 @@ export function AsistenteBurbuja({
       const respuesta = await preguntarAlAsistente(historial, pregunta, area);
       setMensajes((actuales) => [
         ...actuales,
-        { rol: "asistente", texto: respuesta.texto },
+        {
+          rol: "asistente",
+          texto: respuesta.texto,
+          opciones: respuesta.opciones,
+        },
       ]);
     });
   }, [area]);
@@ -233,6 +246,21 @@ export function AsistenteBurbuja({
     asistente.limpiarConsulta();
     preguntar(pregunta);
   }, [asistente, pendiente, preguntar]);
+
+  // Un mensaje de Migue que armó la pantalla —el primero de un recorrido
+  // guiado—: se muestra tal cual, sin preguntarle al modelo. Se limpia antes
+  // de mostrarlo por lo mismo que la consulta de arriba: si no, aparece dos
+  // veces.
+  useEffect(() => {
+    const turno = asistente?.turnoPendiente;
+    if (!turno) return;
+    asistente.limpiarTurno();
+    setMensajes((previos) => [...previos, { rol: "asistente", ...turno }]);
+  }, [asistente]);
+
+  const ultimo = mensajes[mensajes.length - 1];
+  const opciones =
+    !pendiente && ultimo?.rol === "asistente" ? (ultimo.opciones ?? []) : [];
 
   return (
     <>
@@ -309,6 +337,21 @@ export function AsistenteBurbuja({
                 )}
               </div>
             ))}
+
+            {opciones.length > 0 && (
+              <div className="mr-8 flex flex-wrap gap-2">
+                {opciones.map((opcion) => (
+                  <button
+                    key={opcion}
+                    type="button"
+                    onClick={() => preguntar(opcion)}
+                    className="rounded-full bg-municipal-50 px-3 py-1.5 text-left text-sm font-medium text-municipal-700 ring-1 ring-municipal-200 transition-colors hover:bg-municipal-100"
+                  >
+                    {opcion}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {pendiente && (
               <div className="mr-8 flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-slate-100 px-3.5 py-3">

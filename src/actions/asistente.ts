@@ -18,6 +18,7 @@ import {
   type TurnoAsistente,
 } from "@/lib/ia-asistente";
 import { responderConsultaPublica } from "@/lib/ia-asistente-publico";
+import { separarOpciones } from "@/lib/migue-reglas";
 import { obtenerSesion, type SesionApp } from "@/lib/session";
 
 /**
@@ -32,10 +33,18 @@ import { obtenerSesion, type SesionApp } from "@/lib/session";
 export interface RespuestaAsistente {
   ok: boolean;
   texto: string;
+  /** Respuestas para tocar en vez de escribir. Sólo las da Migue feriante. */
+  opciones?: string[];
 }
 
 const MAXIMO_PREGUNTA = 500;
 const MAXIMO_TURNOS = 8;
+/**
+ * El feriante lleva conversaciones más largas: calcular un precio son nueve
+ * preguntas, y con ocho turnos Migue llegaba a la cuenta sin acordarse de
+ * cuántas unidades salían de la tanda.
+ */
+const MAXIMO_TURNOS_FERIANTE = 24;
 const MAXIMO_TEXTO_TURNO = 2000;
 
 /**
@@ -112,7 +121,10 @@ async function registrarAnonima(pregunta: string): Promise<void> {
 }
 
 /** El historial que manda el cliente es hostil hasta que se demuestre lo contrario. */
-function sanearHistorial(historial: unknown): TurnoAsistente[] {
+function sanearHistorial(
+  historial: unknown,
+  maximo: number = MAXIMO_TURNOS,
+): TurnoAsistente[] {
   if (!Array.isArray(historial)) return [];
 
   return historial
@@ -131,7 +143,7 @@ function sanearHistorial(historial: unknown): TurnoAsistente[] {
           : ("usuario" as const),
       texto: turno.texto.slice(0, MAXIMO_TEXTO_TURNO),
     }))
-    .slice(-MAXIMO_TURNOS);
+    .slice(-maximo);
 }
 
 /**
@@ -206,7 +218,7 @@ async function responderComoFeriante(
     };
   }
 
-  const anterior = sanearHistorial(historial);
+  const anterior = sanearHistorial(historial, MAXIMO_TURNOS_FERIANTE);
   let herramientas: string[] = [];
   try {
     const respuesta = await responderConsultaFeriante(
@@ -215,7 +227,10 @@ async function responderComoFeriante(
       pregunta,
     );
     herramientas = respuesta.herramientas;
-    return { ok: true, texto: respuesta.texto };
+    const { texto, opciones } = separarOpciones(respuesta.texto);
+    return opciones.length > 0
+      ? { ok: true, texto, opciones }
+      : { ok: true, texto };
   } finally {
     await registrarAnonima(
       esDeFinanzas(pregunta, anterior, herramientas)

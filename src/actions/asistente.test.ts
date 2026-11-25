@@ -176,6 +176,68 @@ describe("Migue del feriante", () => {
     });
   });
 
+  it("los botones vienen aparte del texto", async () => {
+    sesion.mockResolvedValue(FERIANTE);
+    prisma.vendedor.findUnique.mockResolvedValue({
+      id: "v3",
+      emprendimiento: "Doña Rosita",
+    });
+    responderConsultaFeriante.mockResolvedValueOnce({
+      texto: "¿Querés que la guarde?\n[[Sí, guardala | No, gracias]]",
+      herramientas: ["calcular_precio"],
+    });
+
+    expect(await preguntarAlAsistente([], "50 %", "feriante")).toEqual({
+      ok: true,
+      texto: "¿Querés que la guarde?",
+      opciones: ["Sí, guardala", "No, gracias"],
+    });
+  });
+
+  it("la respuesta suelta a una pregunta del cálculo tampoco queda", async () => {
+    sesion.mockResolvedValue(FERIANTE);
+    prisma.vendedor.findUnique.mockResolvedValue({
+      id: "v3",
+      emprendimiento: "Doña Rosita",
+    });
+
+    await preguntarAlAsistente(
+      [
+        { rol: "usuario", texto: "24" },
+        {
+          rol: "asistente",
+          texto: "¿Cuánto gastás en total en ingredientes para esa tanda?",
+        },
+      ],
+      "15000",
+      "feriante",
+    );
+
+    expect(prisma.consultaAsistente.create).toHaveBeenCalledWith({
+      data: { pregunta: CONSULTA_DE_FINANZAS },
+    });
+  });
+
+  it("recuerda toda la cuenta de un precio, no sólo los últimos ocho turnos", async () => {
+    sesion.mockResolvedValue(FERIANTE);
+    prisma.vendedor.findUnique.mockResolvedValue({
+      id: "v3",
+      emprendimiento: "Doña Rosita",
+    });
+    const historial = Array.from({ length: 20 }, (_, indice) => ({
+      rol: indice % 2 === 0 ? ("asistente" as const) : ("usuario" as const),
+      texto: `turno ${indice}`,
+    }));
+
+    await preguntarAlAsistente(historial, "No, gracias", "feriante");
+
+    expect(responderConsultaFeriante).toHaveBeenCalledWith(
+      expect.anything(),
+      historial,
+      "No, gracias",
+    );
+  });
+
   it("sin ficha de feriante, recibe al Migue público", async () => {
     sesion.mockResolvedValue(FERIANTE);
     prisma.vendedor.findUnique.mockResolvedValue(null);
