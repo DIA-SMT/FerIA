@@ -14,7 +14,9 @@ import type { ProductoParaCompartir } from "@/components/vendedor/compartir-cata
 import { cn } from "@/lib/cn";
 import {
   MAXIMO_PRODUCTOS_PUBLICIDAD,
-  PUBLICIDADES_POR_DIA,
+  cuandoPuedeOtra,
+  DIAS_DEL_PERIODO,
+  PUBLICIDADES_POR_PERIODO,
   type FormatoPublicidad,
 } from "@/lib/publicidad";
 
@@ -42,6 +44,7 @@ export function PublicidadConIA({
   enlace,
   generar,
   rutaDeLaImagen = "/mi-stand/compartir/publicidad",
+  cupoInicial,
 }: {
   productos: ProductoParaCompartir[];
   emprendimiento: string;
@@ -53,7 +56,10 @@ export function PublicidadConIA({
   }) => Promise<EstadoPublicidad>;
   /** Dónde se arma la imagen. Cambia sólo para probarla con datos de ejemplo. */
   rutaDeLaImagen?: string;
+  /** Cuántas le quedan al entrar y, si no le quedan, desde cuándo (ISO). */
+  cupoInicial: { restantes: number; proxima: string | null };
 }) {
+  const [cupo, setCupo] = useState(cupoInicial);
   const conFoto = productos.filter((producto) => producto.foto);
   const [elegidos, setElegidos] = useState<string[]>(() =>
     conFoto.slice(0, 1).map((producto) => producto.id),
@@ -83,6 +89,12 @@ export function PublicidadConIA({
         productos: elegidos,
         anterior: fondo,
       });
+      if (estado.restantes !== undefined) {
+        setCupo({
+          restantes: estado.restantes,
+          proxima: estado.proxima ?? null,
+        });
+      }
       if (!estado.ok || !estado.fondo) {
         setMensaje(estado.mensaje ?? "No se pudo generar la imagen.");
         return;
@@ -206,7 +218,9 @@ export function PublicidadConIA({
           <button
             type="button"
             onClick={pedir}
-            disabled={generando || elegidos.length === 0}
+            disabled={
+              generando || elegidos.length === 0 || cupo.restantes === 0
+            }
             className={cn(estilosBoton("primario"), "mt-4 w-full sm:w-auto")}
           >
             {generando
@@ -217,8 +231,19 @@ export function PublicidadConIA({
           </button>
           <p className="mt-2 text-xs text-slate-500">
             Tarda unos 15 segundos. La IA arma la escena con tus fotos y el
-            texto lo ponemos nosotros, así tu WhatsApp sale bien escrito. Podés
-            generar hasta {PUBLICIDADES_POR_DIA} por día.
+            texto lo ponemos nosotros, así tu WhatsApp sale bien escrito.
+          </p>
+          {/* El cupo: siempre a la vista, para que nadie se entere del tope
+              recién cuando ya no puede. */}
+          <p
+            className={cn(
+              "mt-2 text-xs font-medium",
+              cupo.restantes === 0 ? "text-acento-900" : "text-slate-600",
+            )}
+          >
+            {cupo.restantes === 0
+              ? `Ya usaste las ${PUBLICIDADES_POR_PERIODO} imágenes de estos ${DIAS_DEL_PERIODO} días. Vas a poder generar otra ${cupo.proxima ? cuandoPuedeOtra(new Date(cupo.proxima)) : "en unos días"}. Mientras tanto, podés cambiar el título y el formato de la última.`
+              : `Te ${cupo.restantes === 1 ? "queda 1" : `quedan ${cupo.restantes}`} de ${PUBLICIDADES_POR_PERIODO}. Cada imagen vuelve a estar disponible ${DIAS_DEL_PERIODO} días después de generada.`}
           </p>
         </section>
       </div>

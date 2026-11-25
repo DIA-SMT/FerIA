@@ -306,6 +306,8 @@ model Vendedor {
   fichasDeCostos        FichaDeCostos[]
   /// Lo que ofrece en «Regalos y servicios con sello propio».
   propuestasSelloPropio PropuestaSelloPropio[]
+  /// Cuándo generó cada imagen publicitaria con IA, para el tope.
+  publicidadesGeneradas PublicidadGenerada[]
 
   // Idempotencia de la importación. Postgres admite varios NULL en un índice
   // único, así que las fichas propias (idExterno null) no chocan entre sí.
@@ -875,4 +877,21 @@ model PropuestaSelloPropio {
   @@index([publicada, modalidad])
   @@index([vendedorId])
   @@map("propuestas_sello_propio")
+}
+
+// ------------------------- Imágenes publicitarias ----------------------------
+// Cada imagen publicitaria que la IA arma en «Compartir» es una llamada paga al
+// modelo de imagen. Esto registra cuándo se generó cada una, y nada más, para
+// poner un tope por feriante (`src/actions/publicidad.ts`). Va en la base y no
+// en memoria porque la ventana es de días y el proceso se reinicia con cada
+// despliegue: un tope en memoria se vaciaba solo.
+
+model PublicidadGenerada {
+  id         String   @id @default(cuid())
+  vendedorId String
+  vendedor   Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+  creadoEn   DateTime @default(now())
+
+  @@index([vendedorId, creadoEn])
+  @@map("publicidades_generadas")
 }

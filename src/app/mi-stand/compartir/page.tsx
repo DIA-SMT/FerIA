@@ -6,6 +6,7 @@ import {
 import { PestaniasCompartir } from "@/components/vendedor/pestanias-compartir";
 import { PublicidadConIA } from "@/components/vendedor/publicidad-con-ia";
 import { hayIAConfigurada } from "@/lib/ai";
+import { consultarCupoDePublicidad } from "@/lib/imagen-del-feriante";
 import { prisma } from "@/lib/db";
 import { urlPublica } from "@/lib/media";
 import { requerirVendedorAprobado } from "@/lib/session";
@@ -39,6 +40,7 @@ export default async function PaginaCompartir() {
   }));
   const enlace = `${sitio}/stands/${vendedor.slug}`;
   const conIA = hayIAConfigurada();
+  const cupo = await consultarCupoDePublicidad(vendedor.id);
 
   return (
     <div>
@@ -70,6 +72,10 @@ export default async function PaginaCompartir() {
               emprendimiento={vendedor.emprendimiento}
               enlace={enlace}
               generar={generarPublicidad}
+              cupoInicial={{
+                restantes: cupo.restantes,
+                proxima: cupo.proxima?.toISOString() ?? null,
+              }}
             />
           ) : null
         }

@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/db";
+import {
+  cupoDePublicidad,
+  UN_PERIODO_MS,
+  type CupoDePublicidad,
+} from "@/lib/publicidad";
 import { obtenerSesion } from "@/lib/session";
 import { almacenamiento } from "@/lib/storage";
 import { formatearWhatsapp } from "@/lib/whatsapp";
@@ -54,4 +59,22 @@ export function enlaceParaImagen(slug: string): string {
     .replace(/^https?:\/\//, "")
     .replace(/\/+$/, "");
   return `${sitio}/stands/${slug}`;
+}
+
+/** Cuántas imágenes publicitarias le quedan y desde cuándo puede otra. */
+export async function consultarCupoDePublicidad(
+  vendedorId: string,
+  ahora = new Date(),
+): Promise<CupoDePublicidad> {
+  const generadas = await prisma.publicidadGenerada.findMany({
+    where: {
+      vendedorId,
+      creadoEn: { gt: new Date(ahora.getTime() - UN_PERIODO_MS) },
+    },
+    select: { creadoEn: true },
+  });
+  return cupoDePublicidad(
+    generadas.map((fila) => fila.creadoEn),
+    ahora,
+  );
 }

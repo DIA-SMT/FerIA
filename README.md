@@ -103,8 +103,10 @@ La cara visible para los vecinos.
   (`imagenPublicitaria` en `src/lib/imagen-catalogo.tsx`): un modelo de
   imagen escribe letras deformes y cambia números. La escena se guarda en
   `productos/vendedores/<id>/publicidad/` y la anterior se borra; cambiar el
-  título o el formato no vuelve a llamar a la IA. Hasta 10 por día por
-  feriante.
+  título o el formato no vuelve a llamar a la IA. Hasta 3 cada 3 días por
+  feriante, contados en la tabla `publicidades_generadas` (no en memoria:
+  el proceso se reinicia con cada despliegue); sólo cuentan las que salieron
+  bien.
 - **Migue para difundir**: le arma un plan de publicaciones atado a sus
   próximas ferias, los días en que más miran su página, sus productos más
   consultados y las fechas comerciales que se vienen

@@ -11,10 +11,12 @@ import { ErrorDeIA } from "@/lib/ia-imagenes";
 import { generarEscenaPublicitaria } from "@/lib/ia-publicidad";
 import { titularPublicitario } from "@/lib/ia-texto";
 import { RUBROS } from "@/lib/labels";
-import { crearLimiteDeRitmo } from "@/lib/limite-de-ritmo";
+import { consultarCupoDePublicidad } from "@/lib/imagen-del-feriante";
 import {
+  cuandoPuedeOtra,
+  DIAS_DEL_PERIODO,
   MAXIMO_PRODUCTOS_PUBLICIDAD,
-  PUBLICIDADES_POR_DIA,
+  PUBLICIDADES_POR_PERIODO,
 } from "@/lib/publicidad";
 import { requerirVendedorAprobado } from "@/lib/session";
 import { almacenamiento } from "@/lib/storage";
@@ -35,13 +37,11 @@ export interface EstadoPublicidad {
   /** La ruta de la escena guardada. */
   fondo?: string;
   titular?: string;
+  /** Cuántas le quedan después de esta. */
+  restantes?: number;
+  /** Desde cuándo puede otra, si ya no le quedan (ISO). */
+  proxima?: string | null;
 }
-
-/** Un tope por día y por feriante: con diez alcanza para probar varias. */
-const superaElLimite = crearLimiteDeRitmo({
-  ventanaMs: 24 * 60 * 60 * 1000,
-  maximo: PUBLICIDADES_POR_DIA,
-});
 
 export async function generarPublicidad(pedido: {
   productos: string[];
@@ -69,10 +69,16 @@ export async function generarPublicidad(pedido: {
       return { ok: false, mensaje: "Esos productos no tienen foto." };
     }
 
-    if (superaElLimite(vendedor.id)) {
+    // El tope se cuenta en la base: la ventana es de días y el proceso se
+    // reinicia con cada despliegue. Lo que falla no cuenta: se registra recién
+    // con la imagen guardada.
+    const cupo = await consultarCupoDePublicidad(vendedor.id);
+    if (cupo.restantes === 0) {
       return {
         ok: false,
-        mensaje: `Llegaste a las ${PUBLICIDADES_POR_DIA} imágenes de hoy. Mañana podés generar más; mientras tanto podés cambiar el título de la última.`,
+        restantes: 0,
+        proxima: cupo.proxima?.toISOString() ?? null,
+        mensaje: `Ya generaste ${PUBLICIDADES_POR_PERIODO} imágenes en los últimos ${DIAS_DEL_PERIODO} días. Vas a poder generar otra ${cupo.proxima ? cuandoPuedeOtra(cupo.proxima) : "en unos días"}; mientras tanto podés cambiar el título y el formato de la última.`,
       };
     }
 
@@ -127,7 +133,18 @@ export async function generarPublicidad(pedido: {
       await almacenamiento.eliminar(anterior);
     }
 
-    return { ok: true, fondo, titular };
+    await prisma.publicidadGenerada.create({
+      data: { vendedorId: vendedor.id },
+    });
+    const despues = await consultarCupoDePublicidad(vendedor.id);
+
+    return {
+      ok: true,
+      fondo,
+      titular,
+      restantes: despues.restantes,
+      proxima: despues.proxima?.toISOString() ?? null,
+    };
   } catch (error) {
     if (esControlDeFlujoDeNext(error)) throw error;
     return {

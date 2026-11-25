@@ -73,3 +73,30 @@ describe("el título de la imagen publicitaria", () => {
     expect(palabrasDelTitular("🎁")).toEqual(["🎁"]);
   });
 });
+
+describe("el tope de imágenes publicitarias", () => {
+  const HORA = 60 * 60 * 1000;
+  const ahora = new Date("2026-11-24T17:00:00Z");
+  const hace = (horas: number) => new Date(ahora.getTime() - horas * HORA);
+
+  it("tres cada tres días, con ventana que corre", async () => {
+    const { cupoDePublicidad } = await import("@/lib/publicidad");
+    expect(cupoDePublicidad([], ahora)).toEqual({
+      restantes: 3,
+      proxima: null,
+    });
+    expect(cupoDePublicidad([hace(1), hace(80)], ahora).restantes).toBe(2);
+
+    const lleno = cupoDePublicidad([hace(1), hace(48), hace(60)], ahora);
+    expect(lleno.restantes).toBe(0);
+    // La más vieja que cuenta es de hace 60 h: se libera en 12 h.
+    expect(lleno.proxima).toEqual(new Date(ahora.getTime() + 12 * HORA));
+  });
+
+  it("dice cuándo puede otra en la hora de Tucumán", async () => {
+    const { cuandoPuedeOtra } = await import("@/lib/publicidad");
+    expect(cuandoPuedeOtra(new Date("2026-11-27T17:20:00Z"))).toBe(
+      "el viernes 27 de noviembre a las 14:20",
+    );
+  });
+});
