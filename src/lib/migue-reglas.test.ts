@@ -68,6 +68,40 @@ describe("sin saludar dos veces", () => {
     }
   });
 
+  it("saca las frases de entrada, aunque la persona haya saludado", () => {
+    expect(
+      sinSaludoRepetido(
+        "¡Qué rico! Encontré a [Casa del Alfajor](/stands/casa-del-alfajor).",
+        "busco alfajores",
+      ),
+    ).toBe("Encontré a [Casa del Alfajor](/stands/casa-del-alfajor).");
+    expect(
+      sinSaludoRepetido(
+        "¡Qué buena pregunta! No tengo feriantes de velas.",
+        "hola, ¿hay velas?",
+      ),
+    ).toBe("No tengo feriantes de velas.");
+    expect(
+      sinSaludoRepetido(
+        "¡Con gusto te cuento! Hacen milanesas.",
+        "¿qué hacen?",
+      ),
+    ).toBe("Hacen milanesas.");
+    expect(sinSaludoRepetido("¡Claro! Hay 67.", "¿hay cosmética?")).toBe(
+      "Hay 67.",
+    );
+  });
+
+  it("no toca una exclamación que ya es la respuesta", () => {
+    for (const texto of [
+      "¡Sí! Hay feria el sábado.",
+      "¡Claro que hay feria el sábado!",
+      "¡Qué rico que suena! Te paso el catálogo.",
+    ]) {
+      expect(sinSaludoRepetido(texto, "¿hay feria?")).toBe(texto);
+    }
+  });
+
   it("si la respuesta es sólo el saludo, no la deja vacía", () => {
     expect(sinSaludoRepetido("¡Hola!", "?")).toBe("¡Hola!");
   });

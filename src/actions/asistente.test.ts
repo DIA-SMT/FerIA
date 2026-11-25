@@ -9,13 +9,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   sesion,
-  responderConsulta,
+  responderConsultaPublica,
   responderConsultaAdmin,
   responderConsultaFeriante,
   prisma,
 } = vi.hoisted(() => ({
   sesion: vi.fn(),
-  responderConsulta: vi.fn(async () => "respuesta pública"),
+  responderConsultaPublica: vi.fn(async () => ({
+    texto: "respuesta pública",
+    herramientas: [] as string[],
+  })),
   responderConsultaAdmin: vi.fn(async () => ({
     texto: "respuesta del panel",
     herramientas: ["resumen_pendientes"],
@@ -42,10 +45,7 @@ vi.mock("@/lib/ia-asistente-feriante", async (original) => ({
   ...(await original<typeof import("@/lib/ia-asistente-feriante")>()),
   responderConsultaFeriante,
 }));
-vi.mock("@/lib/ia-asistente", async (original) => ({
-  ...(await original<typeof import("@/lib/ia-asistente")>()),
-  responderConsulta,
-}));
+vi.mock("@/lib/ia-asistente-publico", () => ({ responderConsultaPublica }));
 
 import { preguntarAlAsistente } from "@/actions/asistente";
 import { CONSULTA_DE_FINANZAS } from "@/lib/ia-asistente-feriante";
@@ -71,7 +71,7 @@ describe("preguntarAlAsistente", () => {
 
     expect(respuesta).toEqual({ ok: true, texto: "respuesta del panel" });
     expect(responderConsultaAdmin).toHaveBeenCalledOnce();
-    expect(responderConsulta).not.toHaveBeenCalled();
+    expect(responderConsultaPublica).not.toHaveBeenCalled();
     expect(prisma.consultaAdmin.create).toHaveBeenCalledWith({
       data: {
         usuarioId: "u1",
@@ -100,7 +100,7 @@ describe("preguntarAlAsistente", () => {
 
     expect(respuesta).toEqual({ ok: true, texto: "respuesta pública" });
     expect(responderConsultaAdmin).not.toHaveBeenCalled();
-    expect(responderConsulta).toHaveBeenCalledWith(
+    expect(responderConsultaPublica).toHaveBeenCalledWith(
       [],
       "¿cuántas revisiones hay?",
       {
@@ -119,7 +119,7 @@ describe("preguntarAlAsistente", () => {
     );
 
     expect(responderConsultaAdmin).not.toHaveBeenCalled();
-    expect(responderConsulta).toHaveBeenCalledOnce();
+    expect(responderConsultaPublica).toHaveBeenCalledOnce();
   });
 });
 
@@ -183,7 +183,7 @@ describe("Migue del feriante", () => {
     await preguntarAlAsistente([], "¿qué stand me tocó?", "feriante");
 
     expect(responderConsultaFeriante).not.toHaveBeenCalled();
-    expect(responderConsulta).toHaveBeenCalledOnce();
+    expect(responderConsultaPublica).toHaveBeenCalledOnce();
   });
 
   it("un administrador que dice «feriante» no entra a ningún stand", async () => {

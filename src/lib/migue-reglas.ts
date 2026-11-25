@@ -32,16 +32,30 @@ const SALUDO_INICIAL =
   /^\s*¡?\s*(?:hola|buenas(?:\s+(?:tardes|noches))?|buen\s+d[ií]a|buenos\s+d[ií]as)(?:\s*,?\s*\p{Lu}\p{Ll}+)?\s*[!.,]+\s*/iu;
 
 /**
+ * Una exclamación de entrada, sola: «¡Claro!», «¡Qué buena pregunta!», «¡Con
+ * gusto te cuento!». Sólo si es la exclamación entera: «¡Sí!» es una
+ * respuesta, y «¡Claro que hay feria el sábado!» también.
+ */
+const FRASE_DE_ENTRADA =
+  /^\s*¡\s*(?:claro(?:\s+que\s+s[ií])?|por\s+supuesto|qu[eé]\s+(?:rico|lindo|linda|bueno|buena|buena\s+(?:pregunta|idea|elecci[oó]n))|(?:muy\s+)?buena\s+(?:pregunta|idea|elecci[oó]n)|excelente(?:\s+(?:pregunta|idea|elecci[oó]n))?|perfecto|genial|con\s+(?:mucho\s+)?gusto(?:\s+te\s+(?:ayudo|cuento|respondo))?)\s*!\s*/iu;
+
+/**
  * Saca el saludo del principio de la respuesta cuando la persona no saludó.
  *
  * La burbuja muestra el saludo de Migue apenas se abre, pero ese saludo no
  * viaja en el historial (es texto fijo de la pantalla), así que el modelo no
  * sabe que ya saludó y arrancaba con otro «¡Hola!»: dos saludos seguidos. La
  * regla de `REGLAS_COMUNES` lo pide; esto lo asegura.
+ *
+ * Lo mismo con las frases de entrada que la regla también le prohíbe
+ * («¡Claro!», «¡Qué rico!», «¡Buena pregunta!»), que repetía sobre todo
+ * después de una consulta. Ésas se sacan aunque la persona haya saludado.
  */
 export function sinSaludoRepetido(respuesta: string, pregunta: string): string {
-  if (SALUDA.test(pregunta)) return respuesta;
-  const sin = respuesta.replace(SALUDO_INICIAL, "");
+  const sinSaludo = SALUDA.test(pregunta)
+    ? respuesta
+    : respuesta.replace(SALUDO_INICIAL, "");
+  const sin = sinSaludo.replace(FRASE_DE_ENTRADA, "");
   if (sin === respuesta || !sin.trim()) return respuesta;
   // Que la oración que queda arranque en mayúscula, también tras «¿» o «¡».
   return sin.replace(

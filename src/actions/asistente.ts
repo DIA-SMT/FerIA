@@ -14,17 +14,18 @@ import {
 import {
   AREAS_ASISTENTE,
   ErrorDeAsistente,
-  responderConsulta,
   type AreaAsistente,
   type TurnoAsistente,
 } from "@/lib/ia-asistente";
+import { responderConsultaPublica } from "@/lib/ia-asistente-publico";
 import { obtenerSesion, type SesionApp } from "@/lib/session";
 
 /**
  * La acción pública del asistente.
  *
  * Es el único punto del sitio donde un visitante anónimo dispara un gasto (cada
- * consulta cuesta ~US$ 0,001 medidos), así que acá viven las tres defensas:
+ * consulta cuesta ~US$ 0,0016, medido el 24/11/2026), así que acá viven las
+ * tres defensas:
  * validación de tamaño, límite de ritmo por IP y tope de historial.
  */
 
@@ -313,14 +314,14 @@ export async function preguntarAlAsistente(
     // cada alta borra lo vencido. A este volumen es un WHERE sobre un índice.
     await registrarAnonima(texto);
 
-    const respuesta = await responderConsulta(
+    const respuesta = await responderConsultaPublica(
       sanearHistorial(historial),
       texto,
       {
         area: areaValida,
       },
     );
-    return { ok: true, texto: respuesta };
+    return { ok: true, texto: respuesta.texto };
   } catch (error) {
     if (esControlDeFlujoDeNext(error)) throw error;
 

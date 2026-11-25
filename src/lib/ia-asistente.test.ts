@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // módulo no levante un cliente de Prisma.
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
-import { construirMensajes } from "@/lib/ia-asistente";
+import { mensajeDeSistemaPublico } from "@/lib/ia-asistente";
 
-function sistema(area?: Parameters<typeof construirMensajes>[3]): string {
-  return construirMensajes("(datos)", [], "hola", area)[0]!.content;
+function sistema(area?: Parameters<typeof mensajeDeSistemaPublico>[1]): string {
+  return mensajeDeSistemaPublico("(datos)", area);
 }
 
 describe("la guía de cada área en el prompt de Migue", () => {
