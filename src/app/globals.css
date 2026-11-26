@@ -325,6 +325,24 @@ body:has(dialog[open]) {
   }
 }
 
+/*
+  El cambio de tema (ver `selector-tema.tsx`). La página nueva se destapa con
+  un círculo que anima el botón; acá se saca el fundido que el navegador pone
+  por defecto, para que el círculo tenga borde neto. Y mientras dura, nada se
+  acomoda con transiciones propias.
+*/
+:root[data-cambiando-tema]::view-transition-old(root),
+:root[data-cambiando-tema]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+:root[data-cambiando-tema] *,
+:root[data-cambiando-tema] *::before,
+:root[data-cambiando-tema] *::after {
+  transition: none !important;
+}
+
 /* Respeta la preferencia de movimiento reducido del sistema. */
 @media (prefers-reduced-motion: reduce) {
   *,
