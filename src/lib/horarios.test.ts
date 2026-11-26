@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   abreEnFecha,
+  agendaDeLaPortada,
   diaDeFecha,
   formatearDias,
   formatearRangoHorario,
@@ -220,5 +221,68 @@ describe("los días de un fin de semana largo", () => {
         }),
       ),
     ).toBe("Lun y Sáb");
+  });
+});
+
+describe("agendaDeLaPortada", () => {
+  // Jueves 26/11/2026: la semana va del lunes 23 al domingo 29.
+  const jueves = dia("2026-11-26");
+  const finde = (nombre: string, desde: string, hasta: string) => ({
+    ...edicion({
+      fechaInicio: dia(desde),
+      fechaFin: dia(hasta),
+      diasSemana: ["SABADO", "DOMINGO", "LUNES"] as const,
+    }),
+    nombre,
+  });
+
+  it("no muestra los días de esta semana que ya pasaron", () => {
+    const { deEstaSemana, tarjetas } = agendaDeLaPortada(
+      jueves,
+      [finde("pasada", "2026-11-21", "2026-11-23")],
+      4,
+    );
+    expect(tarjetas).toEqual([]);
+    expect(deEstaSemana).toBe(false);
+  });
+
+  it("lo que queda de esta semana va primero, sin mezclar la que viene", () => {
+    const { deEstaSemana, tarjetas } = agendaDeLaPortada(
+      jueves,
+      [finde("este finde", "2026-11-28", "2026-11-30")],
+      4,
+    );
+    expect(deEstaSemana).toBe(true);
+    expect(tarjetas.map((t) => t.fecha.toISOString().slice(0, 10))).toEqual([
+      "2026-11-28",
+      "2026-11-29",
+    ]);
+  });
+
+  it("si esta semana ya no queda nada, trae las próximas fechas", () => {
+    const { deEstaSemana, tarjetas } = agendaDeLaPortada(
+      jueves,
+      [finde("diciembre", "2026-12-05", "2026-12-07")],
+      2,
+    );
+    expect(deEstaSemana).toBe(false);
+    expect(tarjetas.map((t) => t.fecha.toISOString().slice(0, 10))).toEqual([
+      "2026-12-05",
+      "2026-12-06",
+    ]);
+  });
+
+  it("hoy cuenta", () => {
+    const { tarjetas } = agendaDeLaPortada(
+      jueves,
+      [
+        {
+          ...edicion({ fechaInicio: jueves, fechaFin: jueves }),
+          nombre: "hoy",
+        },
+      ],
+      4,
+    );
+    expect(tarjetas.map((t) => t.edicion.nombre)).toEqual(["hoy"]);
   });
 });

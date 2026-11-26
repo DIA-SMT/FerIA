@@ -22,11 +22,11 @@ import { ultimasPropuestas } from "@/lib/consultas-sello-propio";
 import { prisma } from "@/lib/db";
 import { hoyEnZona } from "@/lib/format";
 import {
-  agendaDeLaSemana,
+  agendaDeLaPortada,
+  DIAS_DE_AGENDA,
   etiquetaDeFecha,
   lugarDeEdicion,
   resumenHorario,
-  semanaDe,
 } from "@/lib/horarios";
 
 export const metadata = {
@@ -37,17 +37,16 @@ export const metadata = {
 
 export default async function PaginaInicio() {
   const hoy = hoyEnZona();
-  const semana = semanaDe(hoy);
-  const [primerDia, ultimoDia] = [semana[0] as Date, semana[6] as Date];
+  const hasta = new Date(hoy.getTime() + DIAS_DE_AGENDA * 24 * 60 * 60 * 1000);
 
-  const [edicionesSemana, porRubro, propuestas] = await Promise.all([
-    // Las que se cruzan con esta semana: empiezan antes de que termine y
-    // terminan después de que empieza.
+  const [proximas, porRubro, propuestas] = await Promise.all([
+    // Las que todavía no terminaron y empiezan dentro de los próximos
+    // DIAS_DE_AGENDA días: de ahí salen las tarjetas de la agenda.
     prisma.edicionFeria.findMany({
       where: {
         ...EDICIONES_PUBLICAS,
-        fechaInicio: { lte: ultimoDia },
-        fechaFin: { gte: primerDia },
+        fechaInicio: { lte: hasta },
+        fechaFin: { gte: hoy },
         feria: { activa: true },
       },
       orderBy: { fechaInicio: "asc" },
@@ -81,24 +80,24 @@ export default async function PaginaInicio() {
     ultimasPropuestas(3),
   ]);
 
-  // Una tarjeta por feria y por día. La agenda devuelve los días con algo, y
-  // acá se aplana para que cada tarjeta sea «esta feria, este día».
-  const agenda = agendaDeLaSemana(semana, edicionesSemana)
-    .flatMap((dia) =>
-      dia.ediciones.map((edicion) => ({ fecha: dia.fecha, edicion })),
-    )
-    .slice(0, 4);
+  // Una tarjeta por feria y por día, de hoy en adelante: lo que queda de esta
+  // semana o, si ya no queda nada, las próximas fechas.
+  const { deEstaSemana, tarjetas: agenda } = agendaDeLaPortada(
+    hoy,
+    proximas,
+    4,
+  );
 
   return (
     <>
       <HeroFerias />
 
-      {/* -------------------------- Ferias de la semana --------------------- */}
+      {/* ----------------------- Ferias de la semana o próximas ------------- */}
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              Ferias de esta semana
+              {deEstaSemana ? "Ferias de esta semana" : "Próximas ferias"}
             </h2>
             <p className="mt-1 text-slate-600">
               Organizate y disfrutá de las ferias de tu barrio.
@@ -115,7 +114,7 @@ export default async function PaginaInicio() {
 
         {agenda.length === 0 ? (
           <p className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5 text-slate-600">
-            Todavía no hay fechas publicadas para esta semana.
+            Todavía no hay próximas fechas publicadas.
           </p>
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

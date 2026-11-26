@@ -70,27 +70,44 @@ export function abreEnFecha(edicion: EdicionConHorario, fecha: Date): boolean {
   return edicion.diasSemana.includes(diaDeFecha(fecha));
 }
 
+/** Hasta cuántos días hacia adelante busca la portada las próximas fechas. */
+export const DIAS_DE_AGENDA = 60;
+
 /**
- * Qué abre cada día de la semana.
+ * Las tarjetas de ferias de la portada: una por feria y por día, de hoy en
+ * adelante.
  *
- * Devuelve un día por cada uno que tenga al menos una feria: los días sin nada
- * no se listan, porque una tarjeta vacía que dice «hoy no hay ferias» ocupa el
- * mismo lugar que una con información y no sirve para nada.
+ * Primero, lo que queda de esta semana. Si esta semana ya no queda nada, las
+ * próximas fechas que haya, y `deEstaSemana` en false para que el título no
+ * diga «de esta semana». Hasta el 26/11/2026 mostraba la semana entera desde
+ * el lunes: un jueves aparecían las ferias del lunes, ya terminadas, y nada
+ * de lo que venía.
  *
  * Es genérica para que la portada pueda traer de cada edición las columnas que
  * necesita mostrar —el nombre de la feria, su slug, su foto— sin que esto las
  * conozca. Acá sólo se decide qué día abre cada cual.
  */
-export function agendaDeLaSemana<E extends EdicionConHorario>(
-  semana: Date[],
+export function agendaDeLaPortada<E extends EdicionConHorario>(
+  hoy: Date,
   ediciones: E[],
-): Array<{ fecha: Date; ediciones: E[] }> {
-  return semana
-    .map((fecha) => ({
-      fecha,
-      ediciones: ediciones.filter((edicion) => abreEnFecha(edicion, fecha)),
-    }))
-    .filter((dia) => dia.ediciones.length > 0);
+  maximo: number,
+): { deEstaSemana: boolean; tarjetas: Array<{ fecha: Date; edicion: E }> } {
+  const domingo = (semanaDe(hoy)[6] as Date).getTime();
+  const tarjetas = Array.from(
+    { length: DIAS_DE_AGENDA + 1 },
+    (_, i) => new Date(hoy.getTime() + i * UN_DIA),
+  ).flatMap((fecha) =>
+    ediciones
+      .filter((edicion) => abreEnFecha(edicion, fecha))
+      .map((edicion) => ({ fecha, edicion })),
+  );
+
+  const deEstaSemana = tarjetas.filter(
+    (tarjeta) => tarjeta.fecha.getTime() <= domingo,
+  );
+  return deEstaSemana.length > 0
+    ? { deEstaSemana: true, tarjetas: deEstaSemana.slice(0, maximo) }
+    : { deEstaSemana: false, tarjetas: tarjetas.slice(0, maximo) };
 }
 
 const MESES_CORTOS = [
