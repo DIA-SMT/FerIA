@@ -13,41 +13,44 @@ import type { Rubro } from "@prisma/client";
  * y letra oscura, de la misma familia.
  *
  * Cada rubro tiene el tono de su degradé de portada (`DEGRADES_RUBRO`), para
- * que Gastronomía sea naranja acá y en el directorio. De noche se dan vuelta
- * solas, como todo el sitio: por eso estas familias están en
- * `scripts/generar-tema-oscuro.mjs`. Una familia nueva acá tiene que ir
- * también allá, o de noche queda una tarjeta pastel con letra clara.
+ * que Gastronomía sea naranja acá y en el directorio.
  *
- * De noche el fondo va más transparente (`dark:…/55`): el espejo de un pastel
- * es un color oscuro pero muy saturado, y cuatro juntos gritaban sobre el azul
- * noche del resto de la página.
+ * Eso es de día. De noche va un velo del mismo pastel sobre el azul de la página, con el
+ * borde y la letra en ese pastel. El espejo automático de un pastel (lo que
+ * hace el tema oscuro con el resto del sitio) es un color oscuro muy
+ * saturado, y cuatro juntas parecían carteles de neón; tampoco gustaron
+ * todas iguales en azul. Por eso de noche el pastel va escrito en hexadecimal
+ * —es el `-200` de día de cada familia—: con el nombre de Tailwind saldría el
+ * color dado vuelta.
  *
  * Las clases van enteras, sin armarlas con la familia: Tailwind sólo genera
  * las que encuentra escritas en el código.
  */
 const TONOS_RUBRO: Record<Rubro, string> = {
   GASTRONOMIA:
-    "border-orange-200 bg-orange-50 text-orange-900 dark:bg-orange-50/55",
-  ARTESANIAS: "border-rose-200 bg-rose-50 text-rose-900 dark:bg-rose-50/55",
+    "border-orange-200 bg-orange-50 text-orange-900 dark:border-[#fed7aa]/50 dark:bg-[#fed7aa]/25 dark:text-[#fed7aa]",
+  ARTESANIAS:
+    "border-rose-200 bg-rose-50 text-rose-900 dark:border-[#fecdd3]/50 dark:bg-[#fecdd3]/25 dark:text-[#fecdd3]",
   PRODUCTOS_REGIONALES:
-    "border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-50/55",
+    "border-amber-200 bg-amber-50 text-amber-900 dark:border-[#fde68a]/50 dark:bg-[#fde68a]/25 dark:text-[#fde68a]",
   HUERTA_Y_VIVERO:
-    "border-emerald-200 bg-emerald-50 text-emerald-900 dark:bg-emerald-50/55",
-  DECORACION: "border-teal-200 bg-teal-50 text-teal-900 dark:bg-teal-50/55",
+    "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-[#a7f3d0]/50 dark:bg-[#a7f3d0]/25 dark:text-[#a7f3d0]",
+  DECORACION:
+    "border-teal-200 bg-teal-50 text-teal-900 dark:border-[#99f6e4]/50 dark:bg-[#99f6e4]/25 dark:text-[#99f6e4]",
   JUGUETES:
-    "border-celeste-200 bg-celeste-50 text-celeste-900 dark:bg-celeste-50/55",
+    "border-celeste-200 bg-celeste-50 text-celeste-900 dark:border-[#bae4fd]/50 dark:bg-[#bae4fd]/25 dark:text-[#bae4fd]",
   LIBROS_Y_ARTE:
-    "border-indigo-200 bg-indigo-50 text-indigo-900 dark:bg-indigo-50/55",
+    "border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-[#c7d2fe]/50 dark:bg-[#c7d2fe]/25 dark:text-[#c7d2fe]",
   INDUMENTARIA:
-    "border-violet-200 bg-violet-50 text-violet-900 dark:bg-violet-50/55",
+    "border-violet-200 bg-violet-50 text-violet-900 dark:border-[#ddd6fe]/50 dark:bg-[#ddd6fe]/25 dark:text-[#ddd6fe]",
   JOYERIA_Y_BIJOUTERIE:
-    "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-900 dark:bg-fuchsia-50/55",
+    "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-900 dark:border-[#f5d0fe]/50 dark:bg-[#f5d0fe]/25 dark:text-[#f5d0fe]",
   COSMETICA_NATURAL:
-    "border-pink-200 bg-pink-50 text-pink-900 dark:bg-pink-50/55",
+    "border-pink-200 bg-pink-50 text-pink-900 dark:border-[#fbcfe8]/50 dark:bg-[#fbcfe8]/25 dark:text-[#fbcfe8]",
   MARROQUINERIA:
-    "border-stone-300 bg-stone-100 text-stone-900 dark:bg-stone-100/55",
+    "border-stone-300 bg-stone-100 text-stone-900 dark:border-[#e7e5e4]/50 dark:bg-[#e7e5e4]/25 dark:text-[#e7e5e4]",
   OTROS:
-    "border-municipal-200 bg-municipal-50 text-municipal-900 dark:bg-municipal-50/55",
+    "border-municipal-200 bg-municipal-50 text-municipal-900 dark:border-[#bfdbfe]/50 dark:bg-[#bfdbfe]/25 dark:text-[#bfdbfe]",
 };
 
 /** Los stickers se inclinan para un lado y para el otro. */
