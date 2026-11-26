@@ -136,7 +136,12 @@ export default async function PaginaFeriantes({
     take: encontrados ? MAXIMO_BUSQUEDA : POR_PAGINA,
     include: {
       usuario: { select: { email: true, nombre: true } },
-      _count: { select: { productos: true, stands: true } },
+      _count: {
+        select: {
+          productos: { where: { borrador: false } },
+          stands: true,
+        },
+      },
       // En qué ferias presenciales está habilitado. Es el dato que antes no
       // estaba en ninguna pantalla: se podía ver cuántos stands tenía asignados
       // —que es logística de una edición— pero no de qué ferias es parte.

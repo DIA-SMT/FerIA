@@ -51,7 +51,11 @@ export default async function PaginaPreciosYCostos() {
     // no tienen ficha, primero los destacados.
     conMigue
       ? prisma.producto.findMany({
-          where: { vendedorId: vendedor.id, fichasDeCostos: { none: {} } },
+          where: {
+            vendedorId: vendedor.id,
+            borrador: false,
+            fichasDeCostos: { none: {} },
+          },
           orderBy: [{ destacado: "desc" }, { creadoEn: "desc" }],
           select: { nombre: true },
           take: 4,

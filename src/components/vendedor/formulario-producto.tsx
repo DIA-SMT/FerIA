@@ -2,8 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useCallback, useState, type ReactNode } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
+import { guardarBorrador } from "@/actions/borradores";
 import type { Variante } from "@/lib/fotos-producto";
 import { AvisoDelEnvio } from "@/components/ui/aviso-flotante";
 import { estilosBoton } from "@/components/ui/boton";
@@ -50,7 +58,20 @@ interface PropsFormularioProducto {
   conPrecios?: boolean;
   /** Cuántas fotos puede mejorar con IA hoy; viaja igual que `hayIA`. */
   restantesIA?: number;
+  /**
+   * Se guarda solo como borrador mientras se arma: el alta de un producto, o
+   * un borrador que se está completando. El botón lo manda a revisión.
+   */
+  autoguardado?: boolean;
 }
+
+/** Cuánto espera después del último cambio para guardar el borrador. */
+const ESPERA_AUTOGUARDADO_MS = 1200;
+
+type EstadoDelBorrador =
+  | { estado: "guardando" }
+  | { estado: "guardado" }
+  | { estado: "error"; mensaje: string };
 
 export function FormularioProducto({
   accion,
@@ -58,6 +79,7 @@ export function FormularioProducto({
   hayIA = true,
   conPrecios = false,
   restantesIA,
+  autoguardado = false,
 }: PropsFormularioProducto) {
   const [estado, enviar] = useActionState(accion, ESTADO_INICIAL);
   const errores = estado.errores;
@@ -105,10 +127,131 @@ export function FormularioProducto({
     setDescartadas((actuales) => [...actuales, ruta]);
   }
 
+  /*
+    El borrador se guarda solo (ver `src/lib/borradores.ts`): un rato después
+    del último cambio, y de a un guardado por vez. El id vive en una ref además
+    del estado porque el guardado que sigue puede salir antes de que React
+    vuelva a dibujar, y sin el id crearía un segundo borrador.
+  */
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const idDelBorrador = useRef<string | null>(producto?.id ?? null);
+  const [idEnPantalla, setIdEnPantalla] = useState<string | null>(
+    producto?.id ?? null,
+  );
+  const [borrador, setBorrador] = useState<EstadoDelBorrador | null>(null);
+  const guardando = useRef(false);
+  const guardarOtraVez = useRef(false);
+  const enviarAlTerminar = useRef(false);
+  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const guardarRef = useRef<() => Promise<void>>(async () => {});
+
+  const guardarAhora = useCallback(async () => {
+    const formulario = formularioRef.current;
+    if (!autoguardado || !formulario) return;
+    if (guardando.current) {
+      guardarOtraVez.current = true;
+      return;
+    }
+
+    const datos = new FormData(formulario);
+    datos.set("formularioCompleto", "1");
+    if (idDelBorrador.current) datos.set("productoId", idDelBorrador.current);
+    // Hasta que tenga nombre o una foto no hay nada que guardar.
+    const hayAlgo =
+      idDelBorrador.current !== null ||
+      String(datos.get("nombre") ?? "").trim().length >= 2 ||
+      String(datos.get("imagenesNuevas") ?? "") !== "";
+    if (!hayAlgo) return;
+
+    guardando.current = true;
+    setBorrador({ estado: "guardando" });
+    const resultado = await guardarBorrador(datos).catch(() => ({
+      ok: false as const,
+      mensaje: "No se pudo guardar el borrador.",
+    }));
+    guardando.current = false;
+
+    if (resultado.ok) {
+      if (!idDelBorrador.current) {
+        idDelBorrador.current = resultado.productoId;
+        setIdEnPantalla(resultado.productoId);
+        // Si recarga, sigue con este borrador y no con un alta vacía.
+        window.history.replaceState(
+          null,
+          "",
+          `/mi-stand/productos/${resultado.productoId}`,
+        );
+      }
+      setBorrador({ estado: "guardado" });
+    } else {
+      setBorrador({ estado: "error", mensaje: resultado.mensaje });
+    }
+
+    if (enviarAlTerminar.current) {
+      enviarAlTerminar.current = false;
+      guardarOtraVez.current = false;
+      formulario.requestSubmit();
+    } else if (guardarOtraVez.current) {
+      guardarOtraVez.current = false;
+      void guardarRef.current();
+    }
+  }, [autoguardado]);
+
+  useEffect(() => {
+    guardarRef.current = guardarAhora;
+  }, [guardarAhora]);
+
+  const programarGuardado = useCallback(() => {
+    if (!autoguardado) return;
+    if (temporizador.current) clearTimeout(temporizador.current);
+    temporizador.current = setTimeout(() => {
+      temporizador.current = null;
+      void guardarRef.current();
+    }, ESPERA_AUTOGUARDADO_MS);
+  }, [autoguardado]);
+
+  // Lo que cambia sin pasar por un campo: las fotos y el texto de la IA.
+  const primeraVez = useRef(true);
+  useEffect(() => {
+    if (primeraVez.current) {
+      primeraVez.current = false;
+      return;
+    }
+    programarGuardado();
+  }, [nombre, descripcion, nuevas, conservadas, programarGuardado]);
+
+  // Si se va con un guardado esperando, sale igual.
+  useEffect(
+    () => () => {
+      if (temporizador.current) {
+        clearTimeout(temporizador.current);
+        void guardarRef.current();
+      }
+    },
+    [],
+  );
+
   return (
-    <form action={enviar} className="space-y-5" noValidate>
-      {producto && (
-        <input type="hidden" name="productoId" value={producto.id} />
+    <form
+      ref={formularioRef}
+      action={enviar}
+      onChange={autoguardado ? programarGuardado : undefined}
+      onSubmit={(evento) => {
+        if (temporizador.current) {
+          clearTimeout(temporizador.current);
+          temporizador.current = null;
+        }
+        // Mandarlo mientras se guarda podía crear el producto dos veces.
+        if (guardando.current) {
+          evento.preventDefault();
+          enviarAlTerminar.current = true;
+        }
+      }}
+      className="space-y-5"
+      noValidate
+    >
+      {idEnPantalla && (
+        <input type="hidden" name="productoId" value={idEnPantalla} />
       )}
       <input
         type="hidden"
@@ -330,12 +473,45 @@ export function FormularioProducto({
         </TarjetaCuerpo>
 
         <TarjetaPie>
-          <Link href="/mi-stand#catalogo" className={estilosBoton("contorno")}>
-            Cancelar
-          </Link>
-          <BotonEnvio>
-            {producto ? "Guardar cambios" : "Agregar al catálogo"}
-          </BotonEnvio>
+          {autoguardado ? (
+            <>
+              <p
+                role="status"
+                className={
+                  borrador?.estado === "error"
+                    ? "mr-auto text-sm text-red-700"
+                    : "mr-auto text-sm text-slate-500"
+                }
+              >
+                {borrador?.estado === "guardando"
+                  ? "Guardando…"
+                  : borrador?.estado === "error"
+                    ? borrador.mensaje
+                    : idEnPantalla
+                      ? "Borrador guardado: sólo lo ves vos."
+                      : "Se guarda solo como borrador mientras lo armás."}
+              </p>
+              <Link
+                href="/mi-stand#catalogo"
+                className={estilosBoton("contorno")}
+              >
+                Volver a mi stand
+              </Link>
+              <BotonEnvio>Enviar a revisión</BotonEnvio>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/mi-stand#catalogo"
+                className={estilosBoton("contorno")}
+              >
+                Cancelar
+              </Link>
+              <BotonEnvio>
+                {producto ? "Guardar cambios" : "Agregar al catálogo"}
+              </BotonEnvio>
+            </>
+          )}
         </TarjetaPie>
       </Tarjeta>
     </form>

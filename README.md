@@ -87,6 +87,13 @@ La cara visible para los vecinos.
 - Una vez aprobado: edición de su **vidriera** (nombre, descripción, portada,
   logo, contacto y redes) y de su **catálogo de productos** (nombre,
   descripción, hasta 4 fotos, disponible sí/no).
+- **Borradores**: mientras arma un producto se guarda solo como borrador, que
+  ve sólo él y no le llega a la Dirección hasta que lo manda a revisión. En
+  `/mi-stand/productos/borradores` sube varias fotos de una vez (cada una es un
+  producto), les pone nombre y descripción en la misma pantalla y los manda
+  juntos. Un borrador que pasa 7 días sin cambios se borra solo, con sus
+  fotos (`src/lib/borradores.ts`); no hay cron: la poda corre al guardar un
+  borrador o abrir «Mi stand».
 - **Sus ferias**: a qué ediciones y stands fue asignado.
 - **Compartir**: arma una imagen de su catálogo (hasta seis productos con
   foto, y precios si quiere, que van sólo en la imagen y no se publican) en

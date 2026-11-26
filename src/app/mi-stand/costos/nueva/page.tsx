@@ -15,7 +15,7 @@ export default async function PaginaNuevaFicha({
   const { producto: productoElegido } = await searchParams;
 
   const productos = await prisma.producto.findMany({
-    where: { vendedorId: vendedor.id },
+    where: { vendedorId: vendedor.id, borrador: false },
     orderBy: { nombre: "asc" },
     select: { id: true, nombre: true },
   });

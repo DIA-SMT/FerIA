@@ -100,7 +100,7 @@ export default async function PaginaFichaFeriante({
           producto: { select: { nombre: true } },
         },
       },
-      _count: { select: { productos: true } },
+      _count: { select: { productos: { where: { borrador: false } } } },
     },
   });
 

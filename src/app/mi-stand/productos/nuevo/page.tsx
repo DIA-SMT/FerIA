@@ -49,9 +49,17 @@ export default async function PaginaNuevoProducto() {
           Agregar producto
         </h1>
         <p className="mt-1 text-sm text-slate-600">
-          Los vecinos lo van a ver cuando lo apruebe la Dirección de Relaciones
-          Institucionales. Mientras tanto aparece en tu stand como «en
-          revisión».
+          Mientras lo armás se guarda solo como borrador, que ves sólo vos.
+          Cuando esté listo, mandalo a revisión: los vecinos lo van a ver cuando
+          lo apruebe la Dirección de Relaciones Institucionales. ¿Tenés varias
+          fotos?{" "}
+          <Link
+            href="/mi-stand/productos/borradores"
+            className="font-medium text-municipal-600 hover:text-municipal-700"
+          >
+            Subilas todas juntas
+          </Link>
+          .
         </p>
       </header>
 
@@ -60,6 +68,7 @@ export default async function PaginaNuevoProducto() {
         hayIA={conIA}
         conPrecios={hayPreciosPublicos()}
         restantesIA={restantesIA}
+        autoguardado
       />
     </div>
   );

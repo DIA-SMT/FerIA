@@ -26,11 +26,13 @@ import {
   TarjetaProductoPropio,
 } from "@/components/vendedor/tarjeta-producto-propio";
 import { hayIAConfigurada } from "@/lib/ai";
+import { cuandoSeBorra } from "@/lib/borradores";
 import { prisma } from "@/lib/db";
 import { formatearFechaHora } from "@/lib/format";
 import { obtenerInteresDelStand } from "@/lib/interes";
 import { RUBROS } from "@/lib/labels";
 import { feriasDelFeriante, proximasAsignaciones } from "@/lib/mis-ferias";
+import { podarSinFrenar } from "@/lib/poda-de-borradores";
 import {
   cambiosAbiertos,
   productoDelDueno,
@@ -44,12 +46,17 @@ export const metadata = { title: "Mi stand" };
 const AVISOS_DE_LLEGADA = {
   agregado: "Producto enviado a revisión: lo vas a ver publicado cuando lo aprueben.",
   actualizado: "Cambios enviados a revisión: los vecinos ven la versión anterior hasta que los aprueben.",
+  enviados: "Productos enviados a revisión: los vas a ver publicados cuando los aprueben.",
 } as const;
 
 export default async function PaginaMiStand({
   searchParams,
 }: {
-  searchParams: Promise<{ agregado?: string; actualizado?: string }>;
+  searchParams: Promise<{
+    agregado?: string;
+    actualizado?: string;
+    enviados?: string;
+  }>;
 }) {
   const { vendedor } = await obtenerVendedorActual();
 
@@ -213,6 +220,10 @@ export default async function PaginaMiStand({
     aplicado y un cartel en cada parte que espera; el vecino sigue viendo la
     aprobada hasta que la Dirección la apruebe.
   */
+  // Los borradores vencidos se borran antes de mostrar el catálogo, así no
+  // aparece uno que ya no existe.
+  await podarSinFrenar();
+
   const [parametros, publicados, participaciones, interes, cambios] =
     await Promise.all([
       searchParams,
@@ -231,6 +242,8 @@ export default async function PaginaMiStand({
           disponible: true,
           destacado: true,
           publicado: true,
+          borrador: true,
+          actualizadoEn: true,
           precio: true,
           stock: true,
         },
@@ -241,9 +254,12 @@ export default async function PaginaMiStand({
     ]);
 
   const { vendedor: stand, estados } = standDelDueno(vendedor, cambios);
-  const productos = publicados.map((producto) =>
-    productoDelDueno(producto, cambios),
-  );
+  // Los borradores van primero en el catálogo, con su cartel: así ve cómo
+  // quedan entre los demás antes de mandarlos a revisión.
+  const borradores = publicados.filter((producto) => producto.borrador);
+  const productos = publicados
+    .filter((producto) => !producto.borrador)
+    .map((producto) => productoDelDueno(producto, cambios));
 
   // Los de Modo Feria tienen su propia pestaña, con su estado en cada
   // propuesta: contarlos acá mandaría a buscar el motivo «en esa parte del
@@ -310,6 +326,22 @@ export default async function PaginaMiStand({
           </Alerta>
         )}
 
+        {borradores.length > 0 && (
+          <Alerta tipo="info">
+            {borradores.length === 1
+              ? "Tenés 1 producto en borrador"
+              : `Tenés ${borradores.length} productos en borrador`}
+            : los ves sólo vos.{" "}
+            <Link
+              href="/mi-stand/productos/borradores"
+              className="font-medium underline underline-offset-2"
+            >
+              Completalos y mandalos a revisión
+            </Link>
+            .
+          </Alerta>
+        )}
+
         <LineaDeInteres resumen={interes} />
       </div>
 
@@ -360,6 +392,14 @@ export default async function PaginaMiStand({
             <li>
               <TarjetaAgregarProducto />
             </li>
+            {borradores.map((producto) => (
+              <li key={producto.id}>
+                <TarjetaProductoPropio
+                  producto={producto}
+                  seBorra={cuandoSeBorra(producto.actualizadoEn)}
+                />
+              </li>
+            ))}
             {productos.map(({ producto, revision, nuevo }) => (
               <li key={producto.id}>
                 <TarjetaProductoPropio

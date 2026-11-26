@@ -32,13 +32,20 @@ export function TarjetaProductoPropio({
   producto,
   revision = null,
   nuevo = false,
+  seBorra = null,
 }: {
   producto: ProductoPropio;
   /** Si tiene un cambio esperando la revisión de la administración. */
   revision?: Estado | null;
   /** Si ese cambio es el alta: todavía no lo ve ningún vecino. */
   nuevo?: boolean;
+  /**
+   * Si es un borrador, cuándo se borra si no lo toca («el jueves 3 de
+   * diciembre»). Un borrador no se marca sin stock: se completa o se borra.
+   */
+  seBorra?: string | null;
 }) {
+  const borrador = seBorra !== null;
   return (
     <Tarjeta className="flex h-full flex-col overflow-hidden">
       <div className="relative">
@@ -51,6 +58,11 @@ export function TarjetaProductoPropio({
           className="aspect-square w-full"
         />
         <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
+          {borrador && (
+            <Badge tono="neutro" tamanio="sm" className="bg-superficie/95">
+              Borrador
+            </Badge>
+          )}
           {producto.destacado && (
             <Badge tono="amarillo" tamanio="sm" className="bg-superficie/95">
               Destacado
@@ -65,10 +77,20 @@ export function TarjetaProductoPropio({
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-semibold text-slate-900">{producto.nombre}</h3>
+        {producto.nombre.trim() ? (
+          <h3 className="font-semibold text-slate-900">{producto.nombre}</h3>
+        ) : (
+          <h3 className="font-semibold text-slate-400 italic">Sin nombre</h3>
+        )}
         {producto.descripcion && (
           <p className="lineas-2 mt-1 text-sm text-slate-600">
             {producto.descripcion}
+          </p>
+        )}
+        {borrador && (
+          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            Lo ves sólo vos. Completalo y mandalo a revisión; si no lo tocás, se
+            borra {seBorra}.
           </p>
         )}
         {revision && (
@@ -86,22 +108,28 @@ export function TarjetaProductoPropio({
             className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
           >
             <IconoLapiz className="size-3.5" />
-            Editar
+            {borrador ? "Completar" : "Editar"}
           </Link>
 
-          <BotonConfirmar
-            accion={alternarDisponibilidad}
-            campos={{ productoId: producto.id }}
-            variante="fantasma"
-            className="text-slate-600"
-          >
-            {producto.disponible ? "Marcar sin stock" : "Marcar disponible"}
-          </BotonConfirmar>
+          {!borrador && (
+            <BotonConfirmar
+              accion={alternarDisponibilidad}
+              campos={{ productoId: producto.id }}
+              variante="fantasma"
+              className="text-slate-600"
+            >
+              {producto.disponible ? "Marcar sin stock" : "Marcar disponible"}
+            </BotonConfirmar>
+          )}
 
           <BotonConfirmar
             accion={eliminarProducto}
             campos={{ productoId: producto.id }}
-            confirmacion={`¿Eliminar "${producto.nombre}" del catálogo? Esta acción no se puede deshacer.`}
+            confirmacion={
+              borrador
+                ? `¿Borrar ${producto.nombre.trim() ? `«${producto.nombre.trim()}»` : "este borrador"}? Se borra con sus fotos.`
+                : `¿Eliminar "${producto.nombre}" del catálogo? Esta acción no se puede deshacer.`
+            }
             variante="fantasma"
             className="ml-auto text-red-600 hover:bg-red-50"
           >
@@ -118,20 +146,30 @@ export function TarjetaProductoPropio({
  * producto. Con el catálogo vacío es la única, y alcanza como invitación.
  */
 export function TarjetaAgregarProducto() {
+  // Dos enlaces y no uno con otro adentro: un enlace dentro de otro no es
+  // HTML válido. El grande es el alta de a uno; el de abajo, varias fotos.
   return (
-    <Link
-      href="/mi-stand/productos/nuevo"
-      className="group flex h-full min-h-40 flex-col sm:min-h-64 items-center justify-center gap-3 rounded-xl border-2 border-dashed border-municipal-300 bg-municipal-50/50 p-6 text-center transition-colors hover:border-municipal-500 hover:bg-municipal-50"
-    >
-      <span className="flex size-14 items-center justify-center rounded-full bg-municipal-500 text-white shadow-sm transition-transform group-hover:scale-105">
-        <IconoMas className="size-7" />
-      </span>
-      <span className="text-base font-semibold text-municipal-800">
-        Agregar producto
-      </span>
-      <span className="text-sm text-slate-600">
-        Con foto y descripción, para que sepan qué ofrecés.
-      </span>
-    </Link>
+    <div className="flex h-full min-h-40 flex-col rounded-xl border-2 border-dashed border-municipal-300 bg-municipal-50/50 text-center transition-colors hover:border-municipal-500 hover:bg-municipal-50 sm:min-h-64">
+      <Link
+        href="/mi-stand/productos/nuevo"
+        className="group flex flex-1 flex-col items-center justify-center gap-3 p-6"
+      >
+        <span className="flex size-14 items-center justify-center rounded-full bg-municipal-500 text-white shadow-sm transition-transform group-hover:scale-105">
+          <IconoMas className="size-7" />
+        </span>
+        <span className="text-base font-semibold text-municipal-800">
+          Agregar producto
+        </span>
+        <span className="text-sm text-slate-600">
+          Con foto y descripción, para que sepan qué ofrecés.
+        </span>
+      </Link>
+      <Link
+        href="/mi-stand/productos/borradores"
+        className="border-t border-dashed border-municipal-200 px-6 py-3 text-sm font-medium text-municipal-600 hover:text-municipal-700"
+      >
+        O subí varias fotos de una vez
+      </Link>
+    </div>
   );
 }

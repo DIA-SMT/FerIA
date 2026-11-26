@@ -2,12 +2,13 @@ import { hayIAConfigurada } from "@/lib/ai";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { actualizarProducto } from "@/actions/productos";
+import { actualizarProducto, crearProducto } from "@/actions/productos";
 import { FormularioProducto } from "@/components/vendedor/formulario-producto";
 import { IconoFlechaIzquierda } from "@/components/ui/iconos";
 import { EstadoDeRevision } from "@/components/vendedor/estado-de-revision";
 import { fotosIARestantes } from "@/lib/cupo-fotos-ia";
 import { prisma } from "@/lib/db";
+import { cuandoSeBorra } from "@/lib/borradores";
 import { aNumero } from "@/lib/format";
 import { hayPreciosPublicos } from "@/lib/marketplace";
 import { cambiosAbiertos, productoDelDueno } from "@/lib/revision";
@@ -60,6 +61,52 @@ export default async function PaginaEditarProducto({
     cambios,
   );
 
+  const valores = {
+    id: producto.id,
+    nombre: producto.nombre,
+    descripcion: producto.descripcion,
+    imagenes: producto.imagenes,
+    disponible: producto.disponible,
+    destacado: producto.destacado,
+    precio: producto.precio,
+    stock: producto.stock,
+  };
+
+  // Un borrador se completa con el mismo formulario del alta: se sigue
+  // guardando solo, y el botón lo manda a revisión.
+  if (publicado.borrador) {
+    return (
+      <div className="max-w-3xl">
+        <header className="mb-6">
+          <Link
+            href="/mi-stand#catalogo"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-municipal-700"
+          >
+            <IconoFlechaIzquierda className="size-4" />
+            Volver a mi stand
+          </Link>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+            Completar producto
+          </h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Es un borrador: lo ves sólo vos y se guarda solo. Cuando esté listo,
+            mandalo a revisión. Si no lo tocás, se borra{" "}
+            {cuandoSeBorra(publicado.actualizadoEn)}.
+          </p>
+        </header>
+
+        <FormularioProducto
+          hayIA={conIA}
+          conPrecios={hayPreciosPublicos()}
+          restantesIA={restantesIA}
+          accion={crearProducto}
+          producto={valores}
+          autoguardado
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl">
       <header className="mb-6">
@@ -93,16 +140,7 @@ export default async function PaginaEditarProducto({
         conPrecios={hayPreciosPublicos()}
         restantesIA={restantesIA}
         accion={actualizarProducto}
-        producto={{
-          id: producto.id,
-          nombre: producto.nombre,
-          descripcion: producto.descripcion,
-          imagenes: producto.imagenes,
-          disponible: producto.disponible,
-          destacado: producto.destacado,
-          precio: producto.precio,
-          stock: producto.stock,
-        }}
+        producto={valores}
       />
     </div>
   );

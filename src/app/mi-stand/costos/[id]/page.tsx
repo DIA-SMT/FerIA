@@ -23,7 +23,7 @@ export default async function PaginaEditarFicha({
       select: { id: true, nombre: true, productoId: true, datos: true },
     }),
     prisma.producto.findMany({
-      where: { vendedorId: vendedor.id },
+      where: { vendedorId: vendedor.id, borrador: false },
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true },
     }),

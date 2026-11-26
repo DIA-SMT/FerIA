@@ -129,14 +129,18 @@ export async function miStand(vendedorId: string) {
   });
   if (!vendedor) return { error: "No encontré tu stand." };
 
-  const [publicados, enRevision, sinStock, interes] = await Promise.all([
-    prisma.producto.count({ where: { vendedorId, publicado: true } }),
-    prisma.producto.count({ where: { vendedorId, publicado: false } }),
-    prisma.producto.count({
-      where: { vendedorId, publicado: true, disponible: false },
-    }),
-    obtenerInteresDelStand(vendedorId),
-  ]);
+  const [publicados, enRevision, borradores, sinStock, interes] =
+    await Promise.all([
+      prisma.producto.count({ where: { vendedorId, publicado: true } }),
+      prisma.producto.count({
+        where: { vendedorId, publicado: false, borrador: false },
+      }),
+      prisma.producto.count({ where: { vendedorId, borrador: true } }),
+      prisma.producto.count({
+        where: { vendedorId, publicado: true, disponible: false },
+      }),
+      obtenerInteresDelStand(vendedorId),
+    ]);
 
   const cambios = vendedor.cambios.map((cambio) => ({
     tipo: TIPOS_DE_CAMBIO[tipoDelCambio(cambio.seccion, cambio.datos)],
@@ -190,7 +194,12 @@ export async function miStand(vendedorId: string) {
         queHacer:
           "Corregirlo en esa parte de su stand y volver a guardar: vuelve a revisión.",
       })),
-    productos: { publicados, enRevision, publicadosSinStock: sinStock },
+    productos: {
+      publicados,
+      enRevision,
+      enBorrador: borradores,
+      publicadosSinStock: sinStock,
+    },
     vidriera:
       interes.diasQueFaltan > 0
         ? {
@@ -234,6 +243,7 @@ export async function misProductos(vendedorId: string) {
       id: true,
       nombre: true,
       publicado: true,
+      borrador: true,
       disponible: true,
       stock: true,
       destacado: true,
@@ -245,12 +255,14 @@ export async function misProductos(vendedorId: string) {
     total: productos.length,
     productos: productos.map((producto) => ({
       id: producto.id,
-      nombre: producto.nombre,
-      estado: producto.publicado
-        ? producto.disponible
-          ? "Publicado"
-          : "Publicado, sin stock"
-        : "Esperando revisión",
+      nombre: producto.nombre || "(sin nombre)",
+      estado: producto.borrador
+        ? "Borrador: lo ve sólo él; se completa y se manda a revisión desde /mi-stand/productos/borradores"
+        : producto.publicado
+          ? producto.disponible
+            ? "Publicado"
+            : "Publicado, sin stock"
+          : "Esperando revisión",
       stock: producto.stock,
       destacado: producto.destacado,
       tieneFichaDeCostos: producto._count.fichasDeCostos > 0,

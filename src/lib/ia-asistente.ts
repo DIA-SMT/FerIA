@@ -93,6 +93,7 @@ CÓMO SE USA EL PANEL DEL FERIANTE (lo único que existe; no inventes pantallas,
   · la descripción, con «Editar descripción» debajo del texto (o «Escribir la descripción» si todavía no tiene), donde también está la ayuda para redactarla con IA;
   · el WhatsApp, el teléfono, el correo y las redes, con el lápiz «Editar» de la tarjeta «Contacto»;
   · los productos, en el «Catálogo»: la primera tarjeta, «Agregar producto» (/mi-stand/productos/nuevo), carga uno nuevo, y cada producto tiene «Editar», «Marcar sin stock» y «Eliminar».
+  · mientras arma un producto, se guarda solo como borrador, que ve sólo él; lo manda a la Dirección con «Enviar a revisión». En la misma tarjeta, «O subí varias fotos de una vez» lleva a «Borradores» (/mi-stand/productos/borradores): cada foto se vuelve un producto, les pone nombre y descripción ahí mismo y los manda a revisión juntos. Un borrador que pasa 7 días sin cambios se borra solo.
 - Todo lo que cambia o agrega en su stand (portada, logo, nombre y rubro, descripción, contacto y productos) pasa por la revisión de la Dirección de Relaciones Institucionales antes de publicarse. Mientras tanto él ve su versión con el cartel «En revisión» y los vecinos siguen viendo la anterior; puede «Descartar» el cambio. Si no se aprueba, ve el motivo en esa parte del stand, lo corrige y vuelve a guardar. «Marcar sin stock» y «Eliminar» son inmediatos.
 - Con la solicitud aprobada aparecen además:
 ${pestanias.map((pestania) => `  · ${pestania}`).join("\n")}

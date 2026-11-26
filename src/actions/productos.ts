@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { fotosDelProducto, fotosQueSobran } from "@/lib/borradores";
 import { prisma } from "@/lib/db";
 import {
   ejecutarAccion,
@@ -35,6 +36,7 @@ function revalidarCatalogo(slug: string): void {
   revalidatePath("/stands");
   revalidatePath(`/stands/${slug}`);
   revalidatePath("/admin/revisiones");
+  revalidatePath("/mi-stand/productos/borradores");
 }
 
 /** Separa un campo de rutas separadas por coma. */
@@ -93,23 +95,62 @@ export async function crearProducto(
     if (!validacion.success) return estadoDesdeZod(validacion.error);
 
     const entrada = validacion.data;
-    const imagenes = fotosElegidas(datos, vendedor.id, 0);
+
+    // Si se fue guardando como borrador mientras lo armaba, se manda ese
+    // mismo: crear otro dejaría el borrador con las mismas fotos, y al
+    // vencerse las borraría.
+    const borradorId = String(datos.get("productoId") ?? "");
+    const borrador = borradorId
+      ? await prisma.producto.findFirst({
+          where: { id: borradorId, vendedorId: vendedor.id, borrador: true },
+          select: { id: true, imagenes: true },
+        })
+      : null;
+    if (borradorId && !borrador) {
+      return estadoDeError(
+        "Este borrador ya no existe: se borró, o ya lo mandaste a revisión.",
+      );
+    }
+
+    const imagenes = borrador
+      ? fotosDelProducto({
+          enElProducto: borrador.imagenes,
+          conservadas: leerRutas(datos, "imagenesActuales"),
+          nuevas: leerRutas(datos, "imagenesNuevas"),
+          vendedorId: vendedor.id,
+        })
+      : fotosElegidas(datos, vendedor.id, 0);
+
+    const campos = {
+      nombre: entrada.nombre,
+      descripcion: entrada.descripcion,
+      precio: entrada.precio,
+      stock: entrada.stock,
+      disponible: entrada.disponible,
+      destacado: entrada.destacado,
+      imagenes,
+    };
 
     // Nace sin publicar: el vecino lo ve recién cuando se aprueba su alta.
-    const producto = await prisma.producto.create({
-      data: {
+    const producto = borrador
+      ? await prisma.producto.update({
+          where: { id: borrador.id },
+          data: { ...campos, borrador: false },
+          select: { id: true },
+        })
+      : await prisma.producto.create({
+          data: { ...campos, vendedorId: vendedor.id, publicado: false },
+          select: { id: true },
+        });
+    if (borrador) {
+      const sobran = fotosQueSobran({
+        antes: borrador.imagenes,
+        descartadas: [],
+        ahora: imagenes,
         vendedorId: vendedor.id,
-        nombre: entrada.nombre,
-        descripcion: entrada.descripcion,
-        precio: entrada.precio,
-        stock: entrada.stock,
-        disponible: entrada.disponible,
-        destacado: entrada.destacado,
-        imagenes,
-        publicado: false,
-      },
-      select: { id: true },
-    });
+      });
+      for (const ruta of sobran) await almacenamiento.eliminar(ruta);
+    }
     await proponerCambio({
       vendedorId: vendedor.id,
       seccion: "PRODUCTO",
@@ -181,9 +222,11 @@ export async function actualizarProducto(
     if (!actual.publicado) {
       // Todavía no lo ve nadie: se corrige en su propia fila y vuelve a
       // revisión (si lo habían rechazado, con esto queda pendiente de nuevo).
+      // Si era un borrador, deja de serlo: guardar acá es mandarlo.
       await prisma.producto.update({
         where: { id: productoId },
         data: {
+          borrador: false,
           nombre: entrada.nombre,
           descripcion: entrada.descripcion,
           precio: entrada.precio,

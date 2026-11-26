@@ -291,6 +291,7 @@ const RUTAS_FIJAS = new Set([
   "/mi-stand",
   "/mi-stand/ferias",
   "/mi-stand/productos/nuevo",
+  "/mi-stand/productos/borradores",
   "/mi-stand/modo-feria",
   "/mi-stand/modo-feria/nueva",
   COMPARTIR,

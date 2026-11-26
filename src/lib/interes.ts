@@ -193,7 +193,7 @@ export async function obtenerInteresDelStand(
       _sum: { aperturas: true, consultas: true },
     }),
     prisma.producto.findMany({
-      where: { vendedorId },
+      where: { vendedorId, borrador: false },
       select: {
         id: true,
         nombre: true,

@@ -476,6 +476,11 @@ model Producto {
   /// ya existían antes de la revisión quedaron en `true`.
   publicado Boolean @default(true)
 
+  /// Un borrador: lo ve sólo el feriante mientras lo arma. No está publicado
+  /// (`publicado` en false) ni en revisión (no tiene `CambioDelStand`), y
+  /// si pasa 7 días sin cambios se borra solo (`src/lib/borradores.ts`).
+  borrador Boolean @default(false)
+
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
@@ -487,6 +492,7 @@ model Producto {
   @@index([vendedorId])
   @@index([disponible])
   @@index([publicado])
+  @@index([borrador, actualizadoEn])
   @@map("productos")
 }
 
