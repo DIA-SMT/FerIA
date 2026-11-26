@@ -183,6 +183,19 @@
   outline-offset: 2px;
 }
 
+/* El campo del buscador no lleva ese contorno: un rectángulo separado
+   alrededor de una cápsula redonda se veía como un recuadro negro pegado
+   (26/11/2026). Lo que se marca es la cápsula entera, con el borde en azul
+   y un halo celeste, que se sigue viendo al navegar con el teclado. */
+.hero input:focus-visible {
+  outline: none;
+}
+
+.hero form:focus-within {
+  border-color: #0455cc;
+  box-shadow: 0 4px 15px #051f4733, 0 0 0 4px #bae4fd;
+}
+
 .hero aside {
   background: #fffffff5;
   border: 1px solid #dde6ef;
