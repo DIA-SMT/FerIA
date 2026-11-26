@@ -159,24 +159,18 @@
   box-shadow: 0 3px 9px #051f4730;
 }
 
+/* «Próximas ferias», el primero y azul fuerte, se sacó el 26/11/2026: iba a
+   /ferias, igual que «Dónde quedan». Cada uno de los que quedan conserva su
+   color. */
 .hero nav a:nth-child(1) {
-  color: #fff;
-  background: #0455cc;
-}
-
-.hero nav a:nth-child(1) img {
-  filter: invert(1);
-}
-
-.hero nav a:nth-child(2) {
   background: #bae4fd;
 }
 
-.hero nav a:nth-child(3) {
+.hero nav a:nth-child(2) {
   background: #eff6ff;
 }
 
-.hero nav a:nth-child(4) {
+.hero nav a:nth-child(3) {
   background: #f5d90a;
 }
 
@@ -243,6 +237,11 @@
     display: grid;
     grid-template-columns: repeat(2,minmax(0,1fr));
     max-width: 520px;
+  }
+
+  /* Con un número impar de botones, el último ocupa la fila entera. */
+  .hero nav a:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 

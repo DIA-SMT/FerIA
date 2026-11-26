@@ -15,7 +15,6 @@ const informacion = [
 
 export function HeroFerias() {
   const accesos = [
-    ["calendario", "Próximas ferias", "/ferias"],
     ["ubicacion", "Dónde quedan", "/ferias"],
     ["personas", hayPedidos() ? "Tienda" : "Emprendedores", "/stands"],
     ["tienda", "Cómo participar", "/registro"],
