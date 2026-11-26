@@ -825,6 +825,31 @@ municipal es más denso y funcional (tablas, filtros, barra lateral).
 
 ## Despliegue a producción
 
+### En la VPS
+
+Desde el 29/10/2026 producción corre en una VPS con la convención de la
+oficina: el usuario `feria` con su carpeta en `/srv/feria`, cada versión en
+`versiones/<fecha>-<sha>`, el symlink `actual` apuntando a la que se sirve, y
+pm2 en el puerto 3003 detrás de nginx. Se despliega de a uno, y en dos
+mitades, con los scripts de `scripts/`:
+
+1. **`deploy-construir.sh <sha>`** clona `main`, instala, construye, aplica
+   las migraciones y prueba la versión nueva en el puerto 3013. No toca
+   producción. Frena si `main` no está en ese sha, si el build falla dos
+   veces o si el 3013 ya está ocupado (si no, la prueba le preguntaría a otro
+   servidor: pasó del 17 al 26/11/2026).
+2. **`deploy-cambiar.sh`** pasa `actual` a la versión que quedó lista,
+   reinicia pm2 y espera que el 3003 responda. Si en 4 minutos no responde,
+   vuelve sola a la anterior.
+
+Los dos se copian a la VPS y corren como `feria` (`sudo -u feria`). El primero
+va desprendido (`setsid nohup … > /tmp/deploy-<sha>.log 2>&1 &`), siguiendo el
+log. Si hay migraciones, antes se hace un respaldo de la base con
+`pg_dump -Fc`. Volver atrás es mover `actual` a la versión anterior y
+reiniciar pm2: `deploy-cambiar.sh` imprime el comando exacto.
+
+### Con Vercel y Supabase (hasta el 3/11/2026)
+
 Checklist mínimo:
 
 1. **Proyecto de Supabase aparte** para producción. No compartas el de
@@ -843,7 +868,7 @@ Checklist mínimo:
 7. **Revisá el linter de Supabase** (*Advisors → Security*) después del primer
    deploy.
 
-### Región de las funciones
+#### Región de las funciones
 
 `vercel.json` fija las funciones en `gru1` (São Paulo), que es donde está la
 base. Sin eso corrían en `iad1` (Virginia) y **cada consulta cruzaba el
