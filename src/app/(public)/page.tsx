@@ -1,11 +1,9 @@
 import Link from "next/link";
 
-import { HeroRuta } from "@/components/public/hero-ruta";
+import { HeroFerias } from "@/components/public/hero-ferias";
 import { SeccionFeriante } from "@/components/public/seccion-feriante";
 import { SeccionRubros } from "@/components/public/seccion-rubros";
 import { SeccionSelloPropio } from "@/components/public/seccion-sello-propio";
-import { TarjetaFeria } from "@/components/public/tarjeta-feria";
-import { EstadoVacio } from "@/components/ui/estado-vacio";
 import {
   COLOR_CATEGORIA,
   ICONOS_CATEGORIA,
@@ -19,11 +17,7 @@ import {
 import { ImagenPortada } from "@/components/ui/imagen";
 import { hayIAConfigurada } from "@/lib/ai";
 import { cn } from "@/lib/cn";
-import {
-  EDICIONES_PUBLICAS,
-  feriasConProximaEdicion,
-  ordenarPorRelevancia,
-} from "@/lib/consultas";
+import { EDICIONES_PUBLICAS } from "@/lib/consultas";
 import { ultimasPropuestas } from "@/lib/consultas-sello-propio";
 import { prisma } from "@/lib/db";
 import { hoyEnZona } from "@/lib/format";
@@ -46,11 +40,7 @@ export default async function PaginaInicio() {
   const semana = semanaDe(hoy);
   const [primerDia, ultimoDia] = [semana[0] as Date, semana[6] as Date];
 
-  // El `count` de feriantes aprobados se fue con los contadores del hero: era
-  // su único consumidor, y una consulta que no alimenta nada es una consulta
-  // que igual cruza a São Paulo en cada visita a la portada.
-  const [ferias, edicionesSemana, porRubro, propuestas] = await Promise.all([
-    feriasConProximaEdicion({ soloConEdiciones: true }),
+  const [edicionesSemana, porRubro, propuestas] = await Promise.all([
     // Las que se cruzan con esta semana: empiezan antes de que termine y
     // terminan después de que empieza.
     prisma.edicionFeria.findMany({
@@ -91,8 +81,6 @@ export default async function PaginaInicio() {
     ultimasPropuestas(3),
   ]);
 
-  const feriasDestacadas = ordenarPorRelevancia(ferias).slice(0, 6);
-
   // Una tarjeta por feria y por día. La agenda devuelve los días con algo, y
   // acá se aplana para que cada tarjeta sea «esta feria, este día».
   const agenda = agendaDeLaSemana(semana, edicionesSemana)
@@ -103,32 +91,33 @@ export default async function PaginaInicio() {
 
   return (
     <>
-      <HeroRuta />
+      <HeroFerias />
 
       {/* -------------------------- Ferias de la semana --------------------- */}
-      {agenda.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                Ferias de esta semana
-              </h2>
-              <p className="mt-1 text-slate-600">
-                Organizate y disfrutá de las ferias de tu barrio.
-              </p>
-            </div>
-            <Link
-              href="/ferias"
-              className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-            >
-              Ver todas las ferias
-              <IconoChevronDerecha className="size-4" />
-            </Link>
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+              Ferias de esta semana
+            </h2>
+            <p className="mt-1 text-slate-600">
+              Organizate y disfrutá de las ferias de tu barrio.
+            </p>
           </div>
+          <Link
+            href="/ferias"
+            className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
+          >
+            Ver todas las ferias
+            <IconoChevronDerecha className="size-4" />
+          </Link>
+        </div>
 
-          {/* Cuatro por fila recién desde 1280 px: entre 1024 y 1280 cada
-              tarjeta medía unos 230 px y el nombre y el horario se partían
-              en tres renglones. */}
+        {agenda.length === 0 ? (
+          <p className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5 text-slate-600">
+            Todavía no hay fechas publicadas para esta semana.
+          </p>
+        ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {agenda.map(({ fecha, edicion }) => {
               const etiqueta = etiquetaDeFecha(fecha);
@@ -235,58 +224,14 @@ export default async function PaginaInicio() {
               );
             })}
           </div>
-        </section>
-      )}
-
-      {/* ------------------------------ Ferias ------------------------------ */}
-      <section className="border-y border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                Ferias en curso y próximas
-              </h2>
-              <p className="mt-1 text-slate-600">
-                Fechas confirmadas por la Dirección de Relaciones Institucionales.
-              </p>
-            </div>
-            <Link
-              href="/ferias"
-              className="inline-flex items-center gap-1 text-sm font-medium text-municipal-600 transition-colors hover:text-municipal-700"
-            >
-              Ver todas
-              <IconoChevronDerecha className="size-4" />
-            </Link>
-          </div>
-
-          {feriasDestacadas.length === 0 ? (
-            <EstadoVacio
-              icono={IconoTienda}
-              className="mt-8 bg-superficie"
-              titulo="Por ahora no hay ferias programadas"
-              descripcion="Cuando la municipalidad publique las próximas fechas, van a aparecer acá."
-            />
-          ) : (
-            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {feriasDestacadas.map((feria, indice) => (
-                <TarjetaFeria
-                  key={feria.slug}
-                  feria={feria}
-                  prioridad={indice < 3}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </section>
 
       {/* ------------------------------ Modo Feria -------------------------- */}
       {propuestas.length > 0 && <SeccionSelloPropio propuestas={propuestas} />}
 
       {/* --------------------------- Qué vas a encontrar -------------------- */}
-      {porRubro.length > 0 && (
-        <SeccionRubros rubros={porRubro} conMigue={hayIAConfigurada()} />
-      )}
+      <SeccionRubros rubros={porRubro} conMigue={hayIAConfigurada()} />
 
       {/* --------------------------- Ser feriante --------------------------- */}
       <SeccionFeriante />

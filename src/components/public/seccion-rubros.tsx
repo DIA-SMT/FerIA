@@ -68,6 +68,13 @@ function stickerDe(rubro: Rubro): string {
   return `/inicio/rubro-${rubro.toLowerCase().replaceAll("_", "-")}.webp`;
 }
 
+const RUBROS_INICIALES: Rubro[] = [
+  "GASTRONOMIA",
+  "ARTESANIAS",
+  "INDUMENTARIA",
+  "JOYERIA_Y_BIJOUTERIE",
+];
+
 /**
  * «Qué vas a encontrar»: los rubros con más emprendimientos, cada uno con su
  * color y su sticker, y al lado la caja para preguntarle a Migue.
@@ -84,6 +91,10 @@ export function SeccionRubros({
    */
   conMigue: boolean;
 }) {
+  const destacados = rubros.length
+    ? rubros
+    : RUBROS_INICIALES.map((rubro) => ({ rubro, _count: 0 }));
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
       {/* Rubros y Migue lado a lado sólo desde 1280 px. Entre 1024 y 1280 la
@@ -113,7 +124,7 @@ export function SeccionRubros({
             puede pisar la tarjeta de arriba.
           */}
           <div className="mt-10 grid gap-x-5 gap-y-8 sm:grid-cols-2">
-            {rubros.map((fila, indice) => (
+            {destacados.map((fila, indice) => (
               <Link
                 key={fila.rubro}
                 href={`/stands?rubro=${fila.rubro}`}
